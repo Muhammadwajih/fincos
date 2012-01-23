@@ -1,0 +1,14 @@
+#summary FINCoS tool wiki.
+
+= Introduction =
+
+The FINCoS framework is a Java-based set of benchmarking tools for load generation and performance measuring of Event Processing systems. It provides a flexible and neutral approach for experimenting diverse CEP systems, where load generators, datasets, queries, and adapters can be easily attached, swapped, reconfigured and scaled. This tool is part of our benchmarking initiative hosted at the Department of Informatic Engineering of the University of Coimbra (see http://bicep.dei.uc.pt/index.php/Main_Page for more details).
+
+
+= Details =
+The FINCoS framework is a Java-based set of benchmarking tools for load generation and performance measuring of Event Processing systems. It provides a flexible and neutral approach for experimenting diverse CEP systems, where load generators, datasets, queries, and adapters can be easily attached, swapped, reconfigured and scaled. This tool is part of our benchmarking initiative hosted at the Department of Informatic Engineering of the University of Coimbra (see http://bicep.dei.uc.pt/index.php/Main_Page for more details).
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
