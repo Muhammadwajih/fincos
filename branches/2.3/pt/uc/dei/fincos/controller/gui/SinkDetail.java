@@ -1,6 +1,7 @@
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -27,16 +28,16 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 
 /**
  * GUI for configuration of Sinks
- * 
+ *
  * @author Marcelo R.N. Mendes
  *
  */
 @SuppressWarnings("serial")
 public class SinkDetail extends ComponentDetail {
-		
+
 	private ArrayList<String> streams;
 	private SinkConfig oldCfg;
-	
+
     private javax.swing.JTextField addressField;
     private javax.swing.JLabel addressLabel;
     private javax.swing.JTextField aliasField;
@@ -50,7 +51,7 @@ public class SinkDetail extends ComponentDetail {
     private javax.swing.JTextField serverAddressField;
     private javax.swing.JLabel serverAddressLabel;
     private javax.swing.JPanel streamsPanel;
-    
+
     private javax.swing.JRadioButton logAllRadio;
     private javax.swing.JCheckBox logCheckBox;
     private javax.swing.ButtonGroup logRadioGroup;
@@ -58,27 +59,30 @@ public class SinkDetail extends ComponentDetail {
     private javax.swing.JLabel logSamplingLabel;
     private javax.swing.JRadioButton logTSRadio;
     private javax.swing.JPanel loggingPanel;
-    
+
     private JComboBox validationSamplingComboBox;
-    private JLabel validationSamplingLabel;    
+    private JLabel validationSamplingLabel;
     private JCheckBox validateCheckBox;
     private JPanel validationPanel;
     private JTextField validatorAddressField;
     private JLabel validatorAddressLabel;
     private JTextField validatorPortField;
     private JLabel validatorPortLabel;
-    
+
     private JPopupMenu streamsPopup = new JPopupMenu();
-    
+
     /** Creates new form Sink */
     public SinkDetail(SinkConfig sink) {
+        super(null);
         initComponents();
-        
+
+        this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
+
         this.streams = new ArrayList<String>();
-        
+
         if(sink != null) {
-        	this.oldCfg = sink;        	
-        	this.op = EDIT;
+        	this.oldCfg = sink;
+        	this.op = UPDATE;
         	setTitle("Editing \"" + sink.getAlias() + "\"");
         	fillProperties(sink);
         }
@@ -87,30 +91,30 @@ public class SinkDetail extends ComponentDetail {
         	this.op = INSERT;
         	setTitle("New Sink");
         }
-               
+
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         this.setVisible(true);
     }
-    
+
     public void fillProperties(SinkConfig sink) {
     	this.aliasField.setText(sink.getAlias());
-    	this.addressField.setText(sink.getAddress().getHostAddress());    	
+    	this.addressField.setText(sink.getAddress().getHostAddress());
     	this.portField.setText(sink.getPort()+"");
     	this.serverAddressField.setText(sink.getServerAddress().getHostAddress());
-    	
+
     	DefaultListModel model = (DefaultListModel) this.streamsList.getModel();
     	String streams [] = sink.getOutputStreamList();
-    	
+
     	for (String stream : streams) {
     		model.addElement(stream);
     		this.streams.add(stream);
-		}    	
-    	    	
+		}
+
     	logCheckBox.setSelected(sink.isLoggingEnabled());
     	setLoggingEnabled(sink.isLoggingEnabled());
-    	if(sink.isLoggingEnabled()) {    		
+    	if(sink.isLoggingEnabled()) {
     		if(sink.getFieldsToLog() == Globals.LOG_ALL_FIELDS)
     			logAllRadio.setSelected(true);
     		else
@@ -120,24 +124,24 @@ public class SinkDetail extends ComponentDetail {
     			logSamplingComboBox.setSelectedItem("1");
     		else if(logSamplRate == 0.001)
     			logSamplingComboBox.setSelectedItem("0.001");
-    		else    			
+    		else
     			logSamplingComboBox.setSelectedItem(""+logSamplRate);
     	}
-    	
-    	validateCheckBox.setSelected(sink.isValidationEnabled());  
+
+    	validateCheckBox.setSelected(sink.isValidationEnabled());
     	setValidationEnabled(sink.isValidationEnabled());
-    	if(sink.isValidationEnabled()) {    		
-    		validatorAddressField.setText(sink.getValidatorAddress().getHostAddress());    		
-    		validatorPortField.setText(""+sink.getValidatorPort());    		
+    	if(sink.isValidationEnabled()) {
+    		validatorAddressField.setText(sink.getValidatorAddress().getHostAddress());
+    		validatorPortField.setText(""+sink.getValidatorPort());
     		double validSamplRate = sink.getValidationSamplingRate();
     		if(validSamplRate == 1)
     			validationSamplingComboBox.setSelectedItem("1");
     		else if(validSamplRate == 0.001)
     			validationSamplingComboBox.setSelectedItem("0.001");
     		else
-    			validationSamplingComboBox.setSelectedItem(""+validSamplRate);    		
+    			validationSamplingComboBox.setSelectedItem(""+validSamplRate);
     	}
-    	    	
+
 
 	}
 
@@ -147,7 +151,7 @@ public class SinkDetail extends ComponentDetail {
     	logSamplingLabel.setEnabled(enabled);
     	logSamplingComboBox.setEnabled(enabled);
 	}
-    
+
     private void setValidationEnabled(boolean enabled) {
     	validatorAddressLabel.setEnabled(enabled);
     	validatorPortLabel.setEnabled(enabled);
@@ -169,7 +173,7 @@ public class SinkDetail extends ComponentDetail {
         okBtn = new javax.swing.JButton("OK", new ImageIcon("imgs/OK.png"));
         okBtn.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				if(validateFields()) {
 					if(streams.isEmpty()) {
 						JOptionPane.showMessageDialog(null, "There must be at least one stream.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
@@ -190,29 +194,29 @@ public class SinkDetail extends ComponentDetail {
 								JOptionPane.showMessageDialog(null, "Invalid value for PerfMon port");
 								return;
 							}
-							
+
 						}
-						
+
 						newCfg = new SinkConfig(aliasField.getText(), InetAddress.getByName(addressField.getText()),
 												Integer.parseInt(portField.getText()), streamsArr,
 												InetAddress.getByName(serverAddressField.getText()),
-												logCheckBox.isSelected(), 
-												logAllRadio.isSelected()? Globals.LOG_ALL_FIELDS 
+												logCheckBox.isSelected(),
+												logAllRadio.isSelected()? Globals.LOG_ALL_FIELDS
 																		: Globals.LOG_ONLY_TIMESTAMPS,
 												Double.parseDouble((String)logSamplingComboBox.getSelectedItem()),
-												validateCheckBox.isSelected(), 
-												InetAddress.getByName(validatorAddressField.getText()), 
-												validatorPort, validatorSamplingRate);						
+												validateCheckBox.isSelected(),
+												InetAddress.getByName(validatorAddressField.getText()),
+												validatorPort, validatorSamplingRate);
 						if (Controller_GUI.getInstance().checkSinkUniqueConstraint(oldCfg, newCfg)) {
 							switch (op) {
-							case EDIT:
+							case UPDATE:
 								Controller_GUI.getInstance().updateSink(oldCfg, newCfg);
 								dispose();
 								break;
 							case INSERT:
 								Controller_GUI.getInstance().addSink(newCfg);
 								dispose();
-							}				
+							}
 						}
 						else
 							JOptionPane.showMessageDialog(null, "New configuration violates unique constraint.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
@@ -222,28 +226,28 @@ public class SinkDetail extends ComponentDetail {
 				}
 				else {
 					JOptionPane.showMessageDialog(null, "One or more required fields were not correctly filled.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
-				}	
-				
+				}
+
 			}
-        	
+
         });
         cancelBtn = new javax.swing.JButton("Cancel", new ImageIcon("imgs/cancel.png"));
         cancelBtn.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {		
+			public void actionPerformed(ActionEvent e) {
 				dispose();
 			}
-        	
+
         });
         portField = new javax.swing.JTextField();
         portLabel = new javax.swing.JLabel("Port");
-        
-        
+
+
         serverAddressField = new javax.swing.JTextField();
         serverAddressLabel = new javax.swing.JLabel("Server Address");
-        
+
         streamsList.setModel(new DefaultListModel());
-        streamsList.addMouseListener(new PopupListener(streamsPopup));        
+        streamsList.addMouseListener(new PopupListener(streamsPopup));
         JMenuItem addStream = new JMenuItem("Add...");
         addStream.addActionListener(new ActionListener() {
 			@Override
@@ -257,8 +261,8 @@ public class SinkDetail extends ComponentDetail {
 					streams.add(streamName);
 					((DefaultListModel)streamsList.getModel()).addElement(streamName);
 				}
-					
-			}        	
+
+			}
         });
         JMenuItem deleteStream = new JMenuItem("Delete");
         deleteStream.addActionListener(new ActionListener() {
@@ -268,24 +272,24 @@ public class SinkDetail extends ComponentDetail {
 
         		int removedCount = 0;
         		for (int index : indices) {
-        			streams.remove(index-removedCount);					
+        			streams.remove(index-removedCount);
         			((DefaultListModel)streamsList.getModel()).remove(index-removedCount);
         			removedCount++;
-        		}								
-        	}        	
+        		}
+        	}
         });
         streamsPopup.add(addStream);
         streamsPopup.add(deleteStream);
-        
+
         streamsScrollPane1.setViewportView(streamsList);
-        
+
 
         streamsPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Streams"));
         streamsPanel.setLayout(new BorderLayout());
         streamsPanel.setPreferredSize(new Dimension(25, 50));
        // streamsPanel.setMaximumSize(new Dimension(30, 50));
         streamsPanel.add(streamsScrollPane1, BorderLayout.CENTER);
-           
+
         java.awt.Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
         logRadioGroup = new javax.swing.ButtonGroup();
         logAllRadio = new javax.swing.JRadioButton();
@@ -293,29 +297,29 @@ public class SinkDetail extends ComponentDetail {
         logAllRadio.setFont(f);
         logTSRadio = new javax.swing.JRadioButton();
         logTSRadio.setFont(f);
-        
-        logSamplingComboBox = new javax.swing.JComboBox(); 
+
+        logSamplingComboBox = new javax.swing.JComboBox();
         logSamplingComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "0.5", "0.25", "0.2", "0.1", "0.05", "0.025", "0.01", "0.001" }));
         logSamplingComboBox.setSelectedItem("1");
         logSamplingLabel = new javax.swing.JLabel();
         logSamplingLabel.setFont(f);
-        
+
         loggingPanel = new javax.swing.JPanel();
-        logCheckBox = new javax.swing.JCheckBox();        
+        logCheckBox = new javax.swing.JCheckBox();
         logCheckBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {            	
-            	setLoggingEnabled(logCheckBox.isSelected());        	            
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	setLoggingEnabled(logCheckBox.isSelected());
             }
         });
-        logCheckBox.setSelected(true);      
-        
+        logCheckBox.setSelected(true);
+
         validationPanel = new JPanel();
         validationPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Runtime Monitoring"));
 
         validateCheckBox = new JCheckBox("Send Events to FINCoS PerfMon tool");
         validateCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	setValidationEnabled(validateCheckBox.isSelected());            	            	          
+            	setValidationEnabled(validateCheckBox.isSelected());
             }
         });
 
@@ -330,7 +334,7 @@ public class SinkDetail extends ComponentDetail {
         validatorPortLabel.setFont(f);
         validatorPortField = new JTextField();
         validatorPortField.setEnabled(false);
-        
+
         validationSamplingComboBox = new JComboBox();
         validationSamplingComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "0.5", "0.25", "0.2", "0.1", "0.05", "0.025", "0.01", "0.001" }));
         validationSamplingComboBox.setPreferredSize(new Dimension(25,20));
@@ -340,7 +344,7 @@ public class SinkDetail extends ComponentDetail {
         validationSamplingLabel = new JLabel("Sampling Rate");
         validationSamplingLabel.setFont(f);
         validationSamplingLabel.setEnabled(false);
-        
+
         javax.swing.GroupLayout validationPanelLayout = new javax.swing.GroupLayout(validationPanel);
         validationPanel.setLayout(validationPanelLayout);
         validationPanelLayout.setHorizontalGroup(
@@ -506,7 +510,7 @@ public class SinkDetail extends ComponentDetail {
 
         pack();
     }
-	
+
     private boolean validateFields() {
     	int port = -1;
     	try {
@@ -529,7 +533,7 @@ public class SinkDetail extends ComponentDetail {
     			)
     			);
     }
-    
+
 	class PopupListener extends MouseAdapter {
 	    JPopupMenu popup;
 
@@ -537,14 +541,16 @@ public class SinkDetail extends ComponentDetail {
 	        popup = popupMenu;
 	    }
 
-	    public void mousePressed(MouseEvent e) {
+	    @Override
+        public void mousePressed(MouseEvent e) {
 	    	if (e.isPopupTrigger()) {
 	            popup.show(e.getComponent(),
 	                       e.getX(), e.getY());
 	        }
 	    }
 
-	    public void mouseReleased(MouseEvent e) {
+	    @Override
+        public void mouseReleased(MouseEvent e) {
 	    	if (e.isPopupTrigger()) {
 	            popup.show(e.getComponent(),
 	                       e.getX(), e.getY());
@@ -561,12 +567,12 @@ public class SinkDetail extends ComponentDetail {
 		this.logCheckBox.setEnabled(false);
 		this.logAllRadio.setEnabled(false);
 		this.logTSRadio.setEnabled(false);
-		this.logSamplingComboBox.setEnabled(false);			
+		this.logSamplingComboBox.setEnabled(false);
 		this.validateCheckBox.setEnabled(false);
 		this.validatorAddressField.setEnabled(false);
 		this.validatorPortField.setEnabled(false);
 		this.validationSamplingComboBox.setEnabled(false);
 		this.okBtn.setEnabled(false);	}
-    
+
 }
 
