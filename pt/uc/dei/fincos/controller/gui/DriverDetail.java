@@ -1,5 +1,6 @@
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -35,17 +36,20 @@ import pt.uc.dei.fincos.driver.WorkloadPhase;
 
 
 /**
- * GUI for configuration of Drivers
- * 
+ * GUI for configuration of Drivers.
+ *
  * @author Marcelo R.N. Mendes
  *
  */
 @SuppressWarnings("serial")
 public class DriverDetail extends ComponentDetail {
-		
-	//private ArrayList<WorkloadPhase> phases;
-	private DriverConfig oldCfg;
-	
+    /** List of workload phases for the Driver being configured. */
+    private ArrayList<WorkloadPhase> phases = new ArrayList<WorkloadPhase>();
+
+    /** Previous properties of the Driver (when the form is open for update). */
+    private DriverConfig oldCfg;
+
+    /** UI fields. */
     private JTextField addressField;
     private JLabel addressLabel;
     private JTextField aliasField;
@@ -55,15 +59,13 @@ public class DriverDetail extends ComponentDetail {
     private JScrollPane jScrollPane1;
     private JButton okBtn;
     private JTable phasesTable;
-    private JPanel workloadPanel;	
-	JPopupMenu phasesPop = new JPopupMenu();
-	
+    private JPanel workloadPanel;
+    private JPopupMenu phasesPop = new JPopupMenu();
 	private JRadioButton threadCountCPUsRadio;
     private JSpinner threadCountField;
     private JRadioButton threadCountFixedRadio;
     private JLabel threadCountLabel;
-    private ButtonGroup threadCountRadioGroup;	
-	
+    private ButtonGroup threadCountRadioGroup;
 	private ButtonGroup logRadioGroup;
 	private JRadioButton logAllRadio;
 	private JCheckBox logCheckBox;
@@ -71,7 +73,6 @@ public class DriverDetail extends ComponentDetail {
 	private JLabel logSamplingLabel;
 	private JRadioButton logTSRadio;
 	private JPanel loggingPanel;
-	
     private JComboBox validationSamplingComboBox;
     private JLabel validationSamplingLabel;
     private JTextField serverAddressField;
@@ -84,32 +85,34 @@ public class DriverDetail extends ComponentDetail {
     private JLabel validatorAddressLabel;
     private JTextField validatorPortField;
     private JLabel validatorPortLabel;
-    
-   
 
-		
-    private ArrayList<WorkloadPhase> phases= new ArrayList<WorkloadPhase>();
- 
+    /**
+     * Creates a form for editing Driver configuration.
+     *
+     * @param dr    Driver configuration properties to be shown in UI, when in UPDATE mode,
+     *              or <tt>null</tt>, in INSERTION mode.
+     */
     public DriverDetail(DriverConfig dr) {
+        super(null);
     	initComponents();
-        
-        if(dr != null) {
-        	this.oldCfg = dr;     
-        	this.op = EDIT;
+    	this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
+
+        if (dr != null) {
+        	this.oldCfg = dr;
+        	this.op = UPDATE;
         	setTitle("Editing \"" + dr.getAlias() + "\"");
         	fillProperties(dr);
-        }	
-        else {        	        	
+        } else {
         	this.op = INSERT;
         	setTitle("New Driver");
         }
-             
+
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         this.setVisible(true);
     }
-    
+
     private void initComponents() {
         aliasField = new javax.swing.JTextField();
         aliasLabel = new javax.swing.JLabel("Alias");
@@ -118,14 +121,14 @@ public class DriverDetail extends ComponentDetail {
         workloadPanel = new javax.swing.JPanel();
         phasesLabel = new javax.swing.JLabel("Phases");
         jScrollPane1 = new javax.swing.JScrollPane();
-        phasesTable = new javax.swing.JTable();       
+        phasesTable = new javax.swing.JTable();
         okBtn = new javax.swing.JButton("OK", new ImageIcon("imgs/OK.png"));
-        
-        cancelBtn = new javax.swing.JButton("Cancel", new ImageIcon("imgs/cancel.png"));        
+
+        cancelBtn = new javax.swing.JButton("Cancel", new ImageIcon("imgs/cancel.png"));
 
         workloadPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Workload"));
 
-        phasesTable.setModel(new DefaultTableModel(            
+        phasesTable.setModel(new DefaultTableModel(
             new String [] {
                 "Phase", "Type"
             	}, 1)  {
@@ -135,12 +138,12 @@ public class DriverDetail extends ComponentDetail {
 	        	}
         	});
         jScrollPane1.setViewportView(phasesTable);
-        
+
         serverAddressLabel = new JLabel("Server Address");
         serverAddressField = new JTextField();
         serverPortLabel = new JLabel("Server Port");
         serverPortField = new JTextField();
-        
+
         java.awt.Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
         threadCountLabel = new javax.swing.JLabel();
         threadCountRadioGroup = new javax.swing.ButtonGroup();
@@ -157,32 +160,32 @@ public class DriverDetail extends ComponentDetail {
         threadCountCPUsRadio.setFont(f);
         threadCountCPUsRadio.setToolTipText("Use as many threads as the number of processors/cores in the host machine.");
         threadCountField.setModel(new javax.swing.SpinnerNumberModel(1, 1, 64, 1));
-        
+
         loggingPanel = new javax.swing.JPanel();
-        loggingPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Logging"));        
-        
-        logCheckBox = new JCheckBox();        
-        logCheckBox.setText("Log Events to Disk");        
+        loggingPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Logging"));
+
+        logCheckBox = new JCheckBox();
+        logCheckBox.setText("Log Events to Disk");
         logRadioGroup = new ButtonGroup();
         logAllRadio = new JRadioButton();
         logAllRadio.setText("All Fields");
         logAllRadio.setSelected(true);
-        logAllRadio.setFont(f);        
-        logRadioGroup.add(logAllRadio);               
+        logAllRadio.setFont(f);
+        logRadioGroup.add(logAllRadio);
         logTSRadio = new JRadioButton();
-        logTSRadio.setText("Only Timestamps");               
+        logTSRadio.setText("Only Timestamps");
         logTSRadio.setFont(f);
         logRadioGroup.add(logTSRadio);
         logSamplingLabel = new javax.swing.JLabel();
         logSamplingLabel.setText("Sampling Rate");
-        logSamplingLabel.setFont(f); 
-        logSamplingComboBox = new javax.swing.JComboBox(); 
+        logSamplingLabel.setFont(f);
+        logSamplingComboBox = new javax.swing.JComboBox();
         logSamplingComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "0.5", "0.25", "0.2", "0.1", "0.05", "0.025", "0.01", "0.001" }));
         logSamplingComboBox.setSelectedItem("1");
 
         validationPanel = new JPanel();
         validationPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Runtime Monitoring"));
-        validateCheckBox = new JCheckBox("Send Events to FINCoS PerfMon tool");        
+        validateCheckBox = new JCheckBox("Send Events to FINCoS PerfMon tool");
         validatorAddressLabel = new JLabel("Address");
         validatorAddressLabel.setEnabled(false);
         validatorAddressLabel.setFont(f);
@@ -194,17 +197,17 @@ public class DriverDetail extends ComponentDetail {
         validatorPortLabel.setFont(f);
         validatorPortField = new JTextField();
         validatorPortField.setEnabled(false);
-        
+
         validationSamplingComboBox = new JComboBox();
         validationSamplingComboBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "0.5", "0.25", "0.2", "0.1", "0.05", "0.025", "0.01", "0.001" }));
-        validationSamplingComboBox.setPreferredSize(new Dimension(25,20));
+        validationSamplingComboBox.setPreferredSize(new Dimension(25, 20));
         validationSamplingComboBox.setSelectedItem("0.1");
         validationSamplingComboBox.setEnabled(false);
 
         validationSamplingLabel = new JLabel("Sampling Rate");
         validationSamplingLabel.setFont(f);
         validationSamplingLabel.setEnabled(false);
-              
+
       //-------------------------------------- Generated Code ------------------------------------
         javax.swing.GroupLayout loggingPanelLayout = new javax.swing.GroupLayout(loggingPanel);
         loggingPanel.setLayout(loggingPanelLayout);
@@ -238,7 +241,7 @@ public class DriverDetail extends ComponentDetail {
                 .addComponent(logSamplingComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
-        
+
         javax.swing.GroupLayout workloadPanelLayout = new javax.swing.GroupLayout(workloadPanel);
         workloadPanel.setLayout(workloadPanelLayout);
         workloadPanelLayout.setHorizontalGroup(
@@ -398,142 +401,143 @@ public class DriverDetail extends ComponentDetail {
 
         pack();
         //--------------------------------- End of Generated Code ---------------------------------
-        
+
         //-------------------------------------- Custom Code ------------------------------------
-        
+
         okBtn.addActionListener(new ActionListener() {
         	@Override
         	public void actionPerformed(ActionEvent e) {
         		try {
-        			if(phasesTable.getCellEditor() != null)
+        			if (phasesTable.getCellEditor() != null) {
         				phasesTable.getCellEditor().stopCellEditing();
+        			}
 
-        			if(validateFields()) {
-        				WorkloadPhase workload[] = new WorkloadPhase[phases.size()]; 
-        				workload = phases.toArray(workload);					
+        			if (validateFields()) {
+        				WorkloadPhase[] workload = new WorkloadPhase[phases.size()];
+        				workload = phases.toArray(workload);
         				DriverConfig newCfg;
         				try {
-        					int validatorPort = 0, serverPort = 0, threadCount=1;        					
+        					int validatorPort = 0, serverPort = 0, threadCount = 1;
         					double validatorSamplingRate = 0;
-        					serverPort = Integer.parseInt(serverPortField.getText());        							
-	
-        					try {
-        						if(threadCountCPUsRadio.isSelected())
-        							threadCount = -1;
-        						else
-        							threadCount = (Integer) threadCountField.getValue();
+        					serverPort = Integer.parseInt(serverPortField.getText());
 
-        						if(validateCheckBox.isSelected()) {
-        							validatorPort = Integer.parseInt(validatorPortField.getText());
-        							validatorSamplingRate = Double.parseDouble((String)validationSamplingComboBox.getSelectedItem());		
+        					try {
+        						if (threadCountCPUsRadio.isSelected()) {
+        							threadCount = -1;
+        						} else {
+        							threadCount = (Integer) threadCountField.getValue();
         						}
 
-        					}
-        					catch (NumberFormatException nfe1) {
-        						JOptionPane.showMessageDialog(null, "Invalid value. Port and thread count fields require numeric values.");
-        					}        				
+        						if (validateCheckBox.isSelected()) {
+        							validatorPort = Integer.parseInt(validatorPortField.getText());
+        							validatorSamplingRate = Double.parseDouble((String) validationSamplingComboBox.getSelectedItem());
+        						}
 
-        					newCfg = 
-        						new DriverConfig(aliasField.getText(), InetAddress.getByName(addressField.getText()), 
+        					} catch (NumberFormatException nfe1) {
+        						JOptionPane.showMessageDialog(null, "Invalid value. Port and thread count fields require numeric values.");
+        					}
+
+        					newCfg =
+        						new DriverConfig(aliasField.getText(), InetAddress.getByName(addressField.getText()),
         								workload, InetAddress.getByName(serverAddressField.getText()),
         								serverPort, threadCount,
-        								logCheckBox.isSelected(), 
-        								logAllRadio.isSelected()? Globals.LOG_ALL_FIELDS 
-        														: Globals.LOG_ONLY_TIMESTAMPS,
-        								Double.parseDouble((String)logSamplingComboBox.getSelectedItem()),
-        								validateCheckBox.isSelected(), 
-        								InetAddress.getByName(validatorAddressField.getText()), 
+        								logCheckBox.isSelected(),
+        								logAllRadio.isSelected() ?  Globals.LOG_ALL_FIELDS
+        														 : Globals.LOG_ONLY_TIMESTAMPS,
+        								Double.parseDouble((String) logSamplingComboBox.getSelectedItem()),
+        								validateCheckBox.isSelected(),
+        								InetAddress.getByName(validatorAddressField.getText()),
         								validatorPort , validatorSamplingRate
         						);
         					if (Controller_GUI.getInstance().checkDriverUniqueConstraint(oldCfg, newCfg)) {
         						switch (op) {
-        						case EDIT:
+        						case UPDATE:
         							Controller_GUI.getInstance().updateDriver(oldCfg, newCfg);
         							dispose();
         							break;
         						case INSERT:
         							Controller_GUI.getInstance().addDriver(newCfg);
         							dispose();
-        						}	
-        					}
-        					else
+        						}
+        					} else {
         						JOptionPane.showMessageDialog(null, "New configuration violates unique constraint.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
-
+        					}
         				} catch (UnknownHostException e2) {
         					JOptionPane.showMessageDialog(null, "Invalid IP address.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
         				}
-        			}
-        			else {
+        			} else {
         				JOptionPane.showMessageDialog(null, "One or more required fields were not correctly filled.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
         			}
-        		} catch (NumberFormatException nfe) {					
+        		} catch (NumberFormatException nfe) {
         			JOptionPane.showMessageDialog(null, "Invalid value at workload table");
         		}
 
-        	}        	
+        	}
         });
-        
+
         cancelBtn.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {		
+			public void actionPerformed(ActionEvent e) {
 				dispose();
 			}
-        	
+
         });
-        
+
         phasesTable.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					JTable source = (JTable)e.getSource();
-					if(source.isEnabled()) {
-						int selected = source.getSelectedRow();
-						if(selected > -1 && selected < phases.size())
-							openPhaseDetail(phases.get(selected));							
-					}					
-				}}	
-		});
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    JTable source = (JTable) e.getSource();
+                    if (source.isEnabled()) {
+                        int selected = source.getSelectedRow();
+                        if (selected > -1 && selected < phases.size()) {
+                            openPhaseDetail(phases.get(selected));
+                        }
+                    }
+                }
+            }
+        });
         phasesTable.addMouseListener(new PopupListener(phasesPop));
         JMenuItem addPhaseMenuItem = new JMenuItem("Add...");
         JMenuItem deletePhaseMenuItem = new JMenuItem("Delete");
         JMenuItem copyPhaseMenuItem = new JMenuItem("Copy...");
-        
+
         addPhaseMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				openPhaseDetail(null);				
-			}			
+				openPhaseDetail(null);
+			}
 		});
-        
+
         deletePhaseMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int index = phasesTable.getSelectedRow();
 
-				if(index > -1 && index < phases.size()) {			
+				if (index > -1 && index < phases.size()) {
 					removePhase(index);
-				}
-				else {
+				} else {
 					JOptionPane.showMessageDialog(null, "Select a phase to delete");
-				}				
-			}			
+				}
+			}
 		});
-        
+
         copyPhaseMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {				
-				int selected = phasesTable.getSelectedRow();				
-				
-				if(selected > -1 && selected < phases.size()) {
-					WorkloadPhase copy = phases.get(selected);					
+			public void actionPerformed(ActionEvent e) {
+				int selected = phasesTable.getSelectedRow();
+
+				if (selected > -1 && selected < phases.size()) {
+					WorkloadPhase copy = phases.get(selected);
 					PhaseDetail detail = openPhaseDetail(null);
 					detail.fillProperties(copy);
-				}						
-				else
-					JOptionPane.showMessageDialog(null, "Select a phase to copy");				
+				} else {
+					JOptionPane.showMessageDialog(null, "Select a phase to copy");
+				}
 
-			}			
+			}
 		});
-        
+
         phasesPop.add(addPhaseMenuItem);
         phasesPop.add(deletePhaseMenuItem);
         phasesPop.add(copyPhaseMenuItem);
@@ -541,106 +545,119 @@ public class DriverDetail extends ComponentDetail {
         threadCountFixedRadio.addItemListener(new java.awt.event.ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
-				threadCountField.setEnabled(threadCountFixedRadio.isSelected()); 
+				threadCountField.setEnabled(threadCountFixedRadio.isSelected());
 			}
         });
         threadCountCPUsRadio.addItemListener(new java.awt.event.ItemListener() {
         	@Override
 			public void itemStateChanged(ItemEvent e) {
-				threadCountField.setEnabled(threadCountFixedRadio.isSelected()); 
+				threadCountField.setEnabled(threadCountFixedRadio.isSelected());
 			}
         });
         threadCountFixedRadio.setSelected(true);
-        
+
         logCheckBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {            	
-            	setLoggingEnabled(logCheckBox.isSelected());        	            
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	setLoggingEnabled(logCheckBox.isSelected());
             }
         });
-        
+
         validateCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	setValidationEnabled(validateCheckBox.isSelected());            	
+            	setValidationEnabled(validateCheckBox.isSelected());
             }
         });
     }
 
 
+    /**
+     * Creates a form for configuring a workload phase.
+     *
+     * @param workloadPhase     Workload phase configuration properties, when in UPDATE mode,
+     *                          or <tt>null</tt>, in INSERTION mode.
+     * @return                  a reference to the just created form
+     */
 	protected PhaseDetail openPhaseDetail(WorkloadPhase workloadPhase) {
     	return new PhaseDetail(this, workloadPhase);
 	}
 
+
+	/**
+	 * Fills the UI with the Driver properties passed as argument.
+	 *
+	 * @param dr   Driver configuration properties to be shown in UI, when in UPDATE mode,
+     *             or <tt>null</tt>, in INSERTION mode.
+	 */
 	public void fillProperties(DriverConfig dr) {
     	this.aliasField.setText(dr.getAlias());
-    	this.addressField.setText(dr.getAddress().getHostAddress());    	
-    	    
-    	WorkloadPhase phases [] = dr.getWorkload();    	
+    	this.addressField.setText(dr.getAddress().getHostAddress());
+
+    	WorkloadPhase[] phases = dr.getWorkload();
     	for (int i = 0; i < phases.length; i++) {
     		addPhase(phases[i]);
 		}
-    	
-    	if(dr.getThreadCount() > 0) {
+
+    	if (dr.getThreadCount() > 0) {
     		this.threadCountFixedRadio.setSelected(true);
     		this.threadCountField.setValue(dr.getThreadCount());
-    	}    		
-    	else {
+    	} else {
     		this.threadCountCPUsRadio.setSelected(true);
     	}
-    		
-    	
+
     	this.serverAddressField.setText(dr.getServerAddress().getHostAddress());
-    	this.serverPortField.setText(""+dr.getServerPort());
-    	    	
+    	this.serverPortField.setText("" + dr.getServerPort());
+
     	logCheckBox.setSelected(dr.isLoggingEnabled());
     	setLoggingEnabled(dr.isLoggingEnabled());
-    	if(dr.isLoggingEnabled()) {    		
-    		if(dr.getFieldsToLog() == Globals.LOG_ALL_FIELDS)
+    	if (dr.isLoggingEnabled()) {
+    		if (dr.getFieldsToLog() == Globals.LOG_ALL_FIELDS) {
     			logAllRadio.setSelected(true);
-    		else
+    		} else {
     			logTSRadio.setSelected(true);
-    		
+    		}
+
     		double logSamplRate = dr.getLoggingSamplingRate();
-    		
-    		if(logSamplRate == 1)
+
+    		if (logSamplRate == 1) {
     			logSamplingComboBox.setSelectedItem("1");
-    		else if(logSamplRate == 0.001)
+    		} else if (logSamplRate == 0.001) {
     			logSamplingComboBox.setSelectedItem("0.001");
-    		else    			
-    			logSamplingComboBox.setSelectedItem(""+logSamplRate);    		
+    		} else {
+    			logSamplingComboBox.setSelectedItem("" + logSamplRate);
+    		}
     	}
-    	
-    	validateCheckBox.setSelected(dr.isValidationEnabled());  
+
+    	validateCheckBox.setSelected(dr.isValidationEnabled());
     	setValidationEnabled(dr.isValidationEnabled());
-    	if(dr.isValidationEnabled()) {    		
-    		validatorAddressField.setText(dr.getValidatorAddress().getHostAddress());    		
-    		validatorPortField.setText(""+dr.getValidatorPort());    		
+    	if (dr.isValidationEnabled()) {
+    		validatorAddressField.setText(dr.getValidatorAddress().getHostAddress());
+    		validatorPortField.setText("" + dr.getValidatorPort());
     		double validSamplRate = dr.getValidationSamplingRate();
-    		if(validSamplRate == 1)
+    		if (validSamplRate == 1) {
     			validationSamplingComboBox.setSelectedItem("1");
-    		else if(validSamplRate == 0.001)
+    		} else if (validSamplRate == 0.001) {
     			validationSamplingComboBox.setSelectedItem("0.001");
-    		else
-    			validationSamplingComboBox.setSelectedItem(""+validSamplRate);    		
-    	}    	
+    		} else {
+    			validationSamplingComboBox.setSelectedItem("" + validSamplRate);
+    		}
+    	}
     }
-    
-    
+
+
     private boolean validateFields() {
     	try {
     		Integer.parseInt(this.serverPortField.getText());
-    		
-    		if(validateCheckBox.isSelected()) {
+
+    		if (validateCheckBox.isSelected()) {
     			Integer.parseInt(this.validatorPortField.getText());
-    			
-    			if(this.validatorAddressField == null || this.validatorAddressField.getText().isEmpty())
+    			if (this.validatorAddressField == null || this.validatorAddressField.getText().isEmpty()) {
     				return false;
+    			}
     		}
-    		
-    	}
-    	catch (NumberFormatException nfe) {
+    	} catch (NumberFormatException nfe) {
     		return false;
     	}
-    	
+
     	return (this.aliasField.getText() != null &&
     			!this.aliasField.getText().isEmpty() &&
     			this.addressField.getText() != null &&
@@ -651,56 +668,75 @@ public class DriverDetail extends ComponentDetail {
     			);
     }
 
+    /**
+     * Updates the definition of a workload phase.
+     *
+     * @param oldCfg    the old phase configuration
+     * @param newCfg    the new phase configuration
+     */
 	public void updatePhase(WorkloadPhase oldCfg, WorkloadPhase newCfg) {
 		int index = this.phases.indexOf(oldCfg);
 
-		if(index > -1) {			
-			this.phases.remove(index);				
-			((DefaultTableModel)phasesTable.getModel()).removeRow(index);
-			addPhase(index, newCfg);				
+		if (index > -1) {
+			this.phases.remove(index);
+			((DefaultTableModel) phasesTable.getModel()).removeRow(index);
+			addPhase(index, newCfg);
 		}
-		
-		
-		
+
+
+
 	}
 
+	/**
+	 * Adds a phase to the list of workload phases of this Driver.
+	 *
+	 * @param index    phase index
+	 * @param phase    the new phase
+	 */
 	public void addPhase(int index, WorkloadPhase phase) {
-		this.phases.add(index,phase);
-		
+		this.phases.add(index, phase);
+
 		DefaultTableModel model = (DefaultTableModel) this.phasesTable.getModel();
-		if(phase instanceof SyntheticWorkloadPhase)
-			model.insertRow(index, new Object[] {"Phase "+ (index+1), "Synthetic"});
-		else if(phase instanceof ExternalFileWorkloadPhase)
-			model.insertRow(index, new Object[] {"Phase "+ (index+1), "External File"});
+		if (phase instanceof SyntheticWorkloadPhase) {
+			model.insertRow(index, new Object[] {"Phase " + (index + 1), "Synthetic"});
+		} else if (phase instanceof ExternalFileWorkloadPhase) {
+			model.insertRow(index, new Object[] {"Phase " + (index + 1), "External File"});
+		}
 	}
-	
+
+	/**
+     * Adds a phase to the list of workload phases of this Driver.
+     *
+     * @param phase    the new phase
+     */
 	public void addPhase(WorkloadPhase phase) {
 		this.phases.add(phase);
-		
+
 		DefaultTableModel model = (DefaultTableModel) this.phasesTable.getModel();
-		if(phase instanceof SyntheticWorkloadPhase)
-			model.insertRow(model.getRowCount()-1, new Object[] {"Phase "+ (phases.indexOf(phase)+1), "Synthetic"});
-		else if(phase instanceof ExternalFileWorkloadPhase)
-			model.insertRow(model.getRowCount()-1, new Object[] {"Phase "+ (phases.indexOf(phase)+1), "External File"});		
+		if (phase instanceof SyntheticWorkloadPhase) {
+			model.insertRow(model.getRowCount() - 1, new Object[] {"Phase " + (phases.indexOf(phase)+1), "Synthetic"});
+		} else if (phase instanceof ExternalFileWorkloadPhase) {
+			model.insertRow(model.getRowCount() - 1, new Object[] {"Phase " + (phases.indexOf(phase)+1), "External File"});
+		}
 	}
 
     private void removePhase(int index) {
-    	if(index < phases.size()) {
-    		phases.remove(index);						
-    		((DefaultTableModel)phasesTable.getModel()).removeRow(index);
-    		
-    		for(int i=index; i<phasesTable.getRowCount()-1; i++)
-    			phasesTable.setValueAt("Phase "+ (i+1), index, 0);	
-    	}    	
+    	if (index < phases.size()) {
+    		phases.remove(index);
+    		((DefaultTableModel) phasesTable.getModel()).removeRow(index);
+    		for (int i = index; i < phasesTable.getRowCount() - 1; i++) {
+    			phasesTable.setValueAt("Phase " + (i + 1), index, 0);
+    		}
+    	}
 	}
-    
+
     private void setLoggingEnabled(boolean enabled) {
     	logAllRadio.setEnabled(enabled);
     	logTSRadio.setEnabled(enabled);
     	logSamplingLabel.setEnabled(enabled);
     	logSamplingComboBox.setEnabled(enabled);
 	}
-    
+
     private void setValidationEnabled(boolean enabled) {
     	validatorAddressLabel.setEnabled(enabled);
     	validatorPortLabel.setEnabled(enabled);
@@ -709,10 +745,13 @@ public class DriverDetail extends ComponentDetail {
         validationSamplingLabel.setEnabled(enabled);
         validationSamplingComboBox.setEnabled(enabled);
     }
-	
+
+    /**
+     * Disables user input on this form.
+     */
 	public void disableGUI() {
 		this.aliasField.setEnabled(false);
-		this.addressField.setEnabled(false);		
+		this.addressField.setEnabled(false);
 		this.phasesTable.setEnabled(false);
 		this.serverAddressField.setEnabled(false);
 		this.serverPortField.setEnabled(false);
@@ -724,14 +763,14 @@ public class DriverDetail extends ComponentDetail {
 		this.logAllRadio.setEnabled(false);
 		this.logTSRadio.setEnabled(false);
 		this.logSamplingLabel.setEnabled(false);
-		this.logSamplingComboBox.setEnabled(false);		
+		this.logSamplingComboBox.setEnabled(false);
 		this.validateCheckBox.setEnabled(false);
 		this.validatorAddressField.setEnabled(false);
 		this.validatorPortField.setEnabled(false);
 		this.validationSamplingComboBox.setEnabled(false);
 		this.okBtn.setEnabled(false);
 	}
-   
-    
+
+
 }
 

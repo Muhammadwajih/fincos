@@ -54,28 +54,28 @@ import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 /**
  * Controller Application (GUI version)
- * 
+ *
  * @author Marcelo R.N. Mendes
  *
  */
 @SuppressWarnings("serial")
-public class Controller_GUI extends JFrame {	
-	ControllerFacade facade;	
-	public boolean configModified; 		
-	
+public class Controller_GUI extends JFrame {
+	ControllerFacade facade;
+	public boolean configModified;
+
 	private double eventRateFactor = 1.0;
-//	=========================== GUI ===================================	
+//	=========================== GUI ===================================
 	private Timer guiRefresher;
-	
+
 	// Menu
 	private JMenuBar menuBar = new JMenuBar();
 	private JMenu fileMenu, driverMenu, sinkMenu, testMenu, alterLoadFactorMenuItem;
 	private JMenuItem profileLoadMenuItem, saveMenuItem, saveAsMenuItem, exitMenuItem,
 				newDriverMenuItem, editDriverMenuItem, deleteDriverMenuItem,
 				newSinkMenuItem, editSinkMenuItem, deleteSinkMenuItem,
-				loadMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, switchMenuItem, optionsMenuItem;				
-	private ButtonGroup rateFactorGroup;	
-	
+				loadMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, switchMenuItem, optionsMenuItem;
+	private ButtonGroup rateFactorGroup;
+
 	// ToolBar
 	private JToolBar toolBar = new JToolBar();
 	private JButton openBtn = new JButton(new ImageIcon("imgs/open.png"));
@@ -85,68 +85,68 @@ public class Controller_GUI extends JFrame {
 	private JButton startBtn = new JButton(new ImageIcon("imgs/start.png"));
 	private JButton pauseBtn = new JButton(new ImageIcon("imgs/pause.png"));
 	private JButton stopBtn = new JButton(new ImageIcon("imgs/stop.png"));
-	private JButton switchPhaseBtn = new JButton(new ImageIcon("imgs/switchPhase.png"));	
-	
+	private JButton switchPhaseBtn = new JButton(new ImageIcon("imgs/switchPhase.png"));
+
 	// Components
 	JPanel driversPanel, sinksPanel, componentsPanel;
-	JTable  driversTable, sinksTable;	
+	JTable  driversTable, sinksTable;
 	JPopupMenu driversPop = new JPopupMenu();
 	JMenuItem driverCopyMenu = new JMenuItem("Copy...");
 	JPopupMenu sinksPop = new JPopupMenu();
-	JMenuItem sinkCopyMenu = new JMenuItem("Copy...");			
-	
+	JMenuItem sinkCopyMenu = new JMenuItem("Copy...");
+
 	//Misc
-	private JPanel commandPanel;	
-	private JFileChooser fileChooser;	
-	
+	private JPanel commandPanel;
+	private JFileChooser fileChooser;
+
 	//Info
 	private JTextArea infoArea;
-	
+
 //===================================================================
 	static Controller_GUI instance;
-		
+
 	public static Controller_GUI getInstance() {
 		if(instance == null)
 			instance = new Controller_GUI();
-		
+
 		return instance;
 	}
-	
+
 	private Controller_GUI() {
-		super("FINCoS Controller");				
+		super("FINCoS Controller");
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage("imgs/ctrl.png"));
-		
+
 		this.facade = ControllerFacade.getInstance();
-		
+
 		commandPanel = new JPanel();
 		commandPanel.setLayout(new BorderLayout());
 		initializeMenuBar();
 		initializeToolBar();
 		commandPanel.add(menuBar, BorderLayout.NORTH);
-		commandPanel.add(toolBar, BorderLayout.CENTER);		
-		
-		infoArea = new JTextArea(10, 30);               
+		commandPanel.add(toolBar, BorderLayout.CENTER);
+
+		infoArea = new JTextArea(10, 30);
         infoArea.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
         JScrollPane infoScroll = new JScrollPane(infoArea);
         infoArea.setEditable(false);
-		
+
         initializeComponentsPanel();
-        
+
         fileChooser = new JFileChooser(Globals.APP_PATH+"config");
         fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("XML Configuration file", "xml"));
     	fileChooser.setAcceptAllFileFilterUsed(false);
     	fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        
+
 		this.getContentPane().setLayout(new BorderLayout());
 		this.getContentPane().add(commandPanel, BorderLayout.NORTH);
 		this.getContentPane().add(componentsPanel, BorderLayout.CENTER);
 		this.getContentPane().add(infoScroll, BorderLayout.SOUTH);
-		
-		this.setSize(800, 600);        
+
+		this.setSize(800, 600);
 		this.setLocationRelativeTo(null); //screen center
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.setVisible(true);
-				
+
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
@@ -168,113 +168,118 @@ public class Controller_GUI extends JFrame {
 				else
 					System.exit(0);
 			}
-		});					
+		});
 	}
-	
+
 	private void initializeMenuBar() {
 		// Menu File
 		fileMenu = new JMenu("File");
 		profileLoadMenuItem = new JMenuItem("Open");
 		profileLoadMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(java.awt.event.ActionEvent e) {									
+			public void actionPerformed(java.awt.event.ActionEvent e) {
 				int action = fileChooser.showOpenDialog(null);
-				
+
 				if(action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
-					loadProfile(fileChooser.getSelectedFile());					
+					loadProfile(fileChooser.getSelectedFile());
 				}
-			} 
-		});	
+			}
+		});
 		saveMenuItem = new JMenuItem("Save");
-		saveMenuItem.addActionListener(new ActionListener() {			
+		saveMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				saveProfile();
-			}			
-		});			
+			}
+		});
 		saveAsMenuItem = new JMenuItem("Save As...");
-		saveAsMenuItem.addActionListener(new ActionListener() {			
+		saveAsMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				saveProfileAs();
-			}			
+			}
 		});
 		exitMenuItem = new JMenuItem("Exit");
-		exitMenuItem.addActionListener(new ActionListener() {			
+		exitMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				exit(); 
-			}			
-		});			
+				exit();
+			}
+		});
 		fileMenu.add(profileLoadMenuItem);
 		fileMenu.add(saveMenuItem);
 		fileMenu.add(saveAsMenuItem);
 		fileMenu.add(exitMenuItem);
-		
+
 		// Menu Driver
 		driverMenu = new JMenu("Drivers");
 		newDriverMenuItem = new JMenuItem("New...");
 		newDriverMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				new DriverDetail(null);					
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        new DriverDetail(null);
+		    }
+		});
 		editDriverMenuItem = new JMenuItem("Edit...");
 		editDriverMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int selected = driversTable.getSelectedRow();
-				if(selected > -1)
-					new DriverDetail(facade.getDriverList().get(selected));	
-				else
-					JOptionPane.showMessageDialog(null, "Select a driver to edit");
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        int selected = driversTable.getSelectedRow();
+		        if (selected > -1) {
+		            new DriverDetail(facade.getDriverList().get(selected));
+		        } else {
+		            JOptionPane.showMessageDialog(null, "Select a driver to edit");
+		        }
+		    }
+		});
 		deleteDriverMenuItem = new JMenuItem("Delete");
 		deleteDriverMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(JOptionPane.showConfirmDialog(null, "Delete Driver(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION)
-					== JOptionPane.YES_OPTION)
+				if (JOptionPane.showConfirmDialog(null, "Delete Driver(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION)
+					== JOptionPane.YES_OPTION) {
 					deleteDrivers();
+				}
 			}
-			
+
 		});
 		driverMenu.add(newDriverMenuItem);
 		driverMenu.add(editDriverMenuItem);
 		driverMenu.add(deleteDriverMenuItem);
-		
+
 		// Menu Sink
 		sinkMenu = new JMenu("Sinks");
 		newSinkMenuItem = new JMenuItem("New...");
 		newSinkMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				new SinkDetail(null);					
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        new SinkDetail(null);
+		    }
+		});
 		editSinkMenuItem = new JMenuItem("Edit...");
 		editSinkMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int selected = sinksTable.getSelectedRow();
-				if(selected > -1) {
-					new SinkDetail(facade.getSinkList().get(selected));										
-				}					
-					
-				else
-					JOptionPane.showMessageDialog(null, "Select a sink to edit");
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        int selected = sinksTable.getSelectedRow();
+		        if (selected > -1) {
+		            new SinkDetail(facade.getSinkList().get(selected));
+		        } else {
+		            JOptionPane.showMessageDialog(null, "Select a sink to edit");
+		        }
+		    }
+		});
 		deleteSinkMenuItem = new JMenuItem("Delete");
 		deleteSinkMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(JOptionPane.showConfirmDialog(null, "Delete Sink(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION)
-					== JOptionPane.YES_OPTION)
+				if (JOptionPane.showConfirmDialog(null, "Delete Sink(s)?", "Confirm Delete", JOptionPane.YES_NO_OPTION)
+					== JOptionPane.YES_OPTION) {
 					deleteSinks();
+				}
 			}
-			
 		});
-		
+
 		sinkMenu.add(newSinkMenuItem);
 		sinkMenu.add(editSinkMenuItem);
 		sinkMenu.add(deleteSinkMenuItem);
 
-		
+
 		// Menu Test
 		testMenu = new JMenu("Test");
 		loadMenuItem = new JMenuItem("Load");
@@ -308,21 +313,21 @@ public class Controller_GUI extends JFrame {
 				switchToNextPhase();
 			}});
 		alterLoadFactorMenuItem = new JMenu("Alter Event Rate");
-		alterLoadFactorMenuItem.setEnabled(false);		
+		alterLoadFactorMenuItem.setEnabled(false);
 		rateFactorGroup = new ButtonGroup();
 		JCheckBoxMenuItem rateFactorItem;
 		for (int i = 15; i >= 5; i--) {
-			rateFactorItem = new JCheckBoxMenuItem(i/10.0 +"x");			
+			rateFactorItem = new JCheckBoxMenuItem(i/10.0 +"x");
 			rateFactorItem.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					String text = ((JCheckBoxMenuItem)e.getSource()).getText();	
+					String text = ((JCheckBoxMenuItem)e.getSource()).getText();
 					eventRateFactor = Double.parseDouble(text.substring(0, text.length()-1));
 					alterRate();
 				}
-				
+
 			});
-			if(i == 10) {				
+			if(i == 10) {
 				alterLoadFactorMenuItem.addSeparator();
 				alterLoadFactorMenuItem.add(rateFactorItem);
 				alterLoadFactorMenuItem.addSeparator();
@@ -332,7 +337,7 @@ public class Controller_GUI extends JFrame {
 				alterLoadFactorMenuItem.add(rateFactorItem);
 			}
 			rateFactorGroup.add(rateFactorItem);
-			
+
 		}
 		rateFactorItem = new JCheckBoxMenuItem("Custom...");
 		rateFactorGroup.add(rateFactorItem);
@@ -344,48 +349,48 @@ public class Controller_GUI extends JFrame {
 					if(input != null) {
 						eventRateFactor = Double.parseDouble(input);
 						alterRate();
-						((JCheckBoxMenuItem)e.getSource()).setText("Custom (" + eventRateFactor + "x)...");	
-					}					
+						((JCheckBoxMenuItem)e.getSource()).setText("Custom (" + eventRateFactor + "x)...");
+					}
 				}catch (NumberFormatException nfe) {
 					JOptionPane.showMessageDialog(null, "Invalid value");
 					actionPerformed(e);
 				}
-				
-			}			
+
+			}
 		});
 		alterLoadFactorMenuItem.add(rateFactorItem);
-		
+
 		optionsMenuItem = new JMenuItem("Options...");
 		optionsMenuItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				TestOptions tOptions = new TestOptions();
-				tOptions.fillProperties(facade.getSocketBufferSize(), 
-										facade.getLogFlushInterval(), 										
-										facade.getCommunicationMode(), 
+				tOptions.fillProperties(facade.getSocketBufferSize(),
+										facade.getLogFlushInterval(),
+										facade.getCommunicationMode(),
 										facade.getRtMeasurementMode(),
 										facade.getUseEventsCreationTime(),
-										facade.getCEPInterfaceConnPropertiesFilePath());				
-			}			
+										facade.getCEPInterfaceConnPropertiesFilePath());
+			}
 		});
-		
+
 		testMenu.add(loadMenuItem);
 		testMenu.add(startMenuItem);
 		testMenu.add(pauseMenuItem);
 		testMenu.add(stopMenuItem);
-		testMenu.add(switchMenuItem);		
+		testMenu.add(switchMenuItem);
 		testMenu.add(alterLoadFactorMenuItem);
 		testMenu.addSeparator();
 		testMenu.add(optionsMenuItem);
-		
-		
+
+
 		menuBar.add(fileMenu);
 		menuBar.add(driverMenu);
 		menuBar.add(sinkMenu);
 		menuBar.add(testMenu);
 
 	}
-	
+
 	private void initializeToolBar() {
 		toolBar.add(openBtn);
 		toolBar.add(saveBtn);
@@ -394,8 +399,8 @@ public class Controller_GUI extends JFrame {
 		toolBar.add(startBtn);
 		toolBar.add(pauseBtn);
 		toolBar.add(stopBtn);
-		toolBar.add(switchPhaseBtn);		
-		
+		toolBar.add(switchPhaseBtn);
+
 		openBtn.setToolTipText("Open configuration file.");
 		saveBtn.setToolTipText("Save configuration file.");
 		saveAsBtn.setToolTipText("Save configuration as...");
@@ -404,16 +409,16 @@ public class Controller_GUI extends JFrame {
 		pauseBtn.setToolTipText("Pause load submission.");
 		stopBtn.setToolTipText("Stop load submission/data generation.");
 		switchPhaseBtn.setToolTipText("Switch Drivers to next phase.");
-		
+
 		openBtn.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {
 				int action = fileChooser.showOpenDialog(null);
-				
+
 				if(action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
-					loadProfile(fileChooser.getSelectedFile());					
+					loadProfile(fileChooser.getSelectedFile());
 				}
-			}});		
+			}});
 		saveBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -423,14 +428,14 @@ public class Controller_GUI extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				saveProfileAs();
-			}});	
-		
+			}});
+
 		loadBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				loadAllComponents();
-			}});	
-		
+			}});
+
 		startBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -452,10 +457,10 @@ public class Controller_GUI extends JFrame {
 				switchToNextPhase();
 			}});
 	}
-	
+
 	private void initializeComponentsPanel() {
 		componentsPanel = new JPanel(new GridLayout(1,2));
-		
+
 		//Drivers Panel
 		driversPanel = new JPanel(new BorderLayout());
 		driversPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Drivers"));
@@ -469,100 +474,98 @@ public class Controller_GUI extends JFrame {
 											}
 										}
 		);
-		
-		driversTable.getTableHeader().setReorderingAllowed(false);	        
+
+		driversTable.getTableHeader().setReorderingAllowed(false);
 		driversTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		driversTable.getColumnModel().getColumn(0).setPreferredWidth(5);
 		driversTable.getColumnModel().getColumn(1).setPreferredWidth(20);
-		driversTable.getColumnModel().getColumn(2).setPreferredWidth(20);		
+		driversTable.getColumnModel().getColumn(2).setPreferredWidth(20);
 		driversTable.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					JTable source = (JTable)e.getSource();
-					if(source.isEnabled()) {
-						int selected = source.getSelectedRow();
-						if(selected > -1) {
-							DriverDetail dd = new DriverDetail(facade.getDriverList().get(selected));
-							
-							if(!source.getModel().getValueAt(selected, 0).equals("DISCONNECTED") &&
-							   !source.getModel().getValueAt(selected, 0).equals("STOPPED") &&
-							   !source.getModel().getValueAt(selected, 0).equals("FINISHED")) {
-									dd.disableGUI();
-							}
-									
-						}
-					}					
-				}}	
+		    @Override
+		    public void mouseClicked(MouseEvent e) {
+		        if (e.getClickCount() == 2) {
+		            JTable source = (JTable) e.getSource();
+		            if (source.isEnabled()) {
+		                int selected = source.getSelectedRow();
+		                if (selected > -1) {
+		                    DriverDetail dd = new DriverDetail(facade.getDriverList().get(selected));
+		                    if (!source.getModel().getValueAt(selected, 0).equals("DISCONNECTED")
+		                            && !source.getModel().getValueAt(selected, 0).equals("STOPPED")
+		                            && !source.getModel().getValueAt(selected, 0).equals("FINISHED")) {
+		                        dd.disableGUI();
+		                    }
+
+		                }
+		            }
+		        }
+		    }
 		});
-		JScrollPane driverScroll = new JScrollPane(); 
-		driverScroll.setViewportView(driversTable);		
+		JScrollPane driverScroll = new JScrollPane();
+		driverScroll.setViewportView(driversTable);
 		driversPanel.add(driverScroll);
 		JMenuItem loadDriverMenuItem = new JMenuItem("Load");
 		JMenuItem startDriverMenuItem = new JMenuItem("Start");
 		JMenuItem pauseDriverMenuItem = new JMenuItem("Pause");
 		JMenuItem stopDriverMenuItem = new JMenuItem("Stop");
 		driversPop.add(driverCopyMenu);
-		driversPop.add(loadDriverMenuItem);		
+		driversPop.add(loadDriverMenuItem);
 		driversPop.add(startDriverMenuItem);
 		driversPop.add(pauseDriverMenuItem);
 		driversPop.add(stopDriverMenuItem);
 		driverCopyMenu.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {				
-				int selected = driversTable.getSelectedRow();				
-				
-				if(selected > -1) {
-					DriverConfig copy = facade.getDriverList().get(selected);					
+			public void actionPerformed(ActionEvent e) {
+				int selected = driversTable.getSelectedRow();
+				if (selected > -1) {
+					DriverConfig copy = facade.getDriverList().get(selected);
 					DriverDetail dscreen = new DriverDetail(null);
 					dscreen.fillProperties(copy);
-				}						
-				else
-					JOptionPane.showMessageDialog(null, "Select a Driver to copy");				
-
-			}			
+				} else {
+					JOptionPane.showMessageDialog(null, "Select a Driver to copy");
+				}
+			}
 		});
 		loadDriverMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (driversTable) {
-					int selected = driversTable.getSelectedRow();				
-					
-					if(selected > -1) {
+					int selected = driversTable.getSelectedRow();
+					if (selected > -1) {
 						DriverConfig dr = facade.getDriverList().get(selected);
 						showInfo("Loading " + dr.getAlias() + "...");
 						loadDriver(dr);
-					}						
-					else
-						JOptionPane.showMessageDialog(null, "Select a Driver to load");	
+					} else {
+						JOptionPane.showMessageDialog(null, "Select a Driver to load");
+					}
 				}
-			}			
+			}
 		});
-		
+
 		startDriverMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (driversTable) {
-					int selected = driversTable.getSelectedRow();				
-					
+					int selected = driversTable.getSelectedRow();
+
 					if(selected > -1) {
 						DriverConfig dr = facade.getDriverList().get(selected);
 						startDriver(dr);
-					}						
+					}
 					else
-						JOptionPane.showMessageDialog(null, "Select a Driver to start");	
+						JOptionPane.showMessageDialog(null, "Select a Driver to start");
 				}
-			}			
+			}
 		});
-		
+
 		pauseDriverMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (driversTable) {
-					int selected = driversTable.getSelectedRow();				
-					
+					int selected = driversTable.getSelectedRow();
+
 					if(selected > -1) {
-						DriverConfig dr = facade.getDriverList().get(selected);											
-												
+						DriverConfig dr = facade.getDriverList().get(selected);
+
 						if(facade.isDriverConnected(dr)) {
 							showInfo("Pausing " + dr.getAlias() + "...");
 							pauseDriver(dr);
@@ -570,20 +573,20 @@ public class Controller_GUI extends JFrame {
 						else {
 							showInfo("Could not pause " + dr.getAlias() + ". Driver is not connected.");
 						}
-					}						
+					}
 					else
-						JOptionPane.showMessageDialog(null, "Select a Driver to pause");	
+						JOptionPane.showMessageDialog(null, "Select a Driver to pause");
 				}
-			}			
+			}
 		});
 		stopDriverMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (driversTable) {
-					int selected = driversTable.getSelectedRow();				
-					
+					int selected = driversTable.getSelectedRow();
+
 					if(selected > -1) {
-						DriverConfig dr = facade.getDriverList().get(selected);												
+						DriverConfig dr = facade.getDriverList().get(selected);
 						if(facade.isDriverConnected(dr)) {
 							showInfo("Stopping " + dr.getAlias() + "...");
 							stopDriver(dr);
@@ -591,15 +594,15 @@ public class Controller_GUI extends JFrame {
 						else {
 							showInfo("Could not stop " + dr.getAlias() + ". Driver is not connected.");
 						}
-					}						
+					}
 					else
-						JOptionPane.showMessageDialog(null, "Select a Driver to stop");	
+						JOptionPane.showMessageDialog(null, "Select a Driver to stop");
 				}
-			}			
+			}
 		});
 
 		driversTable.addMouseListener(new PopupListener(driversPop));
-		
+
 		//Sinks Panel
 		sinksPanel = new JPanel(new BorderLayout());
 		sinksPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Sinks"));
@@ -612,32 +615,33 @@ public class Controller_GUI extends JFrame {
 									return false;
 								}
 							}
-				);    	
-		sinksTable.getTableHeader().setReorderingAllowed(false);	        
+				);
+		sinksTable.getTableHeader().setReorderingAllowed(false);
 		sinksTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		sinksTable.getColumnModel().getColumn(0).setPreferredWidth(50);
 		sinksTable.getColumnModel().getColumn(1).setPreferredWidth(30);
 		sinksTable.getColumnModel().getColumn(2).setPreferredWidth(30);
 		sinksTable.getColumnModel().getColumn(3).setPreferredWidth(5);
 		sinksTable.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
+			@Override
+            public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
 					JTable source = (JTable)e.getSource();
 					if(source.isEnabled()) {
 						int selected = source.getSelectedRow();
 						if(selected > -1) {
-							SinkDetail sd = new SinkDetail(facade.getSinkList().get(selected));							
+							SinkDetail sd = new SinkDetail(facade.getSinkList().get(selected));
 							if(source.getModel().getValueAt(selected, 0).equals("RUNNING")) {
 								sd.disableGUI();
 							}
-						}								
-					}					
-				}}	
+						}
+					}
+				}}
 		});
-		JScrollPane sinkScroll = new JScrollPane(); 
+		JScrollPane sinkScroll = new JScrollPane();
 		sinkScroll.setViewportView(sinksTable);
-		sinksPanel.add(sinkScroll);		
-		JMenuItem loadSinkMenuItem = new JMenuItem("Load");		
+		sinksPanel.add(sinkScroll);
+		JMenuItem loadSinkMenuItem = new JMenuItem("Load");
 		JMenuItem stopSinkMenuItem = new JMenuItem("Stop");
 		sinksPop.add(sinkCopyMenu);
 		sinksPop.add(loadSinkMenuItem);
@@ -645,44 +649,44 @@ public class Controller_GUI extends JFrame {
 		sinkCopyMenu.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
-				int selected = sinksTable.getSelectedRow();				
-				
-				if(selected > -1) {
-					SinkConfig copy = facade.getSinkList().get(selected);					
-					SinkDetail sinkScreen = new SinkDetail(null);
-					sinkScreen.fillProperties(copy);					
-				}						
-				else
-					JOptionPane.showMessageDialog(null, "Select a Sink to copy");				
 
-			}			
+				int selected = sinksTable.getSelectedRow();
+
+				if(selected > -1) {
+					SinkConfig copy = facade.getSinkList().get(selected);
+					SinkDetail sinkScreen = new SinkDetail(null);
+					sinkScreen.fillProperties(copy);
+				}
+				else
+					JOptionPane.showMessageDialog(null, "Select a Sink to copy");
+
+			}
 		});
 		loadSinkMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (sinksTable) {
-					int selected = sinksTable.getSelectedRow();				
-					
+					int selected = sinksTable.getSelectedRow();
+
 					if(selected > -1) {
 						SinkConfig sink = facade.getSinkList().get(selected);
 						showInfo("Loading " + sink.getAlias() + "...");
 						loadSink(sink);
-					}						
+					}
 					else
-						JOptionPane.showMessageDialog(null, "Select a Sink to load");	
+						JOptionPane.showMessageDialog(null, "Select a Sink to load");
 				}
-			}			
+			}
 		});
 		stopSinkMenuItem.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
 				synchronized (sinksTable) {
-					int selected = sinksTable.getSelectedRow();				
-					
+					int selected = sinksTable.getSelectedRow();
+
 					if(selected > -1) {
 						SinkConfig sink = facade.getSinkList().get(selected);
-						
+
 						if(facade.isSinkConnected(sink)) {
 							showInfo("Stopping " + sink.getAlias() + "...");
 							stopSink(sink);
@@ -690,190 +694,190 @@ public class Controller_GUI extends JFrame {
 						else {
 							showInfo("Could not stop " + sink.getAlias() + ". Sink is not connected.");
 						}
-					}						
+					}
 					else
-						JOptionPane.showMessageDialog(null, "Select a Sink to stop");	
+						JOptionPane.showMessageDialog(null, "Select a Sink to stop");
 				}
-			}			
+			}
 		});
-		
+
 		sinksTable.addMouseListener(new PopupListener(sinksPop));
-		
+
 		componentsPanel.add(driversPanel);
 		componentsPanel.add(sinksPanel);
 
 	}
-	
-	private void exit() {		
+
+	private void exit() {
 		System.exit(0);
 	}
-	
+
 	private void showInfo(String msg) {
 		Date now = new Date();
-		
+
 		infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n" );
 		infoArea.setCaretPosition(infoArea.getDocument().getLength());
 	}
-	
-	private void loadProfile(File f) {		
+
+	private void loadProfile(File f) {
 		try {
 			if(guiRefresher != null)
 				guiRefresher.stop();
-			
+
 			try {
-				facade.openTestSetup(f);	
-			} catch (FileNotFoundException fnfe) { // Could not find file with connection properties 
-												  //  for direct communication with the CEP engine. 
-				JOptionPane.showMessageDialog(null, fnfe.getMessage(), 
+				facade.openTestSetup(f);
+			} catch (FileNotFoundException fnfe) { // Could not find file with connection properties
+												  //  for direct communication with the CEP engine.
+				JOptionPane.showMessageDialog(null, fnfe.getMessage(),
 						"Warning", JOptionPane.WARNING_MESSAGE);
 			}
 			catch (IllegalArgumentException ie) { // Inconsistent test options
-				JOptionPane.showMessageDialog(null, ie.getMessage(), 
-						"Warning", JOptionPane.WARNING_MESSAGE);				
+				JOptionPane.showMessageDialog(null, ie.getMessage(),
+						"Warning", JOptionPane.WARNING_MESSAGE);
 			}
-			
+
 			this.reloadDriversTable();
 			this.reloadSinksTable();
-			
-			this.setTitle("FINCoS Controller (" + f.getPath()+")");			
+
+			this.setTitle("FINCoS Controller (" + f.getPath()+")");
 		}
-		
-		catch (Exception e) { // Error parsing configuration file				
-			JOptionPane.showMessageDialog(null, e.getMessage(), 
-										"Error", JOptionPane.ERROR_MESSAGE);			
-			this.reloadDriversTable();		
+
+		catch (Exception e) { // Error parsing configuration file
+			JOptionPane.showMessageDialog(null, e.getMessage(),
+										"Error", JOptionPane.ERROR_MESSAGE);
+			this.reloadDriversTable();
 			this.reloadSinksTable();
 			this.setTitle("FINCoS Controller");
-		} 
-		
+		}
+
 	}
-	
-	private void saveProfile() {	
-		if( this.facade.getDriverList() == null || 
-			this.facade.getDriverList().isEmpty() || 
-			this.facade.getSinkList() == null || 
+
+	private void saveProfile() {
+		if( this.facade.getDriverList() == null ||
+			this.facade.getDriverList().isEmpty() ||
+			this.facade.getSinkList() == null ||
 			this.facade.getSinkList().isEmpty()
-		  ) 
+		  )
 		{
 			JOptionPane.showMessageDialog(null, "Cannot save configuration file. " +
 					"It is necessary to configure at least one Driver and one Sink.");
 			return;
 		}
-		
-		if(facade.isTestSetupLoaded()) {			
+
+		if(facade.isTestSetupLoaded()) {
 			try {
 				facade.saveTestSetupFile();
 				configModified = false;
 				String title = this.getTitle();
-				if(title.endsWith("*")) {					
+				if(title.endsWith("*")) {
 					this.setTitle(title.substring(0, title.length()-1));
-				}				
+				}
 			} catch (FileNotFoundException e) {
-				JOptionPane.showMessageDialog(null, "Configuration file was deleted.", 
-						"Warning", JOptionPane.WARNING_MESSAGE);				
-				this.saveProfileAs();				
-			} catch (Exception e) {								
-				JOptionPane.showMessageDialog(null, 
-						"Could not save configuration file.\n("+e.getClass() + 
-						" - " +e.getMessage()+")", "Error", JOptionPane.ERROR_MESSAGE);				
+				JOptionPane.showMessageDialog(null, "Configuration file was deleted.",
+						"Warning", JOptionPane.WARNING_MESSAGE);
+				this.saveProfileAs();
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null,
+						"Could not save configuration file.\n("+e.getClass() +
+						" - " +e.getMessage()+")", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 		else {
 			this.saveProfileAs();
 		}
-			
+
 	}
-		
+
 	private void saveProfileAs() {
-		if( this.facade.getDriverList() == null || 
-				this.facade.getDriverList().isEmpty() || 
-				this.facade.getSinkList() == null || 
+		if( this.facade.getDriverList() == null ||
+				this.facade.getDriverList().isEmpty() ||
+				this.facade.getSinkList() == null ||
 				this.facade.getSinkList().isEmpty()
-			  ) 
+			  )
 			{
 			JOptionPane.showMessageDialog(null, "Cannot save configuration file. " +
 					"It is necessary to configure at least one Driver and one Sink.");
 			return;
-		}	
-				
+		}
+
 		fileChooser.showSaveDialog(null);
-		
+
 		File f = fileChooser.getSelectedFile();
 		if(f != null) {
 			try {
 				if(!f.getName().endsWith(".xml"))
 					f = new File(f.getAbsolutePath()+".xml");
-				
+
 				facade.saveTestSetupFileAs(f);
 				this.setTitle("FINCoS Controller (" + f.getPath()+")");
-				configModified = false;				
+				configModified = false;
 			} catch (FileNotFoundException e) {
 				JOptionPane.showMessageDialog(null, "File not found.", "Error", JOptionPane.ERROR_MESSAGE);
-			} catch (Exception e) {					
+			} catch (Exception e) {
 				JOptionPane.showMessageDialog(null, "Could not save configuration file.\n("+e.getClass() + " - " +e.getMessage()+")", "Error", JOptionPane.ERROR_MESSAGE);
-			}					
-		}	
+			}
+		}
 	}
-		
-	
+
+
 	private void reloadDriversTable() {
 		synchronized (driversTable) {
 			DefaultTableModel model = (DefaultTableModel) this.driversTable.getModel();
-			int rowCount = model.getRowCount();		
+			int rowCount = model.getRowCount();
 			for (int i = 0; i < rowCount; i++) {
 				model.removeRow(0);
 			}
-			
+
 			if(this.facade.getDriverList() != null && ! this.facade.getDriverList().isEmpty()) {
 				for (DriverConfig dr : facade.getDriverList()) {
-					model.addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress().getHostAddress()});	
+					model.addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress().getHostAddress()});
 				}
-				
+
 			}
-		}		
+		}
 	}
-	
+
 	private void reloadSinksTable() {
 		synchronized (sinksTable) {
 			DefaultTableModel model = (DefaultTableModel) this.sinksTable.getModel();
-			int rowCount = model.getRowCount();		
+			int rowCount = model.getRowCount();
 			for (int i = 0; i < rowCount; i++) {
 				model.removeRow(0);
 			}
-			
-			if(this.facade.getSinkList() != null && ! this.facade.getSinkList().isEmpty()) {			
+
+			if(this.facade.getSinkList() != null && ! this.facade.getSinkList().isEmpty()) {
 				for (SinkConfig sink : this.facade.getSinkList()) {
-					model.addRow(new Object[] {"DISCONNECTED", sink.getAlias(), sink.getAddress().getHostAddress(), sink.getPort()});	
+					model.addRow(new Object[] {"DISCONNECTED", sink.getAlias(), sink.getAddress().getHostAddress(), sink.getPort()});
 				}
-				
+
 			}
-		}	
+		}
 	}
-	
-	
+
+
 	/**
 	 * Enforce unique constraints for Drivers in the test setup
-	 * Unique Constraints: 
+	 * Unique Constraints:
 	 *  1) A Driver must have a unique Alias
 	 *  2) If a Driver runs in the same machine (address) as another Component (Driver or Sink),
-	 *     it cannot be configured to send events to the same Validator at the same port than the latter. 
-	 *  
-	 * 
+	 *     it cannot be configured to send events to the same Validator at the same port than the latter.
+	 *
+	 *
 	 * @param oldCfg		The old configuration of the Driver (null, if it is a new one)
 	 * @param newCfg		The new configuration of the Driver being inserted or updated
 	 * @return				True if there is no uniqueness violation, false otherwise
 	 */
-	public boolean checkDriverUniqueConstraint(DriverConfig oldCfg, DriverConfig newCfg) {				
+	public boolean checkDriverUniqueConstraint(DriverConfig oldCfg, DriverConfig newCfg) {
 		if(facade.getDriverList().contains(newCfg)) {
 			if(facade.getDriverList().contains(oldCfg))
 				return true;
 			else
-				return false;	
+				return false;
 		}
-			
-		
+
+
 		else {
-			// if the new driver has the same alias as an existing one or 
+			// if the new driver has the same alias as an existing one or
 			// runs in the same machine than another Driver or Sink and sends to the same validator on the same port,
 			// Uniqueness Violation
 			for (DriverConfig element : this.facade.getDriverList()) {
@@ -882,84 +886,84 @@ public class Controller_GUI extends JFrame {
 						(oldCfg == null || !oldCfg.getAlias().equals(element.getAlias()))
 					)
 					||
-					(						
+					(
 						newCfg.getAddress().equals(element.getAddress()) &&
 						newCfg.isValidationEnabled() && element.isValidationEnabled() &&
 						newCfg.getValidatorAddress().equals(element.getValidatorAddress()) &&
 						newCfg.getValidatorPort() == element.getValidatorPort() &&
 						(oldCfg == null || !oldCfg.getAlias().equals(element.getAlias()))
-					)	
+					)
 				)
-					return false;	
+					return false;
 			}
-			
+
 			for (SinkConfig element : facade.getSinkList()) {
-				if(	
+				if(
 						newCfg.getAddress().equals(element.getAddress()) &&
 						newCfg.isValidationEnabled() && element.isValidationEnabled() &&
 						newCfg.getValidatorAddress().equals(element.getValidatorAddress()) &&
 						newCfg.getValidatorPort() == element.getValidatorPort()
-					)	
+					)
 					return false;
 			}
 			return true;
 		}
-			
-	}	
-	
-	
+
+	}
+
+
 	/**
 	 * Adds the Driver configuration passed as argument to the test setup
-	 * 
+	 *
 	 * @param dr		The configuration of the Driver to be added
 	 */
-	public void addDriver(DriverConfig dr) {		
-		synchronized (driversTable) {			
+	public void addDriver(DriverConfig dr) {
+		synchronized (driversTable) {
 			facade.addDriver(dr);
-			
-			((DefaultTableModel)driversTable.getModel()).addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress()});			
+
+			((DefaultTableModel)driversTable.getModel()).addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress()});
 		}
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
-		
-		configModified = true;		
+
+		configModified = true;
 	}
-	
-	
+
+
 	/**
 	 * Updates the configuration of an existing Driver
-	 * 
+	 *
 	 * @param oldCfg		The old configuration of the Driver
 	 * @param newCfg		The new configuration of the Driver
 	 */
 	public void updateDriver(DriverConfig oldCfg, DriverConfig newCfg) {
-		synchronized (driversTable) {				
+		synchronized (driversTable) {
 			int index = this.facade.getDriverList().indexOf(oldCfg);
 
-			if(index > -1) {			
+			if(index > -1) {
 				facade.updateDriver(index, newCfg);
 
 				String status = (String) driversTable.getValueAt(index, 0);
-				((DefaultTableModel)driversTable.getModel()).removeRow(index);				
-				((DefaultTableModel)driversTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});				
+				((DefaultTableModel)driversTable.getModel()).removeRow(index);
+				((DefaultTableModel)driversTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});
 			}
 		}
-		
+
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
-		
+
 		configModified = true;
 	}
-	
-	
+
+
 	/**
 	 * Removes one or more Drivers from the test setup
-	 * 
+	 *
 	 */
 	public void deleteDrivers () {
-		synchronized (driversTable) {				
+		synchronized (driversTable) {
 			int indexes[] = this.driversTable.getSelectedRows();
-			
+
 			if(indexes.length > 0) {
 				ArrayList<DriverConfig> toRemove = new ArrayList<DriverConfig>(indexes.length);
 				int i = 0;
@@ -967,44 +971,44 @@ public class Controller_GUI extends JFrame {
 					toRemove.add(facade.getDriverList().get(index));
 					((DefaultTableModel)driversTable.getModel()).removeRow(index-i);
 					i++;
-				}	
-				
+				}
+
 				for (DriverConfig dr : toRemove) {
 					facade.deleteDriver(dr);
-				}			
+				}
 			}
 			else {
 				JOptionPane.showMessageDialog(null, "Select a driver to delete");
 			}
 		}
-		
+
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
 		configModified = true;
 	}
-	
-	
+
+
 	/**
 	 * Enforce unique constraints for Sinks in the test setup
-	 * Unique Constraints: 
+	 * Unique Constraints:
 	 *  1) A Sink must have a unique Alias
 	 *  2) If a Sink runs in the same machine (address) as another Component (Driver or Sink),
-	 *     it cannot be configured to send events to the same Validator at the same port than the latter. 
-	 *  
-	 * 
+	 *     it cannot be configured to send events to the same Validator at the same port than the latter.
+	 *
+	 *
 	 * @param oldCfg		The old configuration of the Sink (null, if it is a new one)
 	 * @param newCfg		The new configuration of the Sink being inserted or updated
 	 * @return				True if there is no uniqueness violation, false otherwise
 	 */
-	public boolean checkSinkUniqueConstraint(SinkConfig oldCfg, SinkConfig newCfg) {				
+	public boolean checkSinkUniqueConstraint(SinkConfig oldCfg, SinkConfig newCfg) {
 		if(facade.getSinkList().contains(newCfg)) {
 			if(facade.getSinkList().contains(oldCfg))
 				return true;
 			else
-				return false;	
+				return false;
 		}
 		else {
-			// if the new sink has the same alias as an existing one or 
+			// if the new sink has the same alias as an existing one or
 			// runs in the same machine and sends to the same validator on the same port,
 			// Uniqueness Violation
 			for (SinkConfig element : this.facade.getSinkList()) {
@@ -1013,79 +1017,79 @@ public class Controller_GUI extends JFrame {
 						(oldCfg == null || !oldCfg.getAlias().equals(element.getAlias()))
 					)
 					||
-					(						
+					(
 						newCfg.getAddress().equals(element.getAddress()) &&
 						newCfg.isValidationEnabled() && element.isValidationEnabled() &&
 						newCfg.getValidatorAddress().equals(element.getValidatorAddress()) &&
 						newCfg.getValidatorPort() == element.getValidatorPort() &&
 						(oldCfg == null || !oldCfg.getAlias().equals(element.getAlias()))
-					)	
+					)
 				)
-					return false;	
+					return false;
 			}
-			
+
 			for (DriverConfig element : facade.getDriverList()) {
-				if(	
+				if(
 						newCfg.getAddress().equals(element.getAddress()) &&
 						newCfg.isValidationEnabled() && element.isValidationEnabled() &&
 						newCfg.getValidatorAddress().equals(element.getValidatorAddress()) &&
 						newCfg.getValidatorPort() == element.getValidatorPort()
-					)	
+					)
 					return false;
 			}
 			return true;
 		}
-			
+
 	}
-	
-	
+
+
 	/**
 	 * Adds the Sink configuration passed as argument to the test setup
-	 * 
+	 *
 	 * @param sink
 	 */
 	public void addSink(SinkConfig sink) {
 		synchronized (sinksTable) {
 			facade.addSink(sink);
-			((DefaultTableModel)sinksTable.getModel()).addRow(new Object[] {"DISCONNECTED", sink.getAlias(), sink.getAddress().getHostAddress(), sink.getPort()});			
-		}	
+			((DefaultTableModel)sinksTable.getModel()).addRow(new Object[] {"DISCONNECTED", sink.getAlias(), sink.getAddress().getHostAddress(), sink.getPort()});
+		}
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
 		configModified = true;
 	}
-	
-	
+
+
 	/**
 	 * Updates the configuration of an existing Sink
-	 * 
+	 *
 	 * @param oldCfg		The old configuration of the Driver
 	 * @param newCfg		The new configuration of the Driver
 	 */
 	public void updateSink(SinkConfig oldCfg, SinkConfig newCfg) {
 		synchronized (sinksTable) {
 			int index = facade.getSinkList().indexOf(oldCfg);
-			
+
 			if(index > -1) {
 				facade.updateSink(index, newCfg);
 				String status = (String) sinksTable.getValueAt(index, 0);
-				((DefaultTableModel)sinksTable.getModel()).removeRow(index);				
+				((DefaultTableModel)sinksTable.getModel()).removeRow(index);
 				((DefaultTableModel)sinksTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress(), newCfg.getPort()});
-			}	
+			}
 		}
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
 		configModified = true;
 	}
-	
-	
+
+
 	/**
 	 * Removes Sink(s) from the test setup
-	 * 
+	 *
 	 */
 	public void deleteSinks () {
-		synchronized (sinksTable) {				
+		synchronized (sinksTable) {
 			int indexes[] = this.sinksTable.getSelectedRows();
-			
+
 			if(indexes.length > 0) {
 				ArrayList<SinkConfig> toRemove = new ArrayList<SinkConfig>(indexes.length);
 				int i = 0;
@@ -1093,26 +1097,26 @@ public class Controller_GUI extends JFrame {
 					toRemove.add(facade.getSinkList().get(index));
 					((DefaultTableModel)sinksTable.getModel()).removeRow(index-i);
 					i++;
-				}	
-				
+				}
+
 				for (SinkConfig sink : toRemove) {
 					facade.deleteSink(sink);
-				}			
+				}
 			}
 			else {
 				JOptionPane.showMessageDialog(null, "Select a Sink to delete");
 			}
-		}	
+		}
 		if(!configModified)
 			this.setTitle(this.getTitle()+"*");
 		configModified = true;
 	}
-	
+
 	/**
 	 * Updates the GUI with information about the Status of the components (Drivers and Sinks)
 	 */
 	private void refreshGUI() {
-		Step s;		
+		Step s;
 
 		synchronized (this.driversTable) {
 			DefaultTableModel driverModel = (DefaultTableModel) this.driversTable.getModel();
@@ -1122,18 +1126,18 @@ public class Controller_GUI extends JFrame {
 					dr = facade.getDriverList().get(i);
 					if(facade.isDriverConnected(dr)) {
 						try {
-							s = facade.getDriverStatus(dr).getStep();	
+							s = facade.getDriverStatus(dr).getStep();
 						}
 						catch (RemoteException e1) {
-							s = Step.DISCONNECTED;							
-							showInfo(dr.getAlias() + " has disconnected.");					
-						}						
+							s = Step.DISCONNECTED;
+							showInfo(dr.getAlias() + " has disconnected.");
+						}
 					}
 					else
 						s = Step.DISCONNECTED;
 
 					driverModel.setValueAt(s.toString(), i, 0);
-				}			
+				}
 			}
 		}
 
@@ -1141,134 +1145,134 @@ public class Controller_GUI extends JFrame {
 			DefaultTableModel sinkModel = (DefaultTableModel) this.sinksTable.getModel();
 			synchronized (facade) {
 				SinkConfig sink;
-				
+
 				for (int j = 0; j < facade.getSinkList().size(); j++) {
 					sink = facade.getSinkList().get(j);
-					
+
 					if(facade.isSinkConnected(sink)) {
 						try {
-							s = facade.getSinkStatus(sink).getStep();	
+							s = facade.getSinkStatus(sink).getStep();
 						}
 						catch (RemoteException e1) {
-							s = Step.DISCONNECTED;							
-							showInfo(sink.getAlias() + " has disconnected.");					
-						}						
+							s = Step.DISCONNECTED;
+							showInfo(sink.getAlias() + " has disconnected.");
+						}
 					}
 					else
 						s = Step.DISCONNECTED;
-					
+
 					sinkModel.setValueAt(s.toString(), j, 0);
-				}					
+				}
 			}
 		}
-		
-		
-	}	
-	
+
+
+	}
+
 	private void startGUIRefresh() {
-		if(guiRefresher == null) {										
+		if(guiRefresher == null) {
 			int delay = 1000/Globals.DEFAULT_GUI_REFRESH_RATE;
 			guiRefresher = new Timer(delay, new ActionListener(){
 				@Override
-				public void actionPerformed(ActionEvent ae) {				
-					//Refresh screen with information obtained from other components via RMI 
-					refreshGUI();	
+				public void actionPerformed(ActionEvent ae) {
+					//Refresh screen with information obtained from other components via RMI
+					refreshGUI();
 				}
 			});
-			
+
 		}
 		guiRefresher.start();
 	}
-	
+
 	private void stopGUIRefresh() {
 		if(guiRefresher != null) {
 			guiRefresher.stop();
 			guiRefresher = null;
-		}	
+		}
 	}
-	
+
 	// ============================ Control Functions ==============================
-		
+
 
 	/**
 	 * Initializes a given Driver
-	 * 
+	 *
 	 * @param	dr		The Driver to be loaded
 	 */
 	private void loadDriver(DriverConfig dr) {
-		stopGUIRefresh();		
-		DriverLoader drLoader = new DriverLoader(dr);					
+		stopGUIRefresh();
+		DriverLoader drLoader = new DriverLoader(dr);
 		drLoader.execute();
 		startGUIRefresh();
 	}
-	
-	
+
+
 	/**
 	 * Initializes a given Sink
-	 * 
+	 *
 	 * @param sink		The Sink to be loaded
 	 */
 	private void loadSink(SinkConfig sink) {
 		SinkLoader sinkLoader = new SinkLoader(sink);
-		sinkLoader.execute();	
+		sinkLoader.execute();
 	}
-	
-	
+
+
 	/**
-	 * Initializes all Drivers and all Sinks by means of RMI calls to them 
+	 * Initializes all Drivers and all Sinks by means of RMI calls to them
 	 */
-		private void loadAllComponents() {			
-			if(facade.getDriverList() == null || 
+		private void loadAllComponents() {
+			if(facade.getDriverList() == null ||
 			   facade.getDriverList().isEmpty()) {
 				JOptionPane.showMessageDialog(null, "Cannot load test. It is necessary to configure at least one Driver and one Sink.");
 			}
-			else {												
+			else {
 				// Stops GUI refreshing thread
-				stopGUIRefresh();		
-								
-				showInfo("Loading components...");								
+				stopGUIRefresh();
+
+				showInfo("Loading components...");
 				try {
 					// Call the remote function "load" for each Driver
 					for (DriverConfig dr : facade.getDriverList()) {
 						loadDriver(dr);
 						Thread.sleep(250);
-					}					
+					}
 
 					// Call the remote function "load" for each Sink
 					for (SinkConfig sink : facade.getSinkList()) {
-						loadSink(sink);		
+						loadSink(sink);
 						Thread.sleep(250);
 					}
 				} catch (InterruptedException e) {
 					System.err.println(e.getMessage());
 				}
 
-				
-				
+
+
 				// Restarts GUI refreshing thread
 				startGUIRefresh();
 			}
 
 		}
-		
-		
+
+
 		/**
 		 * Starts event submission at a given Driver
-		 * 
+		 *
 		 * @param dr	The Driver to be started
 		 */
-		private void startDriver(DriverConfig dr) {					
+		private void startDriver(DriverConfig dr) {
 			if(facade.isDriverConnected(dr)) {
 				showInfo("Starting " + dr.getAlias() + "...");
 				RemoteDriverCaller starter = new RemoteDriverCaller(dr, "start");
-				starter.execute();	
-			}							
+				starter.execute();
+			}
 			else {
 				showInfo("Could not start " + dr.getAlias() + ". Driver is not connected.");
-			}			
+			}
 		}
-		
-		
+
+
 		/**
 		 * Starts all Drivers
 		 */
@@ -1280,168 +1284,168 @@ public class Controller_GUI extends JFrame {
 				showInfo("Load submission started.");
 				for (DriverConfig dr : facade.getDriverList()) {
 					startDriver(dr);
-				}								
-			}	
+				}
+			}
 		}
-		
-		
+
+
 		/**
 		 * Pauses event submission at a given Driver
-		 * 
+		 *
 		 * @param dr	The Driver to be paused
-		 * 
+		 *
 		 */
-		private void pauseDriver(DriverConfig dr) {		
-			if(facade.isDriverConnected(dr)) {				
+		private void pauseDriver(DriverConfig dr) {
+			if(facade.isDriverConnected(dr)) {
 				RemoteDriverCaller caller = new RemoteDriverCaller(dr, "pause");
-				caller.execute();	
-			}	
+				caller.execute();
+			}
 			else {
 				showInfo("Could not pause " + dr.getAlias() + ". Driver is not connected.");
-			}			
+			}
 		}
-		
-		
+
+
 		/**
 		 * Pauses all Drivers
 		 */
-		private synchronized void pauseLoadSubmission() {		
+		private synchronized void pauseLoadSubmission() {
 			showInfo("Pausing load submission...");
 			for (DriverConfig dr : facade.getDriverList()) {
 				pauseDriver(dr);
 			}
 		}
-				
+
 		/**
 		 * Stops event submission at a given Driver
-		 * 
+		 *
 		 * @param dr	The Driver to be stopped
 		 */
-		private void stopDriver(DriverConfig dr) {	
-			if(facade.isDriverConnected(dr)) {				
+		private void stopDriver(DriverConfig dr) {
+			if(facade.isDriverConnected(dr)) {
 				RemoteDriverCaller caller = new RemoteDriverCaller(dr, "stop");
-				caller.execute();	
-			}							
+				caller.execute();
+			}
 			else {
 				showInfo("Could not stop " + dr.getAlias() + ". Driver is not connected.");
-			}			
-		}		
-		
+			}
+		}
+
 		/**
 		 * Unloads a given Sink
-		 * @param sink		The sink to be stopped 
+		 * @param sink		The sink to be stopped
 		 */
 		private void stopSink(SinkConfig sink) {
 			if(facade.isSinkConnected(sink)) {
 				RemoteSinkCaller caller = new RemoteSinkCaller(sink, "stop");
-				caller.execute();	
+				caller.execute();
 			}
 			else {
 				showInfo("Could not stop " + sink.getAlias() + ". Sink is not connected.");
-			}	
+			}
 		}
-		
-		
+
+
 		/**
 		 * Stops all Drivers and Sinks
 		 */
-		private synchronized void stopLoadSubmission() {			
+		private synchronized void stopLoadSubmission() {
 			showInfo("Stopping Drivers...");
 			for (DriverConfig dr : facade.getDriverList()) {
 				stopDriver(dr);
-			}				
+			}
 			showInfo("Stopping Sinks...");
 			for (SinkConfig sink : facade.getSinkList()) {
 				stopSink(sink);
-			}		
+			}
 		}
-				
+
 		/**
 		 * Makes a Driver to jump to the next phase
 		 * (or finish execution if it has no more phases).
-		 * 
+		 *
 		 * @param dr	The Driver that must switch to next phase
 		 */
 		private void switchDriverToNextPhase(DriverConfig dr) {
-			if(facade.isDriverConnected(dr)) {				
+			if(facade.isDriverConnected(dr)) {
 				RemoteDriverCaller caller = new RemoteDriverCaller(dr, "switch");
-				caller.execute();	
-			}							
+				caller.execute();
+			}
 			else {
 				showInfo("Could not switch phase of " + dr.getAlias() + ". Driver is not connected.");
-			}	
+			}
 		}
-		
+
 		/**
-		 * 
-		 * Forces all Drivers to jump to the next phase 
+		 *
+		 * Forces all Drivers to jump to the next phase
 		 * (or finish execution if it has no more phases).
-		 * 
+		 *
 		 */
 		private synchronized void switchToNextPhase() {
 			showInfo("Switching Drivers to next phase...");
 			for (DriverConfig dr : facade.getDriverList()) {
 				switchDriverToNextPhase(dr);
-			}			
+			}
 		}
-		
+
 		/**
 		 * Alters a submission rate of a given Driver.
-		 * 
+		 *
 		 * @param dr	The Driver whose submission rate must be changed
 		 */
 		private void alterDriverRate(DriverConfig dr) {
-			if(facade.isDriverConnected(dr)) {				
+			if(facade.isDriverConnected(dr)) {
 				RemoteDriverCaller caller = new RemoteDriverCaller(dr, "alter");
-				caller.execute();	
-			}							
+				caller.execute();
+			}
 			else {
 				showInfo("Could not alter submission rate of " + dr.getAlias() + ". Driver is not connected.");
-			}	
+			}
 		}
-		
-		
+
+
 		/**
 		 * Alter event submission rate
-		 * 
+		 *
 		 */
 		private synchronized void alterRate() {
 			showInfo("Altering rates on Drivers...");
 			for (DriverConfig dr : facade.getDriverList()) {
 				alterDriverRate(dr);
-			}			
+			}
 		}
-	
-		
+
+
 		/*
-		 *=========================== RMI Worker Threads ============================== 
-		 * Used to call remote methods while keeping GUI responsive to the user 
+		 *=========================== RMI Worker Threads ==============================
+		 * Used to call remote methods while keeping GUI responsive to the user
 		 *=============================================================================
-		 */				
-		class DriverLoader extends SwingWorker<Boolean, Void> {			
+		 */
+		class DriverLoader extends SwingWorker<Boolean, Void> {
 			DriverConfig dr;
-			
+
 			public DriverLoader(DriverConfig driverConfig) {
 				this.dr = driverConfig;
 			}
 			@Override
-			protected Boolean doInBackground()   {				
+			protected Boolean doInBackground()   {
 				Boolean ret = null;
-				try {			
+				try {
 					ret = facade.loadRemoteDriver(dr);
-				} catch (ConnectException ce) {					
-					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". ("+ce.getMessage()+")");						
-				} 
+				} catch (ConnectException ce) {
+					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". ("+ce.getMessage()+")");
+				}
 				catch (NotBoundException nbe) {
-					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". ("+nbe.getClass() + "-" + nbe.getMessage()+")");						
+					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". ("+nbe.getClass() + "-" + nbe.getMessage()+")");
 				}
 				catch (AccessException ae) {
 					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". (" + ae.getClass() + "-" + ae.getMessage()+")");
-				} 
+				}
 				catch (RemoteException re) {
 					showInfo("Could not connect to remote driver " + dr.getAlias()+ ". (" + re.getClass() + "-" + re.getMessage()+")");
 				}
-				catch (Exception e) {					
+				catch (Exception e) {
 					showInfo("Error while loading " + dr.getAlias() + "("+e.getMessage()+")");
 				}
 
@@ -1450,44 +1454,44 @@ public class Controller_GUI extends JFrame {
 			}
 
 			@Override
-			protected void done() {				
+			protected void done() {
 				try {
 					if (get() != null) {
 						if(get())
 							showInfo("Driver " + dr.getAlias() + " has been successfully loaded.");
 						else
 							showInfo("Remote Driver " + dr.getAlias() + " reported that was not successfully loaded.");
-					}						
-				} catch (InterruptedException e) {					
+					}
+				} catch (InterruptedException e) {
 					showInfo(dr.getAlias() + " could not be loaded. (" + e.getMessage()+")");
 				} catch (ExecutionException e) {
 					showInfo(dr.getAlias() + " could not be loaded. ("+ e.getMessage()+")");
 				}
 			}
 		}
-		
+
 		class SinkLoader extends SwingWorker<Boolean, Void> {
 			SinkRemoteFunctions remoteSink;
 			SinkConfig sink;
-			
+
 
 			public SinkLoader(SinkConfig sinkConfig) {
 				this.sink = sinkConfig;
 			}
 			@Override
-			protected Boolean doInBackground() throws RemoteException, InvalidStateException  {				
+			protected Boolean doInBackground() throws RemoteException, InvalidStateException  {
 				Boolean ret = null;
-				try {						
+				try {
 					ret = facade.loadRemotSink(sink);
-				} catch (ConnectException ce) {					
-					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". ("+ce.getMessage()+")");						
-				} 
+				} catch (ConnectException ce) {
+					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". ("+ce.getMessage()+")");
+				}
 				catch (NotBoundException nbe) {
-					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". ("+nbe.getClass() + "-" + nbe.getMessage()+")");						
+					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". ("+nbe.getClass() + "-" + nbe.getMessage()+")");
 				}
 				catch (AccessException ae) {
 					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". (" + ae.getClass() + "-" + ae.getMessage()+")");
-				} 
+				}
 				catch (RemoteException re) {
 					showInfo("Could not connect to remote sink " + sink.getAlias()+ ". (" + re.getClass() + "-" + re.getMessage()+")");
 				}
@@ -1495,59 +1499,59 @@ public class Controller_GUI extends JFrame {
 					showInfo("Error while loading " + sink.getAlias() + "("+e.getMessage()+")");
 				}
 
-				return ret;		
+				return ret;
 
 			}
-			
+
 			@Override
-			protected void done() {				
+			protected void done() {
 				try {
 					if (get() != null) {
 						if (get())
 							showInfo("Sink " + sink.getAlias() + " has been successfully loaded.");
 						else
-							showInfo("Remote Sink " + sink.getAlias() + " reported that was not successfully loaded.");			
-					}										
-				} catch (InterruptedException e) {					
+							showInfo("Remote Sink " + sink.getAlias() + " reported that was not successfully loaded.");
+					}
+				} catch (InterruptedException e) {
 					showInfo(sink.getAlias() + " could not be loaded. (" + e.getMessage()+")");
 				} catch (ExecutionException e) {
 					showInfo(sink.getAlias() + " could not be loaded. ("+ e.getMessage()+")");
 				}
 			}
 		}
-		
-		class RemoteDriverCaller extends SwingWorker<Void, Void> {			
+
+		class RemoteDriverCaller extends SwingWorker<Void, Void> {
 			DriverConfig dr;
 			String op;
-			public RemoteDriverCaller(DriverConfig driverConfig, String operation) {				
+			public RemoteDriverCaller(DriverConfig driverConfig, String operation) {
 				this.dr = driverConfig;
 				this.op = operation;
 			}
-			
+
 			@Override
 			protected Void doInBackground()  {
 				try {
 					if(op.equals("start")) {
-						facade.startRemoteDriver(dr);						
-						showInfo("  " + dr.getAlias()+" started.");	
+						facade.startRemoteDriver(dr);
+						showInfo("  " + dr.getAlias()+" started.");
 						alterLoadFactorMenuItem.setEnabled(true);
 						alterLoadFactorMenuItem.getItem(6).setSelected(true);
 					}
 					else if(op.equals("pause")) {
 						facade.pauseRemoteDriver(dr);
-						showInfo("  " + dr.getAlias()+" paused.");						
-					} 
+						showInfo("  " + dr.getAlias()+" paused.");
+					}
 					else if(op.equals("stop")) {
 						facade.stopRemoteDriver(dr);
-						showInfo("  " + dr.getAlias()+" stopped.");						
+						showInfo("  " + dr.getAlias()+" stopped.");
 					}
 					else if(op.equals("switch")) {
 						facade.switchRemoteDriverToNextPhase(dr);
-						showInfo("  " + dr.getAlias()+" switched to next phase.");						
+						showInfo("  " + dr.getAlias()+" switched to next phase.");
 					}
-					else if(op.equals("alter")) {						
+					else if(op.equals("alter")) {
 						facade.alterRemoteDriverSubmissionRate(dr, eventRateFactor);
-						showInfo("Event rate on  " + dr.getAlias()+ " altered (x " + eventRateFactor + ").");						
+						showInfo("Event rate on  " + dr.getAlias()+ " altered (x " + eventRateFactor + ").");
 					}
 				} catch (InvalidStateException ise)  {
 					showInfo("Cannot " + op + " " + dr.getAlias()+ "(" + ise.getMessage() + ")");
@@ -1559,43 +1563,43 @@ public class Controller_GUI extends JFrame {
 				return null;
 			}
 		}
-		
-		
-		class RemoteSinkCaller extends SwingWorker<Void, Void> {			
+
+
+		class RemoteSinkCaller extends SwingWorker<Void, Void> {
 			SinkConfig sink;
 			String op;
-			public RemoteSinkCaller(SinkConfig sinkConfig, String operation) {				
+			public RemoteSinkCaller(SinkConfig sinkConfig, String operation) {
 				this.sink = sinkConfig;
 				this.op = operation;
 			}
-			
+
 			@Override
 			protected Void doInBackground()  {
 				try {
-					if(op.equals("stop")) {						
+					if(op.equals("stop")) {
 						facade.stopRemoteSink(sink);
-						showInfo("  " + sink.getAlias()+ " stopped.");						
-					}					
-				} 
+						showInfo("  " + sink.getAlias()+ " stopped.");
+					}
+				}
 				catch (Exception e) {
 					showInfo("Could not " + op + " " + sink.getAlias()+ "(" + e.getClass() + "-" + e.getMessage() + ")");
 				}
 
 				return null;
 			}
-		
+
 
 		}
 		// ========================== End of RMI Worker Threads ==============================
-			
-		
+
+
 	public static void main(String[] args) throws UnknownHostException {
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
 				Controller_GUI.getInstance();
 			}
-			
-		});			
+
+		});
 	}
 }
