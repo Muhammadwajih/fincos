@@ -459,7 +459,7 @@ public class HistogramPanel extends JPanel {
 					
 					if(maxValue > prev.getKey()+binWidth) {
 						XYPointerAnnotation maxAnnotation = new XYPointerAnnotation(
-								"\u2265"+Globals.INT_FORMAT.format(prev.getKey())+"\n",
+								"\u2265"+Globals.INT_FORMAT_1.format(prev.getKey())+"\n",
 								prev.getKey()+binWidth, 
 								Math.min(0.85*plot.getRangeAxis().getUpperBound(),1.01*maxFreq), 
 								-1.571);			
