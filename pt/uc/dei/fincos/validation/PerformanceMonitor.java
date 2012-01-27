@@ -672,7 +672,7 @@ public class PerformanceMonitor extends JFrame {
     private void showInfo(String msg) {
         Date now = new Date();
 
-        infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n" );
+        infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
         infoArea.setCaretPosition(infoArea.getDocument().getLength());
     }
 
@@ -909,7 +909,7 @@ public class PerformanceMonitor extends JFrame {
                 }
             }
         }
-        if (this.sinks != null){
+        if (this.sinks != null) {
             for (SinkConfig sink : this.sinks) {
                 if (sink.getAddress().equals(componentAddress) && sink.getValidatorPort() == localPort) {
                     return sink;
@@ -1462,22 +1462,19 @@ public class PerformanceMonitor extends JFrame {
                             drivers = new ArrayList<DriverConfig>(allDrivers.length);
                             driverLabelList = new ArrayList<JLabel>(allDrivers.length);
                             for (DriverConfig dr : allDrivers) {
-                                if (
-                                        /* The IP address of the Validator in Driver's configuration matches one of
-                                         * the addresses of the current machine.
-                                         */
-                                        myAddresses.contains(dr.getServerAddress())
-                                        ||
+                                if (dr.isValidationEnabled()
+                                    /* The IP address of the Validator in Driver's configuration matches one of
+                                     * the addresses of the current machine.
+                                     */
+                                 && (myAddresses.contains(dr.getValidatorAddress())
+                                     ||
                                         /* Or the IP address of the Validator in Driver's configuration is set to
                                          * localhost (127.0.0.1) and the Driver itself runs in the same machine than
                                          * the Validator
                                          */
-                                        (	dr.getServerAddress().getHostAddress().equals("127.0.0.1")
-                                                &&
-                                                (dr.getAddress().getHostAddress().equals("127.0.0.1")||myAddresses.contains(dr.getAddress()))
-                                        )
-                                )
-                                {
+                                        (dr.getValidatorAddress().getHostAddress().equals("127.0.0.1")
+                                      && (dr.getAddress().getHostAddress().equals("127.0.0.1")
+                                       || myAddresses.contains(dr.getAddress()))))) {
                                     addDriver(dr);
                                 }
                             }
@@ -1491,22 +1488,20 @@ public class PerformanceMonitor extends JFrame {
                             sinks = new ArrayList<SinkConfig>(allSinks.length);
                             sinkLabelList = new ArrayList<JLabel>(allSinks.length);
                             for (SinkConfig sink : allSinks) {
-                                if(
+                                if (sink.isValidationEnabled()
                                         /* The IP address of the Adapter in Sink's configuration matches one of
                                          * the addresses of the current machine.
                                          */
-                                        myAddresses.contains(sink.getServerAddress())
+                                        && (myAddresses.contains(sink.getValidatorAddress())
                                         ||
                                         /* Or the IP address of the Adapter in Sink's configuration is set to
                                          * localhost (127.0.0.1) and the Sink itself runs in the same machine than
                                          * the Adapter
                                          */
-                                        (	sink.getServerAddress().getHostAddress().equals("127.0.0.1")
+                                        (sink.getValidatorAddress().getHostAddress().equals("127.0.0.1")
                                                 &&
-                                                (sink.getAddress().getHostAddress().equals("127.0.0.1")||myAddresses.contains(sink.getAddress()))
-                                        )
-                                )
-                                {
+                                                (sink.getAddress().getHostAddress().equals("127.0.0.1")
+                                                        || myAddresses.contains(sink.getAddress()))))) {
                                     addSink(sink);
                                 }
                             }
@@ -1516,6 +1511,7 @@ public class PerformanceMonitor extends JFrame {
                             showInfo("Test setup loaded successfully");
 
                         } catch (Exception exc) {
+                            exc.printStackTrace();
                             JOptionPane.showMessageDialog(null, "Could not open configuration file. File may be corrupted. ", "Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }

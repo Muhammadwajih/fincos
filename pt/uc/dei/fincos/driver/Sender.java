@@ -75,6 +75,9 @@ public class Sender extends Thread {
     /** Time that the Thread was paused since last pause, in nanoseconds. */
     private long timeInPause = 0;
 
+    /** A multiplication factor used to increase or decrease the rate at which events are submitted. */
+    private double factor = 1.0;
+
     /**
      * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
      * Event submission is controlled by the Scheduler passed as argument
@@ -493,7 +496,12 @@ public class Sender extends Thread {
      * @param factor		The multiplication factor (e.g. 2 = 2x faster than original rate)
      */
     public void setRateFactor(double factor) {
-        this.scheduler.setRateFactor(factor);
+        if (this.scheduler != null) {  // scheduled run
+            this.scheduler.setRateFactor(factor);
+        } else {  // timestamped run
+            this.factor = factor;
+        }
+
     }
 
     @Override
@@ -702,7 +710,7 @@ public class Sender extends Thread {
                          * Actual Sleep time = interarrival time minus the difference between
                          * the actual elapsed time and the expected elapsed time.
                          */
-                        interTime = timeResolution * (currentTS - lastTS);
+                        interTime = Math.round(timeResolution * (currentTS - lastTS) / factor);
 
                         elapsedTime = System.currentTimeMillis() - t0;
                         sleepTime = interTime - (elapsedTime - timeInPause - expectedElapsedTime);
