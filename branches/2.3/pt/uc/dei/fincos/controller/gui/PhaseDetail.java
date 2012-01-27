@@ -357,7 +357,6 @@ public class PhaseDetail extends ComponentDetail {
      *                  or <tt>null</tt>, in INSERTION mode.
      */
     public void fillProperties(WorkloadPhase phase) {
-        System.out.println("AQUI");
         if (phase instanceof SyntheticWorkloadPhase) {
             SyntheticWorkloadPhase synthPhase = (SyntheticWorkloadPhase) phase;
             syntheticRadio.setSelected(true);

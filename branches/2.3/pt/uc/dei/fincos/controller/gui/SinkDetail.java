@@ -5,17 +5,19 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -35,7 +37,7 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 @SuppressWarnings("serial")
 public class SinkDetail extends ComponentDetail {
 
-	private ArrayList<String> streams;
+	//private ArrayList<String> streams;
 	private SinkConfig oldCfg;
 
     private javax.swing.JTextField addressField;
@@ -78,16 +80,12 @@ public class SinkDetail extends ComponentDetail {
 
         this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
 
-        this.streams = new ArrayList<String>();
-
-        if(sink != null) {
+        if (sink != null) {
         	this.oldCfg = sink;
         	this.op = UPDATE;
         	setTitle("Editing \"" + sink.getAlias() + "\"");
         	fillProperties(sink);
-        }
-        else {
-        	this.streams = new ArrayList<String>(1);
+        } else {
         	this.op = INSERT;
         	setTitle("New Sink");
         }
@@ -101,45 +99,47 @@ public class SinkDetail extends ComponentDetail {
     public void fillProperties(SinkConfig sink) {
     	this.aliasField.setText(sink.getAlias());
     	this.addressField.setText(sink.getAddress().getHostAddress());
-    	this.portField.setText(sink.getPort()+"");
+    	this.portField.setText(sink.getPort() + "");
     	this.serverAddressField.setText(sink.getServerAddress().getHostAddress());
 
     	DefaultListModel model = (DefaultListModel) this.streamsList.getModel();
-    	String streams [] = sink.getOutputStreamList();
+    	String[] streams  = sink.getOutputStreamList();
 
     	for (String stream : streams) {
     		model.addElement(stream);
-    		this.streams.add(stream);
 		}
 
     	logCheckBox.setSelected(sink.isLoggingEnabled());
     	setLoggingEnabled(sink.isLoggingEnabled());
-    	if(sink.isLoggingEnabled()) {
-    		if(sink.getFieldsToLog() == Globals.LOG_ALL_FIELDS)
+    	if (sink.isLoggingEnabled()) {
+    		if (sink.getFieldsToLog() == Globals.LOG_ALL_FIELDS) {
     			logAllRadio.setSelected(true);
-    		else
+    		} else {
     			logTSRadio.setSelected(true);
+    		}
     		double logSamplRate = sink.getLoggingSamplingRate();
-    		if(logSamplRate == 1)
+    		if (logSamplRate == 1) {
     			logSamplingComboBox.setSelectedItem("1");
-    		else if(logSamplRate == 0.001)
+    		} else if (logSamplRate == 0.001) {
     			logSamplingComboBox.setSelectedItem("0.001");
-    		else
-    			logSamplingComboBox.setSelectedItem(""+logSamplRate);
+    		} else {
+    			logSamplingComboBox.setSelectedItem("" + logSamplRate);
+    		}
     	}
 
     	validateCheckBox.setSelected(sink.isValidationEnabled());
     	setValidationEnabled(sink.isValidationEnabled());
-    	if(sink.isValidationEnabled()) {
+    	if (sink.isValidationEnabled()) {
     		validatorAddressField.setText(sink.getValidatorAddress().getHostAddress());
-    		validatorPortField.setText(""+sink.getValidatorPort());
+    		validatorPortField.setText("" + sink.getValidatorPort());
     		double validSamplRate = sink.getValidationSamplingRate();
-    		if(validSamplRate == 1)
+    		if (validSamplRate == 1) {
     			validationSamplingComboBox.setSelectedItem("1");
-    		else if(validSamplRate == 0.001)
+    		} else if (validSamplRate == 0.001) {
     			validationSamplingComboBox.setSelectedItem("0.001");
-    		else
-    			validationSamplingComboBox.setSelectedItem(""+validSamplRate);
+    		} else {
+    			validationSamplingComboBox.setSelectedItem("" + validSamplRate);
+    		}
     	}
 
 
@@ -170,27 +170,48 @@ public class SinkDetail extends ComponentDetail {
         streamsPanel = new javax.swing.JPanel();
         streamsScrollPane1 = new javax.swing.JScrollPane();
         streamsList = new javax.swing.JList();
+        streamsList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent evt) {
+                JList list = (JList) evt.getSource();
+                if (evt.getClickCount() == 2) {
+                    int index = list.locationToIndex(evt.getPoint());
+                    String streamName = JOptionPane.showInputDialog("New stream name:");
+                    ((DefaultListModel) streamsList.getModel()).setElementAt(streamName, index);
+                }
+            }
+        });
+        streamsList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+                    deleteStream();
+                }
+            }
+        });
         okBtn = new javax.swing.JButton("OK", new ImageIcon("imgs/OK.png"));
         okBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(validateFields()) {
-					if(streams.isEmpty()) {
+				if (validateFields()) {
+				    DefaultListModel model = (DefaultListModel) streamsList.getModel();
+					if (model.size() == 0) {
 						JOptionPane.showMessageDialog(null, "There must be at least one stream.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
 						return;
 					}
-					String streamsArr[] = new String[streams.size()];
-					streams.toArray(streamsArr);
+					String[] streamsArr = new String[model.size()];
+					for (int i = 0; i < model.size(); i++) {
+					    streamsArr[i] = (String) model.elementAt(i);
+                    }
 					SinkConfig newCfg;
 					try {
 						int validatorPort = 0;
 						double validatorSamplingRate = 0;
-						if(validateCheckBox.isSelected()) {
+						if (validateCheckBox.isSelected()) {
 							try {
 								validatorPort = Integer.parseInt(validatorPortField.getText());
-								validatorSamplingRate = Double.parseDouble((String)validationSamplingComboBox.getSelectedItem());
-							}
-							catch (NumberFormatException nfe1) {
+								validatorSamplingRate = Double.parseDouble((String) validationSamplingComboBox.getSelectedItem());
+							} catch (NumberFormatException nfe1) {
 								JOptionPane.showMessageDialog(null, "Invalid value for PerfMon port");
 								return;
 							}
@@ -201,9 +222,8 @@ public class SinkDetail extends ComponentDetail {
 												Integer.parseInt(portField.getText()), streamsArr,
 												InetAddress.getByName(serverAddressField.getText()),
 												logCheckBox.isSelected(),
-												logAllRadio.isSelected()? Globals.LOG_ALL_FIELDS
-																		: Globals.LOG_ONLY_TIMESTAMPS,
-												Double.parseDouble((String)logSamplingComboBox.getSelectedItem()),
+												logAllRadio.isSelected() ? Globals.LOG_ALL_FIELDS : Globals.LOG_ONLY_TIMESTAMPS,
+												Double.parseDouble((String) logSamplingComboBox.getSelectedItem()),
 												validateCheckBox.isSelected(),
 												InetAddress.getByName(validatorAddressField.getText()),
 												validatorPort, validatorSamplingRate);
@@ -217,9 +237,9 @@ public class SinkDetail extends ComponentDetail {
 								Controller_GUI.getInstance().addSink(newCfg);
 								dispose();
 							}
-						}
-						else
+						} else {
 							JOptionPane.showMessageDialog(null, "New configuration violates unique constraint.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+						}
 					} catch (UnknownHostException e2) {
 						JOptionPane.showMessageDialog(null, "Invalid IP address.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
 					}
@@ -253,12 +273,11 @@ public class SinkDetail extends ComponentDetail {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String streamName =	JOptionPane.showInputDialog("Stream name:");
-				if(streamName.isEmpty())
+				if (streamName.isEmpty()) {
 					JOptionPane.showMessageDialog(null, "Invalid stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
-				else if (streams.contains(streamName))
+				} else if (!checkUniqueStreamName(streamName)) {
 					JOptionPane.showMessageDialog(null, "Duplicate stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
-				else {
-					streams.add(streamName);
+				} else {
 					((DefaultListModel)streamsList.getModel()).addElement(streamName);
 				}
 
@@ -268,14 +287,7 @@ public class SinkDetail extends ComponentDetail {
         deleteStream.addActionListener(new ActionListener() {
         	@Override
         	public void actionPerformed(ActionEvent e) {
-        		int indices[] = streamsList.getSelectedIndices();
-
-        		int removedCount = 0;
-        		for (int index : indices) {
-        			streams.remove(index-removedCount);
-        			((DefaultListModel)streamsList.getModel()).remove(index-removedCount);
-        			removedCount++;
-        		}
+        		deleteStream();
         	}
         });
         streamsPopup.add(addStream);
@@ -511,27 +523,37 @@ public class SinkDetail extends ComponentDetail {
         pack();
     }
 
+	/**
+	 * Deletes the selected stream(s) on the Jlist.
+	 */
+    protected void deleteStream() {
+        int[] indices = streamsList.getSelectedIndices();
+
+        int removedCount = 0;
+        for (int index : indices) {
+            ((DefaultListModel) streamsList.getModel()).remove(index - removedCount);
+            removedCount++;
+        }
+    }
+
     private boolean validateFields() {
     	int port = -1;
     	try {
     		port = Integer.parseInt(this.portField.getText());
-    	} catch(NumberFormatException nfe) {
+    	} catch (NumberFormatException nfe) {
     		return false;
     	}
-    	return (port > 0 && this.aliasField.getText() != null &&
-    			!this.aliasField.getText().isEmpty() &&
-    			this.addressField.getText() != null &&
-    			!this.addressField.getText().isEmpty() &&
-    			this.serverAddressField.getText() != null &&
-    			!this.serverAddressField.getText().isEmpty() &&
-    			(!validateCheckBox.isSelected() ||
-    			 (validatorAddressField.getText() != null &&
-    			  !validatorAddressField.getText().isEmpty() &&
-    			  validatorPortField.getText() != null &&
-    			  !validatorPortField.getText().isEmpty()
-    			 )
-    			)
-    			);
+    	return (port > 0 && this.aliasField.getText() != null
+    	    && !this.aliasField.getText().isEmpty()
+    	    && this.addressField.getText() != null
+    	    && !this.addressField.getText().isEmpty()
+    	    && this.serverAddressField.getText() != null
+    	    && !this.serverAddressField.getText().isEmpty()
+    	    && (!validateCheckBox.isSelected()
+    	     || (validatorAddressField.getText() != null
+    	      && !validatorAddressField.getText().isEmpty()
+    	      && validatorPortField.getText() != null
+    	      && !validatorPortField.getText().isEmpty())));
     }
 
 	class PopupListener extends MouseAdapter {
@@ -556,6 +578,23 @@ public class SinkDetail extends ComponentDetail {
 	                       e.getX(), e.getY());
 	        }
 	    }
+	}
+
+	/**
+	 * Checks if a given stream name is unique.
+	 *
+	 * @param newStream    the stream whose uniqueness must be checked
+	 * @return             <tt>true</tt> if there is no stream in this Sink with the specified name,
+	 *                     <tt>true</tt> otherwise.
+	 */
+	private boolean checkUniqueStreamName(String newStream) {
+	    DefaultListModel model = (DefaultListModel) this.streamsList.getModel();
+	    for (int i = 0; i < model.getSize(); i++) {
+            if (newStream.equals(model.elementAt(i))) {
+                return false;
+            }
+        }
+	    return true;
 	}
 
 	public void disableGUI() {
