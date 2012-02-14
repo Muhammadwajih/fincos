@@ -64,7 +64,7 @@ public class EsperInterface extends CEPEngineInterface {
     private HashMap<String, LinkedHashMap<String, String>> streamsSchemas;
 
     /** A map query identifier -> query EPL text.*/
-    private HashMap<String, String> queryNamesAndTexts;
+    private LinkedHashMap<String, String> queryNamesAndTexts;
 
     /** List of input streams.*/
     private String[] inputStreamList;
@@ -143,7 +143,7 @@ public class EsperInterface extends CEPEngineInterface {
         Document doc = builder.parse(new File(queriesFile));
         Element queriesList = doc.getDocumentElement();
         NodeList queries = queriesList.getElementsByTagName("Query");
-        this.queryNamesAndTexts = new HashMap<String, String>(queries.getLength());
+        this.queryNamesAndTexts = new LinkedHashMap<String, String>(queries.getLength());
         Element query;
         String queryName, queryText;
         // Iterates over list of queries/output streams
