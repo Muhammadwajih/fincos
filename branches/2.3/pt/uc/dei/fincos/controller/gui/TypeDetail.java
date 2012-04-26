@@ -55,8 +55,6 @@ public class TypeDetail extends ComponentDetail {
     public TypeDetail(PhaseDetail parent, EventType type, Long dataGenSeed) {
         super(parent);
         initComponents();
-        this.setModal(true);
-        this.requestFocus();
 
         if (type != null) {
             this.oldType = type;
@@ -288,10 +286,12 @@ public class TypeDetail extends ComponentDetail {
                     ArrayList<Attribute> toAdd = new ArrayList<Attribute>(indexes.length);
                     for (int i = 1; i <= numCopies; i++) {
                         for (int index : indexes) {
-                            original = columns.get(index);
-                            copy = (Attribute) original.clone();
-                            copy.setName(copy.getName() + "_copy_" + i);
-                            toAdd.add(copy);
+                            if (index < columns.size()) {
+                                original = columns.get(index);
+                                copy = (Attribute) original.clone();
+                                copy.setName(copy.getName() + "_copy_" + i);
+                                toAdd.add(copy);
+                            }
                         }
                     }
 

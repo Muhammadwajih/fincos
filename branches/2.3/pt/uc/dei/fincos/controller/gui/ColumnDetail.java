@@ -32,7 +32,6 @@ import pt.uc.dei.fincos.random.RandomUniformVariate;
 import pt.uc.dei.fincos.random.Variate;
 
 
-
 /**
  * GUI for configuring attributes of Event types of Synthetic workloads.
  *
@@ -64,7 +63,6 @@ public class ColumnDetail extends ComponentDetail {
     	this.randomSeed = randomSeed;
 
     	initComponents();
-    	this.setModal(true);
 
     	this.dataTypeCombo.getItemListeners()[0].itemStateChanged(null);
 
