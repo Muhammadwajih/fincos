@@ -63,7 +63,7 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
 	}
 
 	@Override
-	public void finalizeService(){
+	public void finalizeService() {
 		System.exit(0);
 	}
 

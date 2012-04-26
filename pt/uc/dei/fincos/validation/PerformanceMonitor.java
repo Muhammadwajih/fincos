@@ -395,18 +395,22 @@ public class PerformanceMonitor extends JFrame {
                         } else {
                             stream = new Stream(Stream.OUTPUT, streamName);
                         }
-                        stats = new PerformanceStats(server, stream);
-                        stats.timestamp = Long.parseLong(splitEv[0]);
-                        stats.avg_throughput = Double.parseDouble(splitEv[3]);
-                        stats.min_throughput = Double.parseDouble(splitEv[4]);
-                        stats.max_throughput = Double.parseDouble(splitEv[5]);
-                        stats.last_throughput = Double.parseDouble(splitEv[6]);
-                        stats.avgRT = Double.parseDouble(splitEv[7]);
-                        stats.minRT = Double.parseDouble(splitEv[8]);
-                        stats.maxRT = Double.parseDouble(splitEv[9]);
-                        stats.stdevRT = Double.parseDouble(splitEv[10]);
-                        stats.lastRT = Double.parseDouble(splitEv[11]);
-                        statsSeries.add(stats);
+                        try {
+                            stats = new PerformanceStats(server, stream);
+                            stats.timestamp = Long.parseLong(splitEv[0]);
+                            stats.avg_throughput = Double.parseDouble(splitEv[3]);
+                            stats.min_throughput = Double.parseDouble(splitEv[4]);
+                            stats.max_throughput = Double.parseDouble(splitEv[5]);
+                            stats.last_throughput = Double.parseDouble(splitEv[6]);
+                            stats.avgRT = Double.parseDouble(splitEv[7]);
+                            stats.minRT = Double.parseDouble(splitEv[8]);
+                            stats.maxRT = Double.parseDouble(splitEv[9]);
+                            stats.stdevRT = Double.parseDouble(splitEv[10]);
+                            stats.lastRT = Double.parseDouble(splitEv[11]);
+                            statsSeries.add(stats);
+                        } catch (NumberFormatException e) {
+                            System.err.println("NumberFormatException " + e.getMessage());
+                        }
                     } else {
                         System.err.println("Invalid record format. Expecting 12 fields, got "
                                           + splitEv.length + " fields.");
