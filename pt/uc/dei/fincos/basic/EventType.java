@@ -29,8 +29,11 @@ public class EventType implements Serializable {
     /** Cached hash code. */
     private final int hashCode;
 
-    /** Indexes of attributes. */
-    private final LinkedHashMap<Attribute, Integer> attIndex;
+    /** Index for attributes name. */
+    private final LinkedHashMap<String, Integer> attIndex;
+
+    /** Cached list of attribute names. */
+    private final String[] attributeNames;
 
     /**
      * Creates a new type with the name and attributes passed as argument.
@@ -53,11 +56,16 @@ public class EventType implements Serializable {
             }
         }
         this.attributes = new Attribute[attSet.size()];
-        this.attIndex = new LinkedHashMap<Attribute, Integer>();
+        this.attIndex = new LinkedHashMap<String, Integer>();
         Iterator<Attribute> iter  = attSet.iterator();
         for (int i = 0; iter.hasNext(); i++) {
             this.attributes[i] = iter.next();
-            this.attIndex.put(attributes[i], i);
+            this.attIndex.put(attributes[i].getName(), i);
+        }
+
+        this.attributeNames = new String[this.attributes.length];
+        for (int i = 0; i < this.attributes.length; i++) {
+            attributeNames[i] = attributes[i].getName();
         }
 
         // Computes and caches the hash code for this type
@@ -82,7 +90,8 @@ public class EventType implements Serializable {
 
     /**
     *
-    * @return the i-th attribute of this type.
+    * @param i  the index of the desired attribute
+    * @return   the i-th attribute of this type.
     */
    public Attribute getAttribute(int i) {
        return this.attributes[i];
@@ -101,21 +110,17 @@ public class EventType implements Serializable {
      * @return  an array containing the names of the attributes of this type.
      */
     public String[] getAttributesNames() {
-        String[] ret = new String[this.attributes.length];
-        for (int i = 0; i < this.attributes.length; i++) {
-            ret[i] = attributes[i].getName();
-        }
-        return ret;
+        return attributeNames;
     }
 
     /**
      * Retrieves the index of a given attribute in this type.
      *
-     * @param att   the attribute
-     * @return      the index of the attribute
+     * @param attName   the name of the attribute
+     * @return          the index of the attribute
      */
-    public int indexOf(Attribute att) {
-        return this.attIndex.get(att);
+    public int indexOf(String attName) {
+        return this.attIndex.get(attName);
     }
 
     /**
@@ -126,7 +131,7 @@ public class EventType implements Serializable {
         String ret = "";
 
         for (int i = 0; i < this.attributes.length; i++) {
-            ret += attributes[i].getName() + ",";
+            ret += attributeNames[i] + ",";
         }
 
         return ret.substring(0, ret.length() - 1);

@@ -2,7 +2,7 @@ package pt.uc.dei.fincos.driver;
 
 import java.io.IOException;
 
-import pt.uc.dei.fincos.adapters.CEPEngineInterface;
+import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.Status;

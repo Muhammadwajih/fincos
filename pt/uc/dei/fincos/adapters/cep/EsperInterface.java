@@ -1,4 +1,4 @@
-package pt.uc.dei.fincos.adapters;
+package pt.uc.dei.fincos.adapters.cep;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -267,17 +267,17 @@ public class EsperInterface extends CEPEngineInterface {
 
             int i = 0;
             ArrayList<InetSocketAddress> sinksList;
+            // TODO: Change this to a mapping Listener->List-of-streams
             for (Entry<String, String> query : this.queryNamesAndTexts.entrySet()) {
                 sinksList = outputToSink.get(query.getKey());
                 if (sinksList != null && !sinksList.isEmpty()) {
                     outputListeners[i] =
-                        new EsperListener(this.epService, query.getKey(),
-                                query.getValue(),
+                        new EsperListener("lsnr-0" + (i + 1), this.getRtMeasurementMode(),
+                                this.getSocketBufferSize(), Globals.DEFAULT_LOG_FLUSH_INTERVAL,
+                                sinksList, this.epService,
+                                query.getKey(), query.getValue(),
                                 this.streamsSchemas.get(query.getKey()),
-                                sinksList, this.eventFormat);
-                    outputListeners[i].rtMeasurementMode = this.getRtMeasurementMode();
-                    outputListeners[i].communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
-                    outputListeners[i].socketBufferSize = this.getSocketBufferSize();
+                                this.eventFormat);
                     outputListeners[i].load();
                     i++;
                 } else {
@@ -319,15 +319,13 @@ public class EsperInterface extends CEPEngineInterface {
 
             if (outputStreams != null) {
                 this.outputListeners = new EsperListener[outputStreams.length];
-
+                // TODO: Change this to a mapping Listener->List-of-streams
                 for (int i = 0; i < outputStreams.length; i++) {
                     System.out.println("Listening to "  + outputStreams[i]);
-                    outputListeners[i] = new EsperListener(this.epService, outputStreams[i],
-                            queryNamesAndTexts.get(outputStreams[i]), this.streamsSchemas.get(outputStreams[i]),
-                            sinkInstance, this.eventFormat);
-                    outputListeners[i].rtMeasurementMode = this.getRtMeasurementMode();
-                    outputListeners[i].communicationMode = Globals.DIRECT_API_COMMUNICATION;
-                    outputListeners[i].socketBufferSize = this.getSocketBufferSize();
+                    outputListeners[i] = new EsperListener("lsnr-0" + (i + 1), this.getRtMeasurementMode(),
+                            Globals.DEFAULT_LOG_FLUSH_INTERVAL, sinkInstance, this.epService,
+                            outputStreams[i], queryNamesAndTexts.get(outputStreams[i]),
+                            this.streamsSchemas.get(outputStreams[i]), this.eventFormat);
                     outputListeners[i].load();
                 }
 

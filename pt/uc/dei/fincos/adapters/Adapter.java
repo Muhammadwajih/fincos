@@ -40,6 +40,8 @@ import javax.swing.table.DefaultTableModel;
 
 import org.w3c.dom.DOMException;
 
+import pt.uc.dei.fincos.adapters.cep.CEPEngineFactory;
+import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
 import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.Step;

@@ -25,8 +25,8 @@ import javax.swing.JTextArea;
 import javax.swing.Timer;
 import javax.swing.border.EtchedBorder;
 
-import pt.uc.dei.fincos.adapters.CEPEngineFactory;
-import pt.uc.dei.fincos.adapters.CEPEngineInterface;
+import pt.uc.dei.fincos.adapters.cep.CEPEngineFactory;
+import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.InvalidStateException;
