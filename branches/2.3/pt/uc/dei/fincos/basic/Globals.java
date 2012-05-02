@@ -49,6 +49,9 @@ public class Globals {
     /** Only the timestamps of events are logged to disk. */
     public static final int LOG_ONLY_TIMESTAMPS = 1;
 
+    /** Default frequency at which log is flushed to disk, in milliseconds. */
+    public static final int DEFAULT_LOG_FLUSH_INTERVAL = 10;
+
     /** Used for formatting dates, times and numbers on GUI.  */
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     public static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");

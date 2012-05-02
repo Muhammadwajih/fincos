@@ -19,8 +19,6 @@ public class Event implements Serializable {
     /** The type of this event. */
     private final EventType type;
 
-  //  private LinkedHashMap<Attribute, Object> attributes;
-
     /** The timestamp of this event. */
     private long timestamp;
 
@@ -82,10 +80,10 @@ public class Event implements Serializable {
     /**
      * Sets the value of an Event's attribute. (Checks if they are compatible)
      *
-     * @param att       The attribute whose value must be set
+     * @param att       The name of the attribute whose value must be set
      * @param value     The intended value
      */
-    public void setAttributeValue(Attribute att, Object value) {
+    public void setAttributeValue(String att, Object value) {
         int fieldIndex = this.type.indexOf(att);
         this.setAttributeValue(fieldIndex, value);
     }
@@ -177,7 +175,7 @@ public class Event implements Serializable {
      * @param att		The attribute whose value must be returned
      * @return			The Attribute's value
      */
-    public Object getAttributeValue(Attribute att) {
+    public Object getAttributeValue(String att) {
         int fieldIndex = this.type.indexOf(att);
         return this.payload[fieldIndex];
     }
