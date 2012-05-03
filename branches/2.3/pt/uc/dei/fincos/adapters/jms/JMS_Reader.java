@@ -22,6 +22,7 @@ public class JMS_Reader extends JMS_Adapter {
     /**
     *
     * @param connProps         connection properties
+    * @param connFactoryName   name of the connection factory at the JNDI server
     * @param outputListeners   a mapping [listener] -> [list-of-destinations-to-be-listened]
     * @param sinkInstance      reference to the Sink instance to which messages must be forwarded
     *
@@ -36,6 +37,7 @@ public class JMS_Reader extends JMS_Adapter {
     /**
      *
      * @param connProps         connection properties
+     * @param connFactoryName   name of the connection factory at the JNDI server
      * @param msgConverter      converts events, as represented in FINCoS, to JMS messages and vice-versa
      * @param outputListeners   a mapping [listener] -> [list-of-destinations-to-be-listened]
      * @param sinkInstance      reference to the Sink instance to which messages must be forwarded
@@ -56,7 +58,7 @@ public class JMS_Reader extends JMS_Adapter {
                     Globals.DEFAULT_LOG_FLUSH_INTERVAL, sinkInstance, msgConverter, outputChannels);
             // Associate the listener with all the queues in outputChannels
             for (EventType type: outputChannels) {
-                Queue q = (Queue) ctxt.lookup("/" + type.getName());
+                Queue q = (Queue) ctxt.lookup(type.getName());
                 MessageConsumer consumer = session.createConsumer(q);
                 consumers.add(consumer);
                 consumer.setMessageListener(lsnr);

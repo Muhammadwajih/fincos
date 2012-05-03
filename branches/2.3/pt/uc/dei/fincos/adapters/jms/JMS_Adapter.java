@@ -49,7 +49,7 @@ public abstract class JMS_Adapter {
         // Set the JNDI properties; specific to the naming service vendor
         this.ctxt = new InitialContext(connProps);
         // Retrieve the queue connection factory.
-        QueueConnectionFactory cf = (QueueConnectionFactory) ctxt.lookup("/" + connFactoryName);
+        QueueConnectionFactory cf = (QueueConnectionFactory) ctxt.lookup(connFactoryName);
         // Create the JMS connection.
         this.conn  = cf.createQueueConnection();
         // Create the JMS session over the JMS connection.
@@ -75,8 +75,8 @@ public abstract class JMS_Adapter {
         connProps.setProperty("java.naming.factory.initial", "org.jnp.interfaces.NamingContextFactory");
         connProps.setProperty("java.naming.provider.url", "jnp://localhost:1099");
         connProps.setProperty("java.naming.factory.url.pkgs", "org.jboss.naming:org.jnp.interfaces");
-        //connProps.setProperty(Context.INITIAL_CONTEXT_FACTORY,"org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-        //connProps.setProperty(Context.PROVIDER_URL,"tcp://127.0.0.1:61616");
+      //  connProps.setProperty(Context.INITIAL_CONTEXT_FACTORY,"org.apache.activemq.jndi.ActiveMQInitialContextFactory");
+       // connProps.setProperty(Context.PROVIDER_URL,"tcp://127.0.0.1:61616");
         // Name of destinations
         String[] channels = {"Stock"};
         // FINCoS internal representation of the Stock message
@@ -86,12 +86,13 @@ public abstract class JMS_Adapter {
                 new Attribute(Datatype.DOUBLE, "Price"),
                 new Attribute(Datatype.INTEGER, "Volume")
         });
+        Converter converter = new StreamMessageConverter();
         // Sets up a JMS Writer
-        JMS_Writer writer = new JMS_Writer(connProps, "ConnectionFactory", channels);
+        JMS_Writer writer = new JMS_Writer(connProps, "ConnectionFactory", channels, converter);
         // Sets up a JMS Reader
         HashMap<String, EventType[]> outputListeners = new HashMap<String, EventType[]>();
         outputListeners.put("lsnr-01", new EventType[] {stockType});
-        JMS_Reader reader = new JMS_Reader(connProps, "ConnectionFactory", outputListeners, null);
+        JMS_Reader reader = new JMS_Reader(connProps, "ConnectionFactory", converter, outputListeners, null);
         // Sends data
         long t0 = System.currentTimeMillis();
         long ts;
@@ -111,6 +112,7 @@ public abstract class JMS_Adapter {
         }
         System.out.println("Throughput: "  + (1000.0 * i / (ts - t0)) + " msgs/sec.");
 
+        Thread.sleep(2000);
 
         reader.disconnect();
         writer.disconnect();
