@@ -3,6 +3,7 @@ package pt.uc.dei.fincos.adapters.jms;
 import java.util.HashMap;
 import java.util.Properties;
 
+import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
@@ -12,7 +13,9 @@ import javax.naming.NamingException;
 import pt.uc.dei.fincos.basic.Event;
 
 /**
- * Adapter used to publish messages into a JMS queue.
+ * Adapter used to publish messages into one or more JMS queues.
+ * By default, NON-PERSISTENT messages are used, as to minimize
+ * the impact on the JMS server.
  */
 public class JMS_Writer extends JMS_Adapter {
 
@@ -52,8 +55,10 @@ public class JMS_Writer extends JMS_Adapter {
         // Creates a sender for each input channel
         senders = new HashMap<String, MessageProducer>();
         for (int i = 0; i < inputChannels.length; i++) {
-            Queue q = (Queue) ctxt.lookup("/" + inputChannels[i]);
-            senders.put(inputChannels[i], session.createProducer(q));
+            Queue q = (Queue) ctxt.lookup(inputChannels[i]);
+            MessageProducer producer = session.createProducer(q);
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+            senders.put(inputChannels[i], producer);
         }
     }
 
