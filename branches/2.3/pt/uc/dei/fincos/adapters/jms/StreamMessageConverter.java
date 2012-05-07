@@ -1,7 +1,6 @@
 package pt.uc.dei.fincos.adapters.jms;
 
 import javax.jms.JMSException;
-import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
@@ -11,7 +10,7 @@ import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
 
 /**
- * Converts an event, as represented in FINCoS, to a JMS map message ({@link MapMessage}), and vice versa.
+ * Converts an event, as represented in FINCoS, to a JMS stream message ({@link StreamMessage}), and vice versa.
  */
 public class StreamMessageConverter extends Converter {
 

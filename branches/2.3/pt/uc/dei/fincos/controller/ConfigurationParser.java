@@ -1191,7 +1191,7 @@ public class ConfigurationParser {
      * @return				A textual representation of the XML document
      * @throws TransformerException
      */
-    private String fromXMLDocToString(Document doc) throws TransformerException {
+    public static String fromXMLDocToString(Document doc) throws TransformerException {
         TransformerFactory tFactory = TransformerFactory.newInstance();
         Transformer transformer = tFactory.newTransformer();
 
@@ -1200,7 +1200,6 @@ public class ConfigurationParser {
         StreamResult result = new StreamResult(sw);
         transformer.transform(source, result);
         return sw.toString();
-
     }
 
     /**

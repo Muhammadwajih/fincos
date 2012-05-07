@@ -17,6 +17,7 @@ import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
@@ -47,6 +48,8 @@ import javax.swing.table.DefaultTableModel;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Step;
+import pt.uc.dei.fincos.controller.ConnectionConfig;
+import pt.uc.dei.fincos.controller.ConnectionsFileParser;
 import pt.uc.dei.fincos.controller.ControllerFacade;
 import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.SinkConfig;
@@ -69,11 +72,12 @@ public class Controller_GUI extends JFrame {
 
 	// Menu
 	private JMenuBar menuBar = new JMenuBar();
-	private JMenu fileMenu, driverMenu, sinkMenu, testMenu, alterLoadFactorMenuItem;
+	private JMenu fileMenu, driverMenu, sinkMenu, testMenu, alterLoadFactorMenuItem, viewMenu;
 	private JMenuItem profileLoadMenuItem, saveMenuItem, saveAsMenuItem, exitMenuItem,
 				newDriverMenuItem, editDriverMenuItem, deleteDriverMenuItem,
 				newSinkMenuItem, editSinkMenuItem, deleteSinkMenuItem,
-				loadMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, switchMenuItem, optionsMenuItem;
+				loadMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, switchMenuItem, optionsMenuItem,
+				connectionsMenuItem;
 	private ButtonGroup rateFactorGroup;
 
 	// ToolBar
@@ -94,6 +98,9 @@ public class Controller_GUI extends JFrame {
 	JMenuItem driverCopyMenu = new JMenuItem("Copy...");
 	JPopupMenu sinksPop = new JPopupMenu();
 	JMenuItem sinkCopyMenu = new JMenuItem("Copy...");
+
+	// Connections
+	private ArrayList<ConnectionConfig> connections;
 
 	//Misc
 	private JPanel commandPanel;
@@ -132,7 +139,7 @@ public class Controller_GUI extends JFrame {
 
         initializeComponentsPanel();
 
-        fileChooser = new JFileChooser(Globals.APP_PATH+"config");
+        fileChooser = new JFileChooser(Globals.APP_PATH + "config");
         fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("XML Configuration file", "xml"));
     	fileChooser.setAcceptAllFileFilterUsed(false);
     	fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -161,17 +168,48 @@ public class Controller_GUI extends JFrame {
 						System.exit(0);
 						break;
 					case JOptionPane.CANCEL_OPTION:
-						;
 						break;
 					}
-				}
-				else
+				} else {
 					System.exit(0);
+				}
 			}
 		});
+
+		try {
+            openConnectionsFile();
+        } catch (Exception e1) {
+            // TODO: improve this exception handling (application shouldn't close)
+            JOptionPane.showMessageDialog(null, "Could not open connections file. Application will abort execution.", "ERROR", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
 	}
 
-	private void initializeMenuBar() {
+	private void openConnectionsFile() throws Exception {
+	    String connFile = Globals.APP_PATH + "config" + File.separator + "Connections.xml";
+	    File f = new File(connFile);
+	    if (!f.exists()) {
+	        ConnectionsFileParser.createEmptyFile(connFile);
+	    }
+        this.connections = new ArrayList<ConnectionConfig>();
+        this.connections.addAll(Arrays.asList(ConnectionsFileParser.getConnections(connFile)));
+    }
+
+	public void setConnections(ArrayList<ConnectionConfig> connections) {
+	    this.connections = connections;
+	}
+
+	/**
+	 * Saves the list of connections to disk.
+	 *
+	 * @throws Exception   if an error occurs when writing data to the file
+	 */
+	public void saveConnections() throws Exception {
+	    String filePath = Globals.APP_PATH + "config" + File.separator + "Connections.xml";
+	    ConnectionsFileParser.saveToFile(this.connections.toArray(new ConnectionConfig[connections.size()]), filePath);
+	}
+
+    private void initializeMenuBar() {
 		// Menu File
 		fileMenu = new JMenu("File");
 		profileLoadMenuItem = new JMenuItem("Open");
@@ -179,7 +217,7 @@ public class Controller_GUI extends JFrame {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
 				int action = fileChooser.showOpenDialog(null);
 
-				if(action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
+				if (action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
 					loadProfile(fileChooser.getSelectedFile());
 				}
 			}
@@ -383,13 +421,27 @@ public class Controller_GUI extends JFrame {
 		testMenu.addSeparator();
 		testMenu.add(optionsMenuItem);
 
+		// View Menu
+		viewMenu = new JMenu("View");
+		connectionsMenuItem = new JMenuItem("Connections");
+		connectionsMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showConnectionsDialog();
+            }});
+		viewMenu.add(connectionsMenuItem);
 
 		menuBar.add(fileMenu);
 		menuBar.add(driverMenu);
 		menuBar.add(sinkMenu);
 		menuBar.add(testMenu);
+		menuBar.add(viewMenu);
 
 	}
+
+    private void showConnectionsDialog() {
+        new ConnectionsDialog(this, connections);
+    }
 
 	private void initializeToolBar() {
 		toolBar.add(openBtn);

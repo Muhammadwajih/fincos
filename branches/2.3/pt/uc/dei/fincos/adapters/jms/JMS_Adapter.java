@@ -88,11 +88,11 @@ public abstract class JMS_Adapter {
         });
         Converter converter = new StreamMessageConverter();
         // Sets up a JMS Writer
-        JMS_Writer writer = new JMS_Writer(connProps, "ConnectionFactory", channels, converter);
+        JMS_Writer writer = new JMS_Writer(connProps, "ThroughputConnectionFactory", channels, converter);
         // Sets up a JMS Reader
         HashMap<String, EventType[]> outputListeners = new HashMap<String, EventType[]>();
         outputListeners.put("lsnr-01", new EventType[] {stockType});
-        JMS_Reader reader = new JMS_Reader(connProps, "ConnectionFactory", converter, outputListeners, null);
+        JMS_Reader reader = new JMS_Reader(connProps, "ThroughputConnectionFactory", converter, outputListeners, null);
         // Sends data
         long t0 = System.currentTimeMillis();
         long ts;
@@ -100,7 +100,7 @@ public abstract class JMS_Adapter {
         System.out.println("Warmup started.");
         for (i = 0; (ts = System.currentTimeMillis()) - t0 < 10000; i++) {
             writer.send(new Event(stockType, new Object[] {System.currentTimeMillis(), "MSFT", 32.01, 100+i}));
-            Thread.sleep(500);
+          //  Thread.sleep(500);
         }
         System.out.println("Throughput: "  + (1000.0 * i / (ts - t0)) + " msgs/sec.");
 
@@ -108,7 +108,7 @@ public abstract class JMS_Adapter {
         t0 = System.currentTimeMillis();
         for (i = 0; (ts = System.currentTimeMillis()) - t0 < 10000; i++) {
             writer.send(new Event(stockType, new Object[] {System.currentTimeMillis(), "MSFT", 32.01, 100+i}));
-            Thread.sleep(500);
+      //      Thread.sleep(500);
         }
         System.out.println("Throughput: "  + (1000.0 * i / (ts - t0)) + " msgs/sec.");
 

@@ -49,7 +49,7 @@ public class JMS_Listener extends OutputListener implements MessageListener {
             }
             // Converts and forwards the event message to a Sink
          //   super.onOutput(msgConverter.toEvent(msg, type).getValues());
-            System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toEvent(msg, type).toCSV());
+        //    System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toEvent(msg, type).toCSV());
         } catch (JMSException jmsExc) {
             throw new RuntimeException(jmsExc.getMessage());
         }
