@@ -57,8 +57,11 @@ public class JMS_Writer extends JMS_Adapter {
         for (int i = 0; i < inputChannels.length; i++) {
             Queue q = (Queue) ctxt.lookup(inputChannels[i]);
             MessageProducer producer = session.createProducer(q);
-            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
             senders.put(inputChannels[i], producer);
+            // Performance Tuning Settings
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+            producer.setDisableMessageID(true);
+            producer.setDisableMessageTimestamp(true);
         }
     }
 
