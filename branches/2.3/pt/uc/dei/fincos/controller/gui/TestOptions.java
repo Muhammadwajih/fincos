@@ -19,28 +19,29 @@ import pt.uc.dei.fincos.controller.ControllerFacade;
  * @author  Marcelo R.N. Mendes
  */
 public class TestOptions extends javax.swing.JFrame {
-    
+
     /**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1679474313988723749L;
 	/** Creates new form TestOptions */
-    
+
 	private JFileChooser connPropertiesChooser;
-	
+
 	public TestOptions() {
     	connPropertiesChooser = new JFileChooser(Globals.APP_PATH+"config");
 		connPropertiesChooser.addChoosableFileFilter(new FileNameExtensionFilter("Properties file (.properties)", "properties"));
 		connPropertiesChooser.setAcceptAllFileFilterUsed(false);
     	connPropertiesChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-    	
+
         initComponents();
+        addListeners();
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         this.setVisible(true);
     }
-    
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -48,64 +49,38 @@ public class TestOptions extends javax.swing.JFrame {
      */
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-    	rtRadioGroup = new javax.swing.ButtonGroup();
-        communicationRadioGroup = new javax.swing.ButtonGroup();
+        rtModeBtnGroup = new javax.swing.ButtonGroup();
+        jPanel2 = new javax.swing.JPanel();
+        rtResolutionBtnGroup = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
-        rtLabel = new javax.swing.JLabel();
-        rtAdapterRadio = new javax.swing.JRadioButton();
-        rtEndToEndRadio = new javax.swing.JRadioButton();
-        rtNoRadio = new javax.swing.JRadioButton();
-        communicarionLabel = new javax.swing.JLabel();
-        communicationAdapterRadio = new javax.swing.JRadioButton();
-        communicationDirectRadio = new javax.swing.JRadioButton();
-        communicationBufferingCheck = new javax.swing.JCheckBox();
-        commBufferSizeLabel1 = new javax.swing.JLabel();
-        commBufferSizeField = new javax.swing.JTextField();
-        commBufferSizeLabel2 = new javax.swing.JLabel();
-        logFlushLabel1 = new javax.swing.JLabel();
-        logFlushField = new javax.swing.JTextField();
-        logFlushLabel2 = new javax.swing.JLabel();
         okBtn = new javax.swing.JButton();
         cancelBtn = new javax.swing.JButton();
-        connPropLabel = new javax.swing.JLabel();
-        connPropField = new javax.swing.JTextField();
-        connPropBtn = new javax.swing.JButton();
-        timestampingModeCheckBox = new javax.swing.JCheckBox();
+        rtPanel = new javax.swing.JPanel();
+        rtEndToEndRadio = new javax.swing.JRadioButton();
+        rtAdapterRadio = new javax.swing.JRadioButton();
+        rtModeLbl = new javax.swing.JLabel();
+        rtCheckBox = new javax.swing.JCheckBox();
+        rtResolutionLbl = new javax.swing.JLabel();
+        rtCreationTimeCheckBox = new javax.swing.JCheckBox();
+        rtMillisRdBtn = new javax.swing.JRadioButton();
+        rtNanosRdBtn = new javax.swing.JRadioButton();
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Test Options");
         setResizable(false);
 
         jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-
-        rtLabel.setText("Response Time Measurement Mode:");
-
-        rtRadioGroup.add(rtAdapterRadio);
-        rtAdapterRadio.setText("Inside Adapter, in Nanoseconds");
-
-        rtRadioGroup.add(rtEndToEndRadio);
-        rtEndToEndRadio.setText("End-to-End, in Milliseconds");
-
-        rtRadioGroup.add(rtNoRadio);
-        rtNoRadio.setText("No Response Time Measurement");
-
-        communicarionLabel.setText("Communication Mode:");
-
-        communicationRadioGroup.add(communicationAdapterRadio);
-        communicationAdapterRadio.setText("Through FINCoS Adapter, CSV format");
-
-        communicationRadioGroup.add(communicationDirectRadio);
-        communicationDirectRadio.setText("Directly to CEP engine, native API format");
-
-        communicationBufferingCheck.setText("Enable buffering");
-
-        commBufferSizeLabel1.setText("Buffer size:");
-
-        commBufferSizeLabel2.setText("events");
-
-        logFlushLabel1.setText("Logging Flushing Interval:");
-
-        logFlushLabel2.setText("milliseconds");
 
         okBtn.setText("OK");
         okBtn.setMaximumSize(new java.awt.Dimension(65, 23));
@@ -114,14 +89,73 @@ public class TestOptions extends javax.swing.JFrame {
 
         cancelBtn.setText("Cancel");
 
-        connPropLabel.setText("Conn. Prop.:");
+        rtPanel.setBorder(javax.swing.BorderFactory.createTitledBorder("Response Time Measurement"));
 
-        connPropField.setToolTipText("Path of file containing connection's properties to a CEP engine.");
+        rtModeBtnGroup.add(rtEndToEndRadio);
+        rtEndToEndRadio.setText("End-to-End (from Driver to Sink)");
+        rtEndToEndRadio.setToolTipText("Event conversion time is accounted");
 
-        connPropBtn.setText("...");
+        rtModeBtnGroup.add(rtAdapterRadio);
+        rtAdapterRadio.setText("Process Time (inside Adapters)");
+        rtAdapterRadio.setToolTipText("Event conversion time is not accounted");
 
-        timestampingModeCheckBox.setText("Use creation time");
-        timestampingModeCheckBox.setToolTipText("Timestamp of events is the time assigned by the scheduler (instead of send time).");
+        rtModeLbl.setText("Mode:");
+
+        rtCheckBox.setText("RT measurement enabled");
+
+        rtResolutionLbl.setText("Resolution:");
+
+        rtCreationTimeCheckBox.setText("Use Creation Time");
+        rtCreationTimeCheckBox.setToolTipText("Use event's original timestamp instead of their send time");
+
+        rtResolutionBtnGroup.add(rtMillisRdBtn);
+        rtMillisRdBtn.setText("Milliseconds");
+
+        rtResolutionBtnGroup.add(rtNanosRdBtn);
+        rtNanosRdBtn.setText("Nanoseconds");
+
+        javax.swing.GroupLayout rtPanelLayout = new javax.swing.GroupLayout(rtPanel);
+        rtPanel.setLayout(rtPanelLayout);
+        rtPanelLayout.setHorizontalGroup(
+            rtPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(rtPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(rtPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(rtAdapterRadio)
+                    .addGroup(rtPanelLayout.createSequentialGroup()
+                        .addGap(21, 21, 21)
+                        .addComponent(rtCreationTimeCheckBox))
+                    .addComponent(rtCheckBox)
+                    .addComponent(rtModeLbl)
+                    .addComponent(rtEndToEndRadio)
+                    .addComponent(rtResolutionLbl)
+                    .addGroup(rtPanelLayout.createSequentialGroup()
+                        .addComponent(rtMillisRdBtn)
+                        .addGap(18, 18, 18)
+                        .addComponent(rtNanosRdBtn)))
+                .addContainerGap(99, Short.MAX_VALUE))
+        );
+        rtPanelLayout.setVerticalGroup(
+            rtPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(rtPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(rtCheckBox)
+                .addGap(11, 11, 11)
+                .addComponent(rtModeLbl)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(rtEndToEndRadio)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(rtCreationTimeCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(rtAdapterRadio)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
+                .addComponent(rtResolutionLbl)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(rtPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(rtMillisRdBtn)
+                    .addComponent(rtNanosRdBtn))
+                .addContainerGap())
+        );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -130,90 +164,19 @@ public class TestOptions extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(rtLabel)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(logFlushLabel1)
+                    .addComponent(rtPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addComponent(cancelBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(cancelBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(okBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(logFlushField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(logFlushLabel2))))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(communicationDirectRadio)
-                                    .addComponent(communicationAdapterRadio)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addGap(21, 21, 21)
-                                        .addComponent(communicationBufferingCheck)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addComponent(commBufferSizeLabel1)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(commBufferSizeField, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(commBufferSizeLabel2))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(27, 27, 27)
-                                .addComponent(connPropLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(connPropField, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(connPropBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addComponent(communicarionLabel)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(rtEndToEndRadio)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(21, 21, 21)
-                                .addComponent(timestampingModeCheckBox))
-                            .addComponent(rtAdapterRadio)
-                            .addComponent(rtNoRadio))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(okBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(rtLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(rtEndToEndRadio)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(timestampingModeCheckBox)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(rtAdapterRadio)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(rtNoRadio)
-                .addGap(15, 15, 15)
-                .addComponent(communicarionLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(communicationAdapterRadio)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(communicationBufferingCheck)
-                    .addComponent(commBufferSizeLabel1)
-                    .addComponent(commBufferSizeLabel2)
-                    .addComponent(commBufferSizeField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(6, 6, 6)
-                .addComponent(communicationDirectRadio)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(connPropBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 18, Short.MAX_VALUE)
-                    .addComponent(connPropField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(connPropLabel))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(logFlushLabel1)
-                    .addComponent(logFlushLabel2)
-                    .addComponent(logFlushField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addComponent(rtPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(cancelBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(okBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -228,200 +191,125 @@ public class TestOptions extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
-        
-        // ============================== Custom Code ===============================
+
+        rtCheckBox.setSelected(true);
         java.awt.Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
-        communicationBufferingCheck.setFont(f);
-        commBufferSizeField.setFont(f);
-        commBufferSizeLabel1.setFont(f);
-        commBufferSizeLabel2.setFont(f);
-        connPropLabel.setFont(f);
-        connPropField.setFont(f);
-        connPropBtn.setFont(f);
-        
-        connPropBtn.addActionListener(new ActionListener() {			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int action = connPropertiesChooser.showOpenDialog(null);
-				if(action == JFileChooser.APPROVE_OPTION && connPropertiesChooser.getSelectedFile() != null) {
-					connPropField.setText(connPropertiesChooser.getSelectedFile().getPath());				
-				}								
-			}			
-		});
-        
-        ItemListener commItemListener = new ItemListener(){
-			@Override
-			public void itemStateChanged(ItemEvent e) {				
-				communicationBufferingCheck.setEnabled(communicationAdapterRadio.isSelected());
-				commBufferSizeLabel1.setEnabled(communicationAdapterRadio.isSelected()&&communicationBufferingCheck.isSelected());
-				commBufferSizeLabel2.setEnabled(communicationAdapterRadio.isSelected()&&communicationBufferingCheck.isSelected());
-				commBufferSizeField.setEnabled(communicationAdapterRadio.isSelected()&&communicationBufferingCheck.isSelected());
-				connPropLabel.setEnabled(communicationDirectRadio.isSelected());
-			    connPropField.setEnabled(communicationDirectRadio.isSelected());
-			    connPropBtn.setEnabled(communicationDirectRadio.isSelected());
-				rtAdapterRadio.setEnabled(communicationAdapterRadio.isSelected());				
-				if(!rtNoRadio.isSelected())
-					rtEndToEndRadio.setSelected(communicationDirectRadio.isSelected());
-			}        	
-        };
-        communicationDirectRadio.addItemListener(commItemListener);
-        communicationAdapterRadio.addItemListener(commItemListener);
-        
-        rtEndToEndRadio.addItemListener(new ItemListener() {			
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				timestampingModeCheckBox.setEnabled(rtEndToEndRadio.isSelected());
-			}
-		});
-        
-        rtEndToEndRadio.setSelected(true);
-        communicationAdapterRadio.setSelected(true);        
-        
-        communicationBufferingCheck.addItemListener(new ItemListener(){
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				commBufferSizeLabel1.setEnabled(communicationBufferingCheck.isSelected());
-				commBufferSizeLabel2.setEnabled(communicationBufferingCheck.isSelected());
-				commBufferSizeField.setEnabled(communicationBufferingCheck.isSelected());
-				if(!communicationBufferingCheck.isSelected()) {
-					commBufferSizeField.setText("1");
-				}				
-			}        	
-        });
-        communicationBufferingCheck.setSelected(true);
-        communicationBufferingCheck.setSelected(false);
-        
-        okBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int socketBufferSize = 0, logFlushInterval = 0, communicationMode = 0, rtMeasurementMode = 0;				
-				if(rtEndToEndRadio.isSelected())
-					rtMeasurementMode = Globals.END_TO_END_RT_MILLIS;
-				else if(rtAdapterRadio.isSelected())
-					rtMeasurementMode = Globals.ADAPTER_RT_NANOS;
-				else if(rtNoRadio.isSelected())
-					rtMeasurementMode = Globals.NO_RT;
-				
-				if(communicationAdapterRadio.isSelected())
-					communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
-				else if(communicationDirectRadio.isSelected()) {
-					communicationMode = Globals.DIRECT_API_COMMUNICATION;
-										
-				}
-					
-				
-				try {
-					socketBufferSize = Integer.parseInt(commBufferSizeField.getText());
-					if(socketBufferSize < 1) {
-						JOptionPane.showMessageDialog(null, "Buffer size parameter must be a positive integer.");
-						return;
-					}						
-				} catch (NumberFormatException nfe1) {
-					JOptionPane.showMessageDialog(null, "Invalid buffer size");
-					return;
-				}
-				
-				try {
-					logFlushInterval = Integer.parseInt(logFlushField.getText());
-					if(logFlushInterval < 0) {
-						JOptionPane.showMessageDialog(null, "Log flush interval parameter must be a non-negative integer.");
-						return;
-					}						
-				} catch (NumberFormatException nfe1) {
-					JOptionPane.showMessageDialog(null, "Invalid log flush interval");
-					return;
-				}
-				
-				try {
-					ControllerFacade.getInstance().updateTestOptions(socketBufferSize, 
-															   logFlushInterval, 
-															   communicationMode, 
-															   rtMeasurementMode,
-															   timestampingModeCheckBox.isSelected(),
-															   connPropField.getText());
-					if(!Controller_GUI.getInstance().configModified)
-						Controller_GUI.getInstance().setTitle(Controller_GUI.getInstance().getTitle()+"*");
-					Controller_GUI.getInstance().configModified = true;
-				} catch (Exception e1) {
-					JOptionPane.showMessageDialog(null, e1.getMessage(), 
-							"Error", JOptionPane.ERROR_MESSAGE);
-					return;
-				}
-				dispose();
-			}        	
-        });
-        
-        cancelBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {		
-				dispose();
-			}
-        	
-        });
-        
+        rtCreationTimeCheckBox.setFont(f);
+
     }// </editor-fold>//GEN-END:initComponents
-    
-    public void fillProperties(int socketBufferSize, int logFlushInterval, 
-			int communicationMode, int rtMeasurementMode, boolean useCreationTime, 
-			String connPropFilePath )
-    {
-    	switch (communicationMode) {
-		case Globals.ADAPTER_CSV_COMMUNICATION:
-			communicationAdapterRadio.setSelected(true);
-			break;
-		case Globals.DIRECT_API_COMMUNICATION:
-			communicationDirectRadio.setSelected(true);
-			break;		
-		}
-    	
-    	switch (rtMeasurementMode) {
-		case Globals.END_TO_END_RT_MILLIS :
+
+    private void addListeners() {
+        rtCheckBox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                rtModeLbl.setEnabled(rtCheckBox.isSelected());
+                rtEndToEndRadio.setEnabled(rtCheckBox.isSelected());
+                rtCreationTimeCheckBox.setEnabled(rtCheckBox.isSelected());
+                rtAdapterRadio.setEnabled(rtCheckBox.isSelected());
+                rtResolutionLbl.setEnabled(rtCheckBox.isSelected());
+                rtMillisRdBtn.setEnabled(rtCheckBox.isSelected());
+                rtNanosRdBtn.setEnabled(rtCheckBox.isSelected());
+            }
+        });
+
+        rtEndToEndRadio.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                rtCreationTimeCheckBox.setEnabled(rtEndToEndRadio.isSelected());
+            }
+        });
+
+        rtEndToEndRadio.setSelected(true);
+
+        okBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int socketBufferSize = 0, logFlushInterval = 0, rtMode = 0, rtResolution = 0;
+                if (rtCheckBox.isSelected()) {
+                    if (rtEndToEndRadio.isSelected()) {
+                        rtMode = Globals.END_TO_END_RT;
+                    } else if (rtAdapterRadio.isSelected()) {
+                        rtMode = Globals.ADAPTER_RT;
+                    }
+                    if (rtMillisRdBtn.isSelected()) {
+                        rtResolution = Globals.MILLIS_RT;
+                    } else if (rtNanosRdBtn.isSelected()) {
+                        rtResolution = Globals.NANO_RT;
+                    }
+                } else {
+                    rtMode = Globals.NO_RT;
+                }
+
+                try {
+                    ControllerFacade.getInstance().updateTestOptions(rtMode, rtResolution, rtCreationTimeCheckBox.isSelected());
+                    if (!Controller_GUI.getInstance().configModified) {
+                        Controller_GUI.getInstance().setTitle(Controller_GUI.getInstance().getTitle() + "*");
+                    }
+                    Controller_GUI.getInstance().configModified = true;
+                } catch (Exception e1) {
+                    JOptionPane.showMessageDialog(null, e1.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                dispose();
+            }
+        });
+
+        cancelBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+
+        });
+
+    }
+
+    public void fillProperties(int rtMode, int rtResolution, boolean useCreationTime) {
+     	switch (rtMode) {
+		case Globals.END_TO_END_RT :
 			rtEndToEndRadio.setSelected(true);
 			break;
-		case Globals.ADAPTER_RT_NANOS:
+		case Globals.ADAPTER_RT:
 			rtAdapterRadio.setSelected(true);
 			break;
 		case Globals.NO_RT:
-			rtNoRadio.setSelected(true);
+			rtCheckBox.setSelected(false);
 			break;
-		}	
-    	
-    	timestampingModeCheckBox.setSelected(useCreationTime);
-    	
-    	communicationBufferingCheck.setSelected(socketBufferSize > 1);
-    	commBufferSizeField.setText(Integer.toString(socketBufferSize));
-    	logFlushField.setText(Integer.toString(logFlushInterval));
-    	connPropField.setText(connPropFilePath);
+		}
+
+     	switch (rtResolution) {
+        case Globals.MILLIS_RT :
+            rtMillisRdBtn.setSelected(true);
+            break;
+        case Globals.NANO_RT:
+            rtNanosRdBtn.setSelected(true);
+            break;
+        }
+
+    	rtCreationTimeCheckBox.setSelected(useCreationTime);
     }
-    
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+
+ // Variables declaration - do not modify
     private javax.swing.JButton cancelBtn;
-    private javax.swing.JTextField commBufferSizeField;
-    private javax.swing.JLabel commBufferSizeLabel1;
-    private javax.swing.JLabel commBufferSizeLabel2;
-    private javax.swing.JLabel communicarionLabel;
-    private javax.swing.JRadioButton communicationAdapterRadio;
-    private javax.swing.JCheckBox communicationBufferingCheck;
-    private javax.swing.JRadioButton communicationDirectRadio;
-    private javax.swing.ButtonGroup communicationRadioGroup;
-    private javax.swing.JButton connPropBtn;
-    private javax.swing.JTextField connPropField;
-    private javax.swing.JLabel connPropLabel;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JTextField logFlushField;
-    private javax.swing.JLabel logFlushLabel1;
-    private javax.swing.JLabel logFlushLabel2;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JButton okBtn;
     private javax.swing.JRadioButton rtAdapterRadio;
+    private javax.swing.JCheckBox rtCheckBox;
+    private javax.swing.JCheckBox rtCreationTimeCheckBox;
     private javax.swing.JRadioButton rtEndToEndRadio;
-    private javax.swing.JLabel rtLabel;
-    private javax.swing.JRadioButton rtNoRadio;
-    private javax.swing.ButtonGroup rtRadioGroup;
-    private javax.swing.JCheckBox timestampingModeCheckBox;
-    // End of variables declaration//GEN-END:variables
-    
+    private javax.swing.JRadioButton rtMillisRdBtn;
+    private javax.swing.ButtonGroup rtModeBtnGroup;
+    private javax.swing.JLabel rtModeLbl;
+    private javax.swing.JRadioButton rtNanosRdBtn;
+    private javax.swing.JPanel rtPanel;
+    private javax.swing.ButtonGroup rtResolutionBtnGroup;
+    private javax.swing.JLabel rtResolutionLbl;
+    // End of variables declaration
+
 }

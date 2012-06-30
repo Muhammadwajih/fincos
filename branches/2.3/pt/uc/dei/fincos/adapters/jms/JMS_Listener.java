@@ -1,55 +1,55 @@
 package pt.uc.dei.fincos.adapters.jms;
 
-import java.util.HashMap;
-
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.Queue;
 
 import pt.uc.dei.fincos.adapters.OutputListener;
-import pt.uc.dei.fincos.basic.EventType;
+import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.sink.Sink;
 
+/**
+ * Listens to messages coming from one or more JMS queues.
+ *
+ * @author Marcelo R.N. Mendes
+ */
 public class JMS_Listener extends OutputListener implements MessageListener {
 
     /** Converts JMS messages to events, as represented in FINCoS. */
     private final Converter msgConverter;
 
-    /** Maps {@link Destination} names into event types. */
-    private final HashMap<String, EventType> evtTypes;
 
     /**
      *
-     * @param lsnrID                an alias for this listener
-     * @param rtMeasurementMode     response time measurement (either in milliseconds or nanoseconds)
-     * @param logFlushInterval      frequency of log flushes to disk, in milliseconds
-     * @param sinkInstance          reference to the Sink instance to which events must be forwarded
-     * @param msgConverter          converts JMS messages to events, as represented in FINCoS
-     * @param listenedTypes         a list of event types this listener listens to
+     * @param lsnrID        an alias for this listener
+     * @param rtMode        response time measurement mode (either END-TO-END or ADAPTER)
+     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param sinkInstance  reference to the Sink instance to which events must be forwarded
+     * @param msgConverter  converts JMS messages to events, as represented in FINCoS
      */
-    public JMS_Listener(String lsnrID, int rtMeasurementMode, int logFlushInterval, Sink sinkInstance,
-            Converter msgConverter, EventType[] listenedTypes) {
-        super(lsnrID, rtMeasurementMode, logFlushInterval, sinkInstance);
+    public JMS_Listener(String lsnrID, int rtMode, int rtResolution, Sink sinkInstance,
+            Converter msgConverter) {
+        super(lsnrID, rtMode, rtResolution, sinkInstance);
         this.msgConverter = msgConverter;
-        this.evtTypes = new HashMap<String, EventType>();
-        for (EventType eventType : listenedTypes) {
-            this.evtTypes.put(eventType.getName(), eventType);
-        }
     }
 
     @Override
     public void onMessage(Message msg) {
+        long timestamp = -1;
+        if (this.rtMode == Globals.ADAPTER_RT) {
+            if (this.rtResolution == Globals.MILLIS_RT) {
+                timestamp = System.currentTimeMillis();
+            } else if (this.rtResolution == Globals.NANO_RT) {
+                timestamp = System.nanoTime();
+            }
+        }
+
         try {
             String src = ((Queue) msg.getJMSDestination()).getQueueName();
-            EventType type = this.evtTypes.get(src);
-            if (type == null) {
-                throw new RuntimeException("Received a message of unrecognized type: \"" + src + "\"");
-            }
             // Converts and forwards the event message to a Sink
-         //   super.onOutput(msgConverter.toEvent(msg, type).getValues());
-        //    System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toEvent(msg, type).toCSV());
+            super.onOutput(msgConverter.toObjectArray(msg, src, timestamp));
+            //System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toObjectArray(msg, src));
         } catch (JMSException jmsExc) {
             throw new RuntimeException(jmsExc.getMessage());
         }

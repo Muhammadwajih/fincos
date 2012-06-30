@@ -39,9 +39,9 @@ public class ThroughputEstimator {
 		this.modFactor = (int) (1 / samplingRate);
 		this.throughputWindowModel = throughputWindowModel;
 
-		if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS) {
+		if (rtMeasurementMode == Globals.ADAPTER_RT) {
 			rtFactor = 1E6;
-		} else if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS
+		} else if (rtMeasurementMode == Globals.END_TO_END_RT
 		        || rtMeasurementMode == Globals.NO_RT) {
 			rtFactor = 1.0;
 		}

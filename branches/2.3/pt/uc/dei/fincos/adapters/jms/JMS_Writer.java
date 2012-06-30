@@ -10,14 +10,17 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.naming.NamingException;
 
+import pt.uc.dei.fincos.adapters.InputAdapter;
 import pt.uc.dei.fincos.basic.Event;
 
 /**
  * Adapter used to publish messages into one or more JMS queues.
  * By default, NON-PERSISTENT messages are used, as to minimize
  * the impact on the JMS server.
+ *
+ * @author Marcelo R.N. Mendes
  */
-public class JMS_Writer extends JMS_Adapter {
+public class JMS_Writer extends JMS_Adapter implements InputAdapter {
 
     /** Maps input channel names into JMS senders/destinations. */
     private HashMap<String, MessageProducer> senders;
@@ -28,12 +31,15 @@ public class JMS_Writer extends JMS_Adapter {
      * @param connProps         connection properties
      * @param connFactoryName   name of the connection factory at the JNDI server
      * @param inputChannels     a list of JMS destinations into which this adapter will insert messages
+     * @param rtMode            either END-TO-END or ADAPTER
+     * @param rtResolution      either Milliseconds or Nanoseconds
      *
      * @throws NamingException  if a naming exception is encountered
      * @throws JMSException     if an error occurs during connection with JMS provider
      */
-    public JMS_Writer(Properties connProps, String connFactoryName, String[] inputChannels) throws NamingException, JMSException {
-        this(connProps, connFactoryName, inputChannels, new MapMessageConverter());
+    public JMS_Writer(Properties connProps, String connFactoryName, String[] inputChannels,
+            int rtMode, int rtResolution) throws NamingException, JMSException {
+        this(connProps, connFactoryName, inputChannels, new MapMessageConverter(rtMode, rtResolution));
     }
 
     /**

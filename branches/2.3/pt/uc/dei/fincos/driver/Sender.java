@@ -2,51 +2,40 @@ package pt.uc.dei.fincos.driver;
 
 import java.io.IOException;
 
-import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
+import pt.uc.dei.fincos.adapters.InputAdapter;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
-import pt.uc.dei.fincos.communication.ClientSocketInterface;
 import pt.uc.dei.fincos.controller.Logger;
 import pt.uc.dei.fincos.data.DataFileReader;
 
 
 /**
- * Sends Events to CEP engines or FINCoS Adapter.
+ * Sends events to the system under test.
  *
  * @author Marcelo R.N. Mendes
  * @see Driver
  *
  */
 public class Sender extends Thread {
+    /** Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider). */
+    private InputAdapter adapter;
 
-    /** How events will be sent to CEP engines (directly through their API or through FINCoS Adapter). */
-    private final int communicationMode;
+    /** How latency is computed: end-to-end (from Drivers to Sink) or inside adapters */
+    private final int rtMode;
 
-    /** Connection handle with FINCoS Adapter. */
-    private ClientSocketInterface server;
+    /** Resolution of the timestamps: milliseconds or nanoseconds. */
+    private final int rtResolution;
 
-    /** Connection handle with FINCoS Performance Monitor. */
-    private ClientSocketInterface perfmon;
-
-    /** Direct interface with CEP engine. */
-    private CEPEngineInterface cepEngineInterface;
-
-    /** How latency is computed (end-to-end, in milliseconds, or inside FINCoS Adapter, in nanoseconds). */
-    private int rtMeasurementMode;
-
-    /** Use event's scheduled time instead of sending time as its timestamp. */
+    /** Use events' *scheduled time* instead of *sending time* for response time measurement. */
     private boolean useScheduledTime;
 
-    /** Indicates if tuple in the external data file (if used) contain already a timestamp. */
+    /** Indicates if tuples in the external data file (if used) contain already a timestamp. */
     private final boolean containsTimestamps;
 
     /** The time unit of the timestamps in the external data file (if used). */
     private int timestampUnit;
-
-    /** Sampling rate used when sending event to FINCoS Performance Monitor. */
-    private final int perfmonSamplMod;
 
     /** Number of times the external data file must be read/submitted. */
     private final int fileRepeatCount;
@@ -79,372 +68,80 @@ public class Sender extends Thread {
     private double factor = 1.0;
 
     /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument
-     * Events' data is generated in runtime. [ADAPTER_CSV communication].
+     * Constructor #1: event submission is controlled by the Scheduler passed as argument;
+     *                 events' data is generated in runtime.
      *
-     * @param server                A socket interface to the server/adapter
-     * @param perfmon               A socket interface to FINCoS Performance Monitor
+     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
      * @param scheduler             Schedules event submission according to a given rate
      * @param dataGen               Events' data generator
      * @param group                 A thread group
      * @param id                    A thread ID
-     * @param perfmonSamplingRate   The percentage of events to forward to FINCoS PerfMon
      * @param loopCount             Number of repetitions of the workload
+     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
      */
-    public Sender(ClientSocketInterface server, ClientSocketInterface perfmon,
-            Scheduler scheduler, DataGen dataGen, ThreadGroup group, String id,
-            double perfmonSamplingRate, int loopCount) {
+    public Sender(InputAdapter adapter, Scheduler scheduler, DataGen dataGen,
+            ThreadGroup group, String id, int loopCount, int rtMode, int rtResolution) {
         super(group, id);
-        this.communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
-        this.server = server;
-        this.perfmon = perfmon;
+        this.adapter = adapter;
         this.scheduler = scheduler;
         this.datagen = dataGen;
         this.containsTimestamps = false; // No data file -> No timestamps
         this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
         this.fileRepeatCount = loopCount;
+        this.rtMode = rtMode;
+        this.rtResolution = rtResolution;
     }
 
     /**
-     * Constructor for sending events only to FINCoS Adapter (no online performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is generated in runtime. [ADAPTER_CSV communication].
+     * Constructor #2: event submission is controlled by the Scheduler passed as argument;
+     *                 events' data is loaded from data file.
      *
-     * @param server        A socket interface to the server/adapter
-     * @param scheduler     Schedules event submission according to a given rate
-     * @param datagen       Events' data generator
-     * @param group         A thread group
-     * @param id            A thread ID
-     * @param loopCount     Number of repetitions of the workload
-     */
-    public Sender(ClientSocketInterface server, Scheduler scheduler, DataGen datagen,
-            ThreadGroup group, String id, int loopCount) {
-        this(server, null, scheduler, datagen, group, id, 1, loopCount);
-    }
-
-    /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is loaded from data file. [ADAPTER_CSV communication]
-     *
-     * @param server                A socket interface to the server/adapter
-     * @param perfmon               A socket interface to an instance of FINCoS Perfmon
-     * @param scheduler             Schedules event submission according to a given rate
-     * @param dataReader            Reads data sets from disk
-     * @param containsTimestamps    Indicates if the events in the data file are associated to timestamps
-     * @param group                 A thread group
-     * @param id                    A thread ID
-     * @param perfmonSamplingRate   The percentage of events to forward to a FINCoS Perfmon
-     * @param loopCount             Number of repetitions of the workload
-     */
-    public Sender(ClientSocketInterface server, ClientSocketInterface perfmon,
-            Scheduler scheduler, DataFileReader dataReader, boolean containsTimestamps,
-            ThreadGroup group, String id, double perfmonSamplingRate, int loopCount)
-    {
-        super(group, id);
-        this.communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
-        this.server = server;
-        this.perfmon = perfmon;
-        this.scheduler = scheduler;
-        this.dataFileReader = dataReader;
-        this.containsTimestamps = containsTimestamps;
-        this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
-        this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     * Constructor for sending events only to FINCoS Adapter (no performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is loaded from data file. [ADAPTER_CSV communication]
-     *
-     * @param server                A socket interface to the server/adapter
+     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
      * @param scheduler             Schedules event submission according to a given rate
      * @param dataReader            Reads data sets from disk
      * @param containsTimestamps    Indicates if the events in the data file are associated to timestamps
      * @param group                 A thread group
      * @param id                    A thread ID
      * @param loopCount             Number of repetitions of the workload
+     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
      */
-    public Sender(ClientSocketInterface server, Scheduler scheduler, DataFileReader dataReader,
-            boolean containsTimestamps, ThreadGroup group, String id, int loopCount) {
-        this(server, null, scheduler, dataReader, containsTimestamps, group, id, 1, loopCount);
-    }
-
-    /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument.
-     * [ADAPTER_CSV communication].
-     *
-     * @param server                 A socket interface to the server/adapter
-     * @param perfmon                A socket interface to FINCoS PerfMon
-     * @param scheduler              Schedules event submission according to a given rate
-     * @param dataReader             Reads data sets from disk
-     * @param containsTimestamps     Indicates if the events in the data file are associated to timestamps
-     * @param perfmonSamplingRate    The percentage of events to forward to FINCoS PerfMon
-     * @param loopCount              Number of repetitions of the workload
-     */
-    public Sender(ClientSocketInterface server, ClientSocketInterface perfmon, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps, double perfmonSamplingRate,
-            int loopCount) {
-        this.communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
-        this.server = server;
-        this.perfmon = perfmon;
+    public Sender(InputAdapter adapter, Scheduler scheduler, DataFileReader dataReader,
+            boolean containsTimestamps, ThreadGroup group, String id,
+            int loopCount, int rtMode, int rtResolution) {
+        super(group, id);
+        this.adapter = adapter;
         this.scheduler = scheduler;
         this.dataFileReader = dataReader;
         this.containsTimestamps = containsTimestamps;
         this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
         this.fileRepeatCount = loopCount;
+        this.rtMode = rtMode;
+        this.rtResolution = rtResolution;
     }
 
     /**
-     * Constructor for sending events only to FINCoS Adapter (no online performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * [ADAPTER_CSV communication].
+     * Constructor #3: event submission is controlled by timestamps in a datafile.
      *
-     * @param server                A socket interface to the server/adapter
-     * @param scheduler             Schedules event submission according to a given rate
-     * @param dataReader            Reads data sets from disk
-     * @param containsTimestamps    Indicates if the events in the data file are associated to timestamps
-     * @param loopCount             Number of repetitions of the workload
-     */
-    public Sender(ClientSocketInterface server, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps, int loopCount) {
-        this(server, null, scheduler, dataReader, containsTimestamps, 1, loopCount);
-    }
-
-    /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by timestamps in the datafile.
-     * [ADAPTER_CSV communication].
-     *
-     * @param server                A socket interface to the server/adapter
-     * @param perfmon               A socket interface to FINCoS PerfMon
-     * @param dataReader            Reads data sets from disk
+     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
+     * @param dataReader            Reads events from a data file at disk
      * @param timestampUnit         Time Unit of timestamps in data file
-     * @param perfmonSamplingRate   The percentage of events to forward to FINCoS PerfMon
      * @param loopCount             Number of repetitions of the workload
+     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
      */
-    public Sender(ClientSocketInterface server, ClientSocketInterface perfmon,
-            DataFileReader dataReader, int timestampUnit, double perfmonSamplingRate,
-            int loopCount) {
-        this.communicationMode = Globals.ADAPTER_CSV_COMMUNICATION;
+    public Sender(InputAdapter adapter, DataFileReader dataReader,
+            int timestampUnit, int loopCount, int rtMode, int rtResolution) {
+        this.adapter = adapter;
         this.scheduler = null;
-        this.server = server;
-        this.perfmon = perfmon;
         this.dataFileReader = dataReader;
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
         this.containsTimestamps = true; // Event submission controlled by timestamps
         this.timestampUnit = timestampUnit;
         this.status = new Status(Step.STOPPED, 0);
         this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     * Constructor for sending events only to FINCoS Adapter (no online performance monitoring).
-     * Event submission is controlled by timestamps in the datafile.
-     * [ADAPTER_CSV communication].
-     *
-     * @param server                A socket interface to the server/adapter
-     * @param dataReader            Reads data sets from disk
-     * @param timestampUnit         Time Unit of timestamps in data file
-     * @param loopCount             Number of repetitions of the workload
-     */
-    public Sender(ClientSocketInterface server, DataFileReader dataReader, int timestampUnit, int loopCount) {
-        this(server, null, dataReader, timestampUnit, 1, loopCount);
-    }
-
-    /**
-     *
-     * Constructor for sending events to both CEP Engine and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is loaded from data file. [DIRECT_API communication].
-     *
-     * @param cepEngineInterface		A direct interface with a CEP engine using its proprietary API
-     * @param perfmon					A socket interface to an instance of FINCoS Perfmon
-     * @param scheduler					Schedules event submission according to a given rate
-     * @param dataReader				Reads data sets from disk
-     * @param containsTimestamps		Indicates if the events in the data file are associated to timestamps
-     * @param group						A thread group
-     * @param id						A thread ID
-     * @param perfmonSamplingRate	    The percentage of events to forward to a FINCoS Perfmon
-     * @param loopCount					Number of repetitions of the workloads
-     */
-    public Sender(CEPEngineInterface cepEngineInterface,
-            ClientSocketInterface perfmon, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps,
-            ThreadGroup group, String id, double perfmonSamplingRate, int loopCount) {
-        super(group, id);
-        this.communicationMode = Globals.DIRECT_API_COMMUNICATION;
-        this.cepEngineInterface = cepEngineInterface;
-        this.perfmon = perfmon;
-        this.scheduler = scheduler;
-        this.dataFileReader = dataReader;
-        this.containsTimestamps = containsTimestamps;
-        this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
-        this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     *
-     * Constructor for sending events only to CEP Engine (no online performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is loaded from data file. [DIRECT_API communication]
-     *
-     * @param cepEngineInterface	A direct interface with a CEP engine using its proprietary API
-     * @param scheduler				Schedules event submission according to a given rate
-     * @param dataReader			Reads data sets from disk
-     * @param containsTimestamps	Indicates if the events in the data file are associated to timestamps
-     * @param group					A thread group
-     * @param id					A thread ID
-     * @param loopCount				Number of repetitions of the workload
-     *
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps, ThreadGroup group,
-            String id, int loopCount) {
-        this(cepEngineInterface, null, scheduler, dataReader, containsTimestamps, group, id, 1, loopCount);
-    }
-
-    /**
-     *
-     * Constructor for sending events to both CEP Engine and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument
-     * Events' data is generated in runtime. [DIRECT_API communication]
-     *
-     * @param cepEngineInterface		A direct interface with a CEP engine using its proprietary API
-     * @param perfmon					A socket interface to FINCoS PerfMon
-     * @param scheduler					Schedules event submission according to a given rate
-     * @param dataGen					Events' data generator
-     * @param group						A thread group
-     * @param id						A thread ID
-     * @param perfmonSamplingRate	    The percentage of events to forward to FINCoS PerfMon
-     * @param loopCount					Number of repetitions of the workload
-     *
-     */
-    public Sender(CEPEngineInterface cepEngineInterface,
-            ClientSocketInterface perfmon, Scheduler scheduler, DataGen dataGen,
-            ThreadGroup group, String id,
-            double perfmonSamplingRate, int loopCount) {
-        super(group, id);
-        this.communicationMode = Globals.DIRECT_API_COMMUNICATION;
-        this.cepEngineInterface = cepEngineInterface;
-        this.perfmon = perfmon;
-        this.scheduler = scheduler;
-        this.datagen = dataGen;
-        this.containsTimestamps = false; // No data file -> No timestamps
-        this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
-        this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     *
-     * Constructor for sending events only to CEP Engine (no online performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * Events' data is generated in runtime. [DIRECT_API communication].
-     *
-     * @param cepEngineInterface	A direct interface with a CEP engine using its proprietary API
-     * @param scheduler				Schedules event submission according to a given rate
-     * @param datagen				Events' data generator
-     * @param group					A thread group
-     * @param id					A thread ID
-     * @param loopCount				Number of repetitions of the workload
-     *
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, Scheduler scheduler,
-            DataGen datagen, ThreadGroup group, String id, int loopCount) {
-        this(cepEngineInterface, null, scheduler, datagen, group, id, 1, loopCount);
-    }
-
-    /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by the Scheduler passed as argument.
-     * [DIRECT_API communication].
-     *
-     * @param cepEngineInterface		A direct interface with a CEP engine using its proprietary API
-     * @param perfmon					A socket interface to FINCoS PerfMon
-     * @param scheduler					Schedules event submission according to a given rate
-     * @param dataReader				Reads data sets from disk
-     * @param containsTimestamps		Indicates if the events in the data file are associated to timestamps
-     * @param perfmonSamplingRate	    The percentage of events to forward to FINCoS PerfMon
-     * @param loopCount					Number of repetitions of the workload
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, ClientSocketInterface perfmon, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps, double perfmonSamplingRate,
-            int loopCount) {
-        this.communicationMode = Globals.DIRECT_API_COMMUNICATION;
-        this.cepEngineInterface = cepEngineInterface;
-        this.perfmon = perfmon;
-        this.scheduler = scheduler;
-        this.dataFileReader = dataReader;
-        this.containsTimestamps = containsTimestamps;
-        this.status = new Status(Step.STOPPED, 0);
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
-        this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     * Constructor for sending events only to FINCoS Adapter (no online performance monitoring).
-     * Event submission is controlled by the Scheduler passed as argument.
-     * [DIRECT_API communication].
-     *
-     * @param cepEngineInterface	A direct interface with a CEP engine using its proprietary API
-     * @param scheduler				Schedules event submission according to a given rate
-     * @param dataReader			Reads data sets from disk
-     * @param containsTimestamps	Indicates if the events in the data file are associated to timestamps
-     * @param loopCount				Number of repetitions of the workload
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, Scheduler scheduler,
-            DataFileReader dataReader, boolean containsTimestamps, int loopCount) {
-        this(cepEngineInterface, null, scheduler, dataReader, containsTimestamps, 1, loopCount);
-    }
-
-    /**
-     * Constructor for sending events to both FINCoS Adapter and FINCoS Perfmon.
-     * Event submission is controlled by timestamps in the datafile.
-     * [DIRECT_API communication].
-     *
-     * @param cepEngineInterface		A direct interface with a CEP engine using its proprietary API
-     * @param perfmon					A socket interface to FINCoS PerfMon
-     * @param dataReader				Reads data sets from disk
-     * @param timestampUnit				Time Unit of timestamps in data file
-     * @param perfmonSamplingRate	    The percentage of events to forward to FINCoS PerfMon
-     * @param loopCount					Number of repetitions of the workload
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, ClientSocketInterface perfmon,
-            DataFileReader dataReader, int timestampUnit, double perfmonSamplingRate,
-            int loopCount) {
-        this.communicationMode = Globals.DIRECT_API_COMMUNICATION;
-        this.scheduler = null;
-        this.cepEngineInterface = cepEngineInterface;
-        this.perfmon = perfmon;
-        this.dataFileReader = dataReader;
-        this.perfmonSamplMod = (int) (1 / perfmonSamplingRate);
-        this.containsTimestamps = true; // Event submission controlled by timestamps
-        this.timestampUnit = timestampUnit;
-        this.status = new Status(Step.STOPPED, 0);
-        this.fileRepeatCount = loopCount;
-    }
-
-    /**
-     * Constructor for sending events only to FINCoS Adapter (no online performance monitoring).
-     * Event submission is controlled by timestamps in the datafile.
-     * [DIRECT_API communication].
-     *
-     * @param cepEngineInterface	A direct interface with a CEP engine using its proprietary API
-     * @param dataReader			Reads data sets from disk
-     * @param timestampUnit			Time Unit of timestamps in data file
-     * @param loopCount				Number of repetitions of the workload
-     *
-     */
-    public Sender(CEPEngineInterface cepEngineInterface, DataFileReader dataReader,
-            int timestampUnit, int loopCount) {
-        this(cepEngineInterface, null, dataReader, timestampUnit, 1, loopCount);
+        this.rtMode = rtMode;
+        this.rtResolution = rtResolution;
     }
 
     /**
@@ -525,16 +222,13 @@ public class Sender extends Thread {
 
         try {
             this.status.setStep(Step.RUNNING);
-            String csvEvent = null;
+            // String csvEvent = null;
 
             if (dataFileReader != null) {
-                csvEvent = dataFileReader.getNextCSVEvent();
+                event = dataFileReader.getNextEvent();
             } else if (datagen != null) {
                 synchronized (datagen) {
                     event = datagen.getNextEvent();
-                }
-                if (communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-                    csvEvent = event.toCSV();
                 }
             }
 
@@ -545,17 +239,13 @@ public class Sender extends Thread {
 
                 // Used when timestamping mode is based on scheduled time -----------------
                 long firstTimestamp = t0;
-                double sendTimestamp = 0;
+                long firstTimestampNano = System.nanoTime();
+                double scheduledTime = 0;
                 long t00, t11;
                 double diffSleep;
                 //------------------------------------------------------------------------
 
-                while (csvEvent != null || event != null) {
-                    // Removes event's timestamp (First field), if it exists in the data file
-                    if (containsTimestamps) {
-                        csvEvent = csvEvent.substring(csvEvent.indexOf(Globals.CSV_SEPARATOR) + 1);
-                    }
-
+                while (event != null) {
                     try {
                         /* Sleeps for a interval defined by scheduler according to event rate.
                          * The effective sleep time is adjusted to compensate for possible delays:
@@ -598,15 +288,18 @@ public class Sender extends Thread {
                             return;
                         }
 
-                        sendTimestamp = firstTimestamp + (1.0 * (expectedElapsedTime - timeInPause) / SLEEP_TIME_RESOLUTION + diffSleep);
 
-                        // Sends event to Adapter/CEP engine
-                        if (communicationMode == Globals.DIRECT_API_COMMUNICATION
-                                && datagen != null) {
-                            this.sendEvent(event, (long) sendTimestamp);
-                        } else {
-                            this.sendEvent(csvEvent, (long) sendTimestamp);
+                        if (useScheduledTime && rtMode == Globals.END_TO_END_RT) {
+                            if (rtResolution == Globals.NANO_RT) {
+                                scheduledTime = firstTimestampNano + (expectedElapsedTime - timeInPause + diffSleep);
+                            } else if (rtResolution == Globals.MILLIS_RT) {
+                                scheduledTime = firstTimestamp + (1.0 * (expectedElapsedTime - timeInPause) / SLEEP_TIME_RESOLUTION + diffSleep);
+                            }
+                            event.setTimestamp((long) scheduledTime);
                         }
+                        // Sends the event
+                        this.sendEvent(event);
+
                     } catch (Exception exc) {
                         System.err.println("Cannot send event (" + exc.getMessage() + ")");
                         exc.printStackTrace();
@@ -616,18 +309,14 @@ public class Sender extends Thread {
                     }
 
                     if (dataFileReader != null) { // read event from data file
-                        csvEvent = dataFileReader.getNextCSVEvent();
+                        event = dataFileReader.getNextEvent();
                     } else if (datagen != null)  { // generate event
                         event = datagen.getNextEvent();
-                        // if events are exchanged through FINCoS Adapter, convert to CSV
-                        if (communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-                            csvEvent = event != null ? event.toCSV() : null;
-                        }
                     }
                 }
                 if (dataFileReader != null) {
                     dataFileReader.reOpen();
-                    csvEvent = dataFileReader.getNextCSVEvent();
+                    event = dataFileReader.getNextEvent();
                 }
             }
 
@@ -666,17 +355,18 @@ public class Sender extends Thread {
 
         try {
             this.status.setStep(Step.RUNNING);
-            String event = dataFileReader.getNextCSVEvent();
+            Event event = dataFileReader.getNextEvent();
             String timestamp;
 
             // initializes lastTS variable
             if (event != null) {
-                timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
+                /*timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
                 if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
                     lastTS = Globals.DATE_TIME_FORMAT.parse(timestamp).getTime();
                 } else {
                     lastTS = Long.parseLong(timestamp);
-                }
+                }*/
+                lastTS = event.getTimestamp();
 
             } else {
                 return;
@@ -693,7 +383,7 @@ public class Sender extends Thread {
                 //------------------------------------------------------------------------
 
                 while (event != null) {
-                    timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
+                    /*timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
                     // Removes event's timestamp
                     event = event.substring(event.indexOf(Globals.CSV_SEPARATOR) + 1);
 
@@ -701,8 +391,8 @@ public class Sender extends Thread {
                         currentTS = Globals.DATE_TIME_FORMAT.parse(timestamp).getTime();
                     } else {
                         currentTS = Long.parseLong(timestamp);
-                    }
-
+                    }*/
+                    currentTS = event.getTimestamp();
 
                     try {
                         /* Sleeps for a interval between consecutive events in the data file.
@@ -741,10 +431,11 @@ public class Sender extends Thread {
                             return;
                         }
 
+                        // Sends the event
                         scheduledTime = firstTimestamp + (expectedElapsedTime - timeInPause);
+                        event.setTimestamp(scheduledTime);
+                        this.sendEvent(event);
 
-                        // Sends event to Adapter/CEP engine
-                        this.sendEvent(event, scheduledTime);
                     } catch (Exception ioe2) {
                         System.err.println("Cannot send event (" + ioe2.getMessage() + ")");
                         if (this.status.getStep() == Step.RUNNING) {
@@ -752,11 +443,11 @@ public class Sender extends Thread {
                         }
                     }
 
-                    event = dataFileReader.getNextCSVEvent();
+                    event = dataFileReader.getNextEvent();
                 }
 
                 dataFileReader.reOpen();
-                event = dataFileReader.getNextCSVEvent();
+                event = dataFileReader.getNextEvent();
             }
 
             this.status.setStep(Step.FINISHED);
@@ -775,113 +466,28 @@ public class Sender extends Thread {
         }
     }
 
-    /**
-     * Sends an event to the CEP engine (or FINCoS Adapter).
-     *
-     * @param event         the event to be sent
-     * @param timestamp     the timestamp to be assigned to the event
-     *
-     * @throws Exception
-     */
-    private void sendEvent(String event, long timestamp) throws Exception {
-        // If not use scheduled time...
-        if (!useScheduledTime) {
-            timestamp = System.currentTimeMillis(); // use send time
-        }
-
-        // Send the event to server
-        if (communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-            if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS) {
-                this.server.sendTimestampedCSVEvent(event, timestamp);
-            } else if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS
-                    || rtMeasurementMode == Globals.NO_RT) {
-                this.server.sendCSVEvent(event);
+    private void sendEvent(Event event) throws Exception {
+        // Response time measurement:
+        if (rtMode == Globals.END_TO_END_RT && !useScheduledTime) {  // Do not use scheduled time...
+            // ...use measured send time
+            long sendTime = 0;
+            if (rtResolution == Globals.MILLIS_RT) {
+                sendTime = System.currentTimeMillis();
+            } else if (rtResolution == Globals.NANO_RT) {
+                sendTime = System.nanoTime();
             }
-        } else if (communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-            if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS) {
-                this.cepEngineInterface.sendEvent(event + Globals.CSV_SEPARATOR + timestamp);
-            } else if (rtMeasurementMode == Globals.NO_RT) {
-                this.cepEngineInterface.sendEvent(event);
-            }
-        }
-
-        sentEventCount++;
-
-        if (logger != null) {
-            logger.log(event, timestamp);
-        }
-
-        try {
-            // Send the event to FINCoS Performance monitor
-            if (this.perfmon != null && sentEventCount % this.perfmonSamplMod == 0) {
-                if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS) {
-                    perfmon.sendCSVEvent(event + Globals.CSV_SEPARATOR + System.nanoTime());
-                } else if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS
-                        || rtMeasurementMode == Globals.NO_RT) {
-                    perfmon.sendTimestampedCSVEvent(event, timestamp);
-                }
-            }
-        } catch (Exception ioe1) {
-            System.err.println("Cannot send event to FINCoS PerfMon(" + ioe1.getMessage() + ")");
-        }
-    }
-
-    private void sendEvent(Event event, long timestamp) throws Exception {
-        // If not use scheduled time...
-        if (!useScheduledTime) {
-            timestamp = System.currentTimeMillis(); // use send time
+            event.setTimestamp(sendTime);
         }
 
         // Send the event to server;
-        if (communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-            String csvEvent = event.toCSV();
-            if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS) {
-                this.server.sendTimestampedCSVEvent(csvEvent, timestamp);
-            } else if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS
-                    || rtMeasurementMode == Globals.NO_RT) {
-                this.server.sendCSVEvent(csvEvent);
-            }
+        adapter.send(event);
 
-            if (logger != null) {
-                logger.log(csvEvent, timestamp);
-            }
-        } else if (communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-            if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS) {
-                event.setTimestamp(timestamp);
-                cepEngineInterface.sendEvent(event);
-            } else if (rtMeasurementMode == Globals.NO_RT) {
-                cepEngineInterface.sendEvent(event);
-            }
-
-            if (logger != null) {
-                logger.log(event.toCSV(), timestamp);
-            }
+        // Logs the sent event
+        if (logger != null) {
+            logger.log(event);
         }
 
         sentEventCount++;
-
-        try {
-            // Send the event to FINCoS PerfMon
-            if (this.perfmon != null && sentEventCount % this.perfmonSamplMod == 0) {
-                if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS) {
-                    perfmon.sendCSVEvent(event + Globals.CSV_SEPARATOR + System.nanoTime());
-                } else if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS
-                        || rtMeasurementMode == Globals.NO_RT) {
-                    perfmon.sendTimestampedCSVEvent(event.toCSV(), timestamp);
-                }
-            }
-        } catch (Exception ioe1) {
-            System.err.println("Cannot send event to FINCoS PerfMon(" + ioe1.getMessage() + ")");
-        }
-    }
-
-    /**
-     * Sets how latency is computed.
-     *
-     * @param rtMeasurementMode     Either (end-to-end, in milliseconds, or inside FINCoS Adapter, in nanoseconds)
-     */
-    public void setRTMeasurementMode(int rtMeasurementMode) {
-        this.rtMeasurementMode = rtMeasurementMode;
     }
 
     /**

@@ -21,14 +21,14 @@ import pt.uc.dei.fincos.controller.ConnectionConfig;
 public class ConnectionDetail extends ComponentDetail {
 
     ConnectionConfig oldCfg;
-    ConnectionsDialog parent;
+    Dialog parent;
 
     private JPopupMenu propsPop = new JPopupMenu();
     private JMenuItem addMenuItem = new JMenuItem("Add");
     private JMenuItem delMenuItem = new JMenuItem("Delete");
 
     /** Creates new form ConnectionDialog */
-    public ConnectionDetail(ConnectionsDialog parent, ConnectionConfig connCfg) {
+    public ConnectionDetail(Dialog parent, ConnectionConfig connCfg) {
         super(null);
         this.parent = parent;
         initComponents();
@@ -40,6 +40,7 @@ public class ConnectionDetail extends ComponentDetail {
             this.op = UPDATE;
             setTitle("Editing \"" + connCfg.alias + "\"");
             fillProperties(connCfg);
+            aliasField.setEditable(false);
         } else {
             this.op = INSERT;
             setTitle("Create new Connection");
@@ -222,9 +223,9 @@ public class ConnectionDetail extends ComponentDetail {
         okBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if ((op == INSERT && !parent.isUnique(aliasField.getName()))
+                if ((op == INSERT && !isUnique(aliasField.getName()))
                         ||
-                    (op == UPDATE && !oldCfg.alias.equals(aliasField.getText()) && !parent.isUnique(aliasField.getName()))) {
+                    (op == UPDATE && !oldCfg.alias.equals(aliasField.getText()) && !isUnique(aliasField.getName()))) {
                     JOptionPane.showMessageDialog(null, "There is already a connection named \""
                             + aliasField.getText() + "\".", "Invalid Input",
                             JOptionPane.ERROR_MESSAGE);
@@ -246,13 +247,32 @@ public class ConnectionDetail extends ComponentDetail {
                         props.put(name, value);
                     }
                     ConnectionConfig newCfg = new ConnectionConfig(alias, type, props);
-                    switch (op) {
-                    case UPDATE:
-                        parent.updateConnection(oldCfg, newCfg);
-                        break;
-                    case INSERT:
-                        parent.addConnection(newCfg);
+                    if (parent instanceof ConnectionsDialog) {
+                        switch (op) {
+                        case UPDATE:
+                            ((ConnectionsDialog) parent).updateConnection(oldCfg, newCfg);
+                            break;
+                        case INSERT:
+                            ((ConnectionsDialog) parent).addConnection(newCfg);
+                        }
+                    } else if (parent instanceof DriverDetail) {
+                        try {
+                            Controller_GUI.getInstance().addConnection(newCfg);
+                            ((DriverDetail) parent).updateConnectionsList();
+                        } catch (Exception e1) {
+                            JOptionPane.showMessageDialog(null, "Could not create connection ("
+                                    + e1.getMessage() + ").", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } else if (parent instanceof SinkDetail) {
+                        try {
+                            Controller_GUI.getInstance().addConnection(newCfg);
+                            ((SinkDetail) parent).updateConnectionsList();
+                        } catch (Exception e1) {
+                            JOptionPane.showMessageDialog(null, "Could not create connection ("
+                                    + e1.getMessage() + ").", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
                     }
+
                     dispose();
                 }
             }
@@ -307,6 +327,22 @@ public class ConnectionDetail extends ComponentDetail {
                 }
             }
         });
+    }
+
+    /**
+     * Checks unique constraint for a given connection name.
+     *
+     * @param alias     connection alias
+     * @return          <tt>true</tt> if there is no other connection in the set with the alias
+     *                  passed as argument, <tt>false</tt> otherwise.
+     */
+    protected boolean isUnique(String alias) {
+        for (ConnectionConfig c : Controller_GUI.getInstance().getConnections()) {
+            if (c.alias.equals(alias)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Variables declaration - do not modify

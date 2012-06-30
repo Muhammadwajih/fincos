@@ -7,15 +7,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Properties;
 
+import javax.jms.JMSException;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -25,491 +26,362 @@ import javax.swing.JTextArea;
 import javax.swing.Timer;
 import javax.swing.border.EtchedBorder;
 
+import pt.uc.dei.fincos.adapters.AdapterType;
 import pt.uc.dei.fincos.adapters.cep.CEPEngineFactory;
 import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
-import pt.uc.dei.fincos.basic.Event;
+import pt.uc.dei.fincos.adapters.jms.JMS_Reader;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
-import pt.uc.dei.fincos.communication.ClientSocketInterface;
-import pt.uc.dei.fincos.communication.SocketWorkerThread;
+import pt.uc.dei.fincos.controller.ConnectionConfig;
 import pt.uc.dei.fincos.controller.Logger;
 import pt.uc.dei.fincos.controller.SinkConfig;
-import pt.uc.dei.fincos.data.CSVReader;
 
+/**
+ * Sink application. Receives and processes results from a CEP engine.
+ *
+ * @author Marcelo R.N. Mendes
+ */
+public class Sink extends JFrame implements SinkRemoteFunctions {
+    /** Serial id. */
+    private static final long serialVersionUID = -8020918447595615618L;
 
-public class Sink extends JFrame implements SinkRemoteFunctions{
-	private static final long serialVersionUID = 5882702336468705470L;
-	
-	//========================= GUI ===================================
-	JLabel statusLabel, eventCountLabel; 	
-	JPanel statusPanel;
-	JTextArea infoArea;	
-	//=================================================================
-	
-	private ServerSocket incomingEventsSocket; //Used to receive events from FINCoS Adapter
-	private CEPEngineInterface cepEngineInterface; //Used to receive events directly from CEP engine
-	private AdapterListener workerThreads[];
-	private Logger logger;
-	
-	private String alias;	
-	private int rtMeasurementMode;
-	
-	private int logSamplMod, validSamplMod, fieldsToLog;
-	
-	private ClientSocketInterface validator;
-	
-	private Status status;	
-	
-	private long receivedEvents = 0;			
-	
-	public Sink() {
-		this("Sink");
-	}
-	
-	public Sink(String alias) {
-		super(alias);		
-		
-		this.setIconImage(Toolkit.getDefaultToolkit().getImage("imgs/sink.png"));
-		
-		this.alias = alias;
-		this.status = new Status();
-			
-		statusPanel =  new JPanel();
-		statusPanel.setLayout(null);
-        statusPanel.setPreferredSize(new Dimension(200,400));
+    /** The unique identifier of this Sink. */
+    private String alias;
+
+    /** Used to receive events directly from CEP engine. */
+    private CEPEngineInterface cepEngineInterface;
+
+    /** Used to receive events from a JMS provider. */
+    private JMS_Reader jmsInterface;
+
+    /** How this Sink receives events from CEP engines (directly through their API or through JMS messages). */
+    private AdapterType adapterType;
+
+    /** Logs received events to disk. */
+    private Logger logger;
+
+    /** Which fields will be logged to disk (all or timestamps only). */
+    private int fieldsToLog;
+
+    /** Logging sampling. */
+    private int logSamplMod;
+
+    /** Response time measurement mode (either END-TO-END or ADAPTER). */
+    protected int rtMode;
+
+    /** Response time measurement resolution (either Milliseconds or Nanoseconds). */
+    protected int rtResolution;
+
+    /** Current state of this Sink. */
+    private Status status;
+
+    /** Total number of events received so far. */
+    private long receivedEvents = 0;
+
+    //========================= GUI ===================================
+    JLabel statusLabel, eventCountLabel;
+    JPanel statusPanel;
+    JTextArea infoArea;
+    //=================================================================
+
+    /**
+     * Creates an anonymous Sink.
+     */
+    public Sink() {
+        this("Sink");
+    }
+
+    /**
+     * Creates a named Sink.
+     *
+     * @param alias     the identifier of the Sink
+     */
+    public Sink(String alias) {
+        super(alias);
+
+        this.setIconImage(Toolkit.getDefaultToolkit().getImage("imgs/sink.png"));
+
+        this.alias = alias;
+        this.status = new Status();
+
+        statusPanel =  new JPanel();
+        statusPanel.setLayout(null);
+        statusPanel.setPreferredSize(new Dimension(200, 400));
         statusPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Status"));
-        statusLabel = new JLabel();                       
+        statusLabel = new JLabel();
         eventCountLabel = new JLabel("Rcvd events: 0");
-        
-		statusPanel.add(statusLabel);		
-		statusPanel.add(eventCountLabel);
-		
-		statusLabel.setBounds(10, 10, 150, 50);
-		eventCountLabel.setBounds(20, 45, 175, 50);
-        
-		infoArea = new JTextArea(10, 30);   
+
+        statusPanel.add(statusLabel);
+        statusPanel.add(eventCountLabel);
+
+        statusLabel.setBounds(10, 10, 150, 50);
+        eventCountLabel.setBounds(20, 45, 175, 50);
+
+        infoArea = new JTextArea(10, 30);
         infoArea.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
         JScrollPane infoScroll = new JScrollPane(infoArea);
-        infoArea.setEditable(false);        
-        
-		this.getContentPane().setLayout(new BorderLayout());
-		this.getContentPane().add(statusPanel, BorderLayout.LINE_START);
-		this.getContentPane().add(infoScroll, BorderLayout.CENTER);
-		
-		this.setSize(700, 400);        
-		this.setLocationRelativeTo(null); //screen center
-		this.setResizable(false);
-		this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		this.setVisible(true);
-		
-		refreshGUI();						
-		
-		int delay = 1000/Globals.DEFAULT_GUI_REFRESH_RATE;
-		Timer guiRefresher = new Timer(delay, new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {				
-				refreshGUI();					
-			}			
-		});
-		guiRefresher.start();
-		
-		try {
-			System.out.println("Sink application started. Initializing remote interface...");
-			showInfo("Sink application started. Initializing remote interface...");
-			this.initializeRMI();
-			System.out.println("Done! Waiting for remote commands...");
-			showInfo("Done! Waiting for remote commands...");
-		} catch (Exception e) {
-			this.status.setStep(Step.ERROR);			
-			System.err.println("ERROR: Could not initialize remote interface: " + e.getMessage());
-			showInfo("ERROR: Could not initialize remote interface: " + e.getMessage());
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
-						
-			guiRefresher.stop();
-			guiRefresher = null;
-			this.dispose();
-			
-		} 
-		
-	}
-	
-	private void initializeRMI() throws RemoteException {
-		SinkRemoteFunctions stub = (SinkRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
-		Registry registry = LocateRegistry.getRegistry(Globals.DEFAULT_RMI_PORT);
-		registry.rebind(alias, stub);	
-	}
+        infoArea.setEditable(false);
 
-	public void refreshGUI() {
-		switch (this.status.getStep()) {
-		case DISCONNECTED:
-			this.statusLabel.setIcon(Globals.YELLOW_SIGN);
-			break;
-		case CONNECTED:
-		case READY:
-		case PAUSED:
-		case STOPPED:		
-			this.statusLabel.setIcon(Globals.BLUE_SIGN);
-			break;		
-		case LOADING:
-		case RUNNING: 
-			this.statusLabel.setIcon(Globals.GREEN_SIGN);
-			break;
-		case ERROR:
-			this.statusLabel.setIcon(Globals.RED_SIGN);
-			break;
-		}		
-						
-		eventCountLabel.setText("Rcvd events: " + 
-				Globals.LONG_FORMAT.format(receivedEvents));		
+        this.getContentPane().setLayout(new BorderLayout());
+        this.getContentPane().add(statusPanel, BorderLayout.LINE_START);
+        this.getContentPane().add(infoScroll, BorderLayout.CENTER);
 
-		if(this.status.getStep() == Step.READY && receivedEvents > 0)
-			this.status.setStep(Step.RUNNING);
-		
-		this.statusLabel.setText(this.status.getStep().toString());		
-		
-		statusPanel.revalidate();
-	}
-	
+        this.setSize(700, 400);
+        this.setLocationRelativeTo(null); //screen center
+        this.setResizable(false);
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        this.setVisible(true);
 
-	@Override
-	public boolean load(SinkConfig sinkCfg, 
-			int communicationMode,	int rtMeasurementMode,
-			int socketBufferSize, int logFlushInterval,
-			Properties adapterProperties) 
-	throws RemoteException, InvalidStateException, Exception {						
-		if(this.status.getStep() == Step.DISCONNECTED ||
-		   this.status.getStep() == Step.ERROR ||
-		   this.status.getStep() == Step.STOPPED) {
-			if(communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-				// Socket communication
-				try {
-					unload();
-					this.status.setStep(Step.CONNECTED);
-					incomingEventsSocket = new ServerSocket(sinkCfg.getPort());				
-					String outputStreams[] = sinkCfg.getOutputStreamList();
-					workerThreads = new AdapterListener[outputStreams.length];		
-					for (int i = 0; i < workerThreads.length; i++) {
-						workerThreads[i] = new AdapterListener("Listener for " + outputStreams[i], incomingEventsSocket);
-						workerThreads[i].start();	
-					}	
-				} catch (IOException ioe) {	
-					showInfo("Could not open server socket (" + ioe.getMessage() + ").");
-					System.err.println("Could not open server socket (" + ioe.getMessage() + ").");
-					this.status.setStep(Step.ERROR);
-					return false;
-				}
-			}
-			else if (communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-				cepEngineInterface = CEPEngineFactory.getCEPEngineInterface(adapterProperties);		
-				if(cepEngineInterface == null)		
-					throw new Exception("Unsupported CEP engine");		
-				cepEngineInterface.setRtMeasurementMode(rtMeasurementMode);
-				cepEngineInterface.setSocketBufferSize(socketBufferSize);
-				showInfo("Connecting to CEP engine...");
-				cepEngineInterface.connect();				
-				cepEngineInterface.load(sinkCfg.getOutputStreamList(), this);
-			}
-			
-			this.rtMeasurementMode = rtMeasurementMode;
-					
-			// Logging
-			if(sinkCfg.isLoggingEnabled()) {											
-				String rtResolution;
-				switch (rtMeasurementMode) {
-				case Globals.ADAPTER_RT_NANOS:
-					rtResolution = "ADAPTER_RT_NANOS";
-					break;
-				case Globals.END_TO_END_RT_MILLIS:
-					rtResolution = "END_TO_END_RT_MILLIS";
-					break;
-				default:
-					rtResolution = "NO_RT";				
-				}
-				
-				try {
-					String logHeader = "FINCoS Sink Log File."+
-					 "\n Sink Alias: " + sinkCfg.getAlias()+
-					 "\n Sink Address: " + sinkCfg.getAddress().getHostAddress()+
-					 "\n Server Address: " + sinkCfg.getServerAddress().getHostAddress()+
-					 "\n Start time: " + new Date()+
-					 "\n Response Time Resolution: " + rtResolution;
-					logger = new Logger(Globals.APP_PATH+"log"+File.separator+sinkCfg.getAlias()+".log", 
-										logHeader, logFlushInterval, sinkCfg.getLoggingSamplingRate(),
-										sinkCfg.getFieldsToLog());	
-					logSamplMod = (int) (1/sinkCfg.getLoggingSamplingRate());
-					fieldsToLog = sinkCfg.getFieldsToLog();
-				} catch (IOException ioe2) {
-					System.err.println("Could not open logger (" + ioe2.getMessage() + ").");
-					showInfo("Could not open logger (" + ioe2.getMessage() + ").");
-					this.status.setStep(Step.ERROR);
-					return false;
-				}
-			}
-			
-			// Validation
-			if(sinkCfg.isValidationEnabled()) {
-				this.validSamplMod = (int) (1/sinkCfg.getValidationSamplingRate());				
-				
-				// Tries to connect to validator
-				if(validator != null) {
-					try {
-						validator.disconnect();
-						validator = null;
-					} catch (IOException ioe3) {					
-						System.err.println("Could not disconnect from validator. (" +ioe3.getMessage() +")");
-						showInfo("Could not disconnect from validator. (" +ioe3.getMessage() +")");
-						this.status.setStep(Step.ERROR);					
-					}
-				}
-				try {				
-					showInfo("Trying to establish connection to validator at " + sinkCfg.getValidatorAddress().getHostAddress() + ":" + sinkCfg.getValidatorPort() + "...");					
-					this.validator = // * communication with FINCoS Perfmon has no buffering
-						new ClientSocketInterface(sinkCfg.getValidatorAddress(), sinkCfg.getValidatorPort(),1);					
-					showInfo("Done!");
-				} catch (UnknownHostException e) {					
-					showInfo("ERROR: Cannot connect to specified validator: Unknown host.");
-					this.status.setStep(Step.ERROR);
-					return false;
-				} catch (IOException e) {					
-					showInfo("ERROR: Cannot connect to specified validator. (" + e.getMessage() + ").");
-					this.status.setStep(Step.ERROR);
-					return false;
-				}
-			}								
-			
-			this.status.setStep(Step.READY);
-			showInfo(alias+" has been successfully loaded.");
-			return true;
-		}
-		else {
-			throw new InvalidStateException("Could not load sink. Sink has already been loaded.");
-		}			
-	}
-	
+        refreshGUI();
 
-	public void unload() {
-		if(workerThreads != null) {
-			for (AdapterListener worker : workerThreads) {
-				worker.close();
-				worker = null;
-			}
-			workerThreads = null;	
-		}
-		
-		if(this.incomingEventsSocket != null) {
-			try {
-				this.incomingEventsSocket.close();
-			} catch (IOException e) {
-				System.err.println("Exception while closing server socket (" + e.getMessage() + ").");
-			}
-			this.incomingEventsSocket = null;
-		}
-		
-		if(this.cepEngineInterface != null) {
-			cepEngineInterface.disconnect();
-			this.cepEngineInterface = null;
-		}
-		
-		if(this.logger != null) {
-			this.logger.close();
-			this.logger = null;				
-		}	
-		
-		if(this.validator != null) {
-			try {
-				validator.disconnect();
-				validator = null;
-			} catch (IOException e) {
-				System.err.println("Exception while disconnecting from Validator.");
-			}
-		}
-				
-		this.status.setStep(Step.STOPPED);
-		showInfo("Sink has been stopped.");
-		receivedEvents = 0;
-	}
+        int delay = 1000 / Globals.DEFAULT_GUI_REFRESH_RATE;
+        Timer guiRefresher = new Timer(delay, new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refreshGUI();
+            }
+        });
+        guiRefresher.start();
 
-	
-	public void showInfo(String msg) {
-		Date now = new Date();		
-		infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n" );
-		infoArea.setCaretPosition(infoArea.getDocument().getLength());
-	}
-	
-	private String toCSV(Object event[]) {
-		StringBuilder sb = new StringBuilder("type:");		
-		sb.append(event[0]);
-		
-		for (int i = 1; i < event.length; i++) {
-			sb.append(Globals.CSV_SEPARATOR);
-			sb.append(event[i]);	
-		}
-		
-		return sb.toString();
-	}
-	
-	public void processOutputEvent(Object event[]) {
-		long timestampMillis = System.currentTimeMillis();
-		long receivedCount=0;
-		synchronized (this) {
-			receivedEvents++;
-			receivedCount = receivedEvents;
-		}
-				
-		
-		try {			
-			// Log event, if configured to
-			if(logger != null && receivedCount%logSamplMod == 0) {	
-				if(fieldsToLog == Globals.LOG_ALL_FIELDS) {
-					switch (rtMeasurementMode) {
-					// event already contains times in nanos; only adds timestamp in millis
-					case Globals.ADAPTER_RT_NANOS:						
-						logger.writeRecord(toCSV(event), timestampMillis);  
-						break;
-					// event already contains time of causer event in millis (adds timestamp in millis)
-					case Globals.END_TO_END_RT_MILLIS: 
-						logger.writeRecord(toCSV(event), timestampMillis);
-						break;
-					// event does not contain any times; only adds timestamp in millis
-					case Globals.NO_RT:  
-						logger.writeRecord(toCSV(event), timestampMillis);
-					}				
-				}					
-				else if(fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {					
-					String eventType = "type:"+event[0];					
-					switch (rtMeasurementMode) {
-					// event already contains time of causer event in millis (adds timestamp and arrival time of event in millis)
-					case Globals.END_TO_END_RT_MILLIS: 								
-						Long causerEmissionTimeMillis = (Long) event[event.length-1];									
-						logger.writeRecord(eventType+Globals.CSV_SEPARATOR+causerEmissionTimeMillis, 
-										   timestampMillis);						
-					break;
-					// event does not contain any times; only adds timestamp in millis
-					case Globals.NO_RT: 
-						logger.writeRecord(eventType, timestampMillis);
-					}														
-				}									
-			}			
-			
-			// Send the event to validator
-			if(validator != null) {
-				if(receivedCount%validSamplMod == 0) {
-					if(rtMeasurementMode == Globals.ADAPTER_RT_NANOS)
-						System.err.println("incompatibility");
-					else if(rtMeasurementMode == Globals.END_TO_END_RT_MILLIS ||
-							rtMeasurementMode == Globals.NO_RT)
-						validator.sendTimestampedCSVEvent(toCSV(event), timestampMillis);
-				}					
-			}
-		} catch (IOException ioe) {
-			System.err.println("Error while processing event \"" + event + 
-					"\" (" + ioe.getMessage() +").");
-		}		
-	}
-	
-	
-	
-	/**
-	 * Processes an event received from the CEP engine (or FINCoS Adapter)
-	 * 
-	 * @param event
-	 * @throws Exception
-	 */
-	public void processOutputEvent(String event) {		
-		long timestampMillis = System.currentTimeMillis();
-		long receivedCount=0;
-		synchronized (this) {
-			receivedEvents++;
-			receivedCount = receivedEvents;
-		}
-				
-		
-		try {
-			// Log event, if configured to
-			if(logger != null && receivedCount%logSamplMod == 0) {	
-				if(fieldsToLog == Globals.LOG_ALL_FIELDS) {
-					switch (rtMeasurementMode) {
-					// event already contains times in nanos; only adds timestamp in millis
-					case Globals.ADAPTER_RT_NANOS:						
-						logger.writeRecord(event, timestampMillis);  
-						break;
-					// event already contains time of causer event in millis (adds timestamp in millis)
-					case Globals.END_TO_END_RT_MILLIS: 
-						logger.writeRecord(event, timestampMillis);
-						break;
-					// event does not contain any times; only adds timestamp in millis
-					case Globals.NO_RT:  
-						logger.writeRecord(event, timestampMillis);
-					}				
-				}					
-				else if(fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-					String eventSplit[] = CSVReader.split(event, Globals.CSV_SEPARATOR);
-					String eventType = eventSplit[0];
-					switch (rtMeasurementMode) {
-					// event already contains times in nanos; only adds timestamp in millis
-					case Globals.ADAPTER_RT_NANOS:												
-						String causerEmissionTimeNano = eventSplit[eventSplit.length-2];
-						String arrivalTimeNanos = eventSplit[eventSplit.length-1];						
-						logger.writeRecord( eventType+Globals.CSV_SEPARATOR+
-											causerEmissionTimeNano+Globals.CSV_SEPARATOR+
-											arrivalTimeNanos, timestampMillis);  
-						break;
-					// event already contains time of causer event in millis (adds timestamp and arrival time of event in millis)
-					case Globals.END_TO_END_RT_MILLIS: 						
-						String causerEmissionTimeMillis = eventSplit[eventSplit.length-1];									
-						logger.writeRecord( eventType+Globals.CSV_SEPARATOR+
-											causerEmissionTimeMillis,
-											timestampMillis);						
-						break;
-					// event does not contain any times; only adds timestamp in millis
-					case Globals.NO_RT: 
-						logger.writeRecord(eventType, timestampMillis);
-					}														
-				}									
-			}			
-			
-			// Send the event to validator
-			if(validator != null) {
-				if(receivedCount%validSamplMod == 0) {
-					if(rtMeasurementMode == Globals.ADAPTER_RT_NANOS)
-						validator.sendCSVEvent(event);
-					else if(rtMeasurementMode == Globals.END_TO_END_RT_MILLIS ||
-							rtMeasurementMode == Globals.NO_RT)
-						validator.sendTimestampedCSVEvent(event, timestampMillis);
-				}					
-			}
-		} catch (IOException ioe) {
-			System.err.println("Error while processing event \"" + event + 
-					"\" (" + ioe.getMessage() +").");
-		}		
-	}
-	
-	class AdapterListener extends SocketWorkerThread{
-		
-		public AdapterListener(String threadID, ServerSocket ss) {
-			super(threadID, ss);
-		}
+        try {
+            String logMsg = "Sink application started. Initializing remote interface...";
+            System.out.println(logMsg);
+            showInfo(logMsg);
+            this.initializeRMI();
+            System.out.println("Done! Waiting for remote commands...");
+            showInfo("Done! Waiting for remote commands...");
+        } catch (Exception e) {
+            this.status.setStep(Step.ERROR);
+            String logMsg = "ERROR: Could not initialize remote interface: " + e.getMessage();
+            System.err.println(logMsg);
+            showInfo(logMsg);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
 
-		@Override
-		public void processIncomingMessage(Object o) throws Exception {
-			if(o instanceof String)
-				processOutputEvent((String)o);
-			else if (o instanceof Event) {
-				
-			}					
-		}		
-	}
-	
+            guiRefresher.stop();
+            guiRefresher = null;
+            this.dispose();
+        }
+    }
 
-	@Override
-	public Status getStatus() throws RemoteException {
-		return this.status;
-	}
+    private void initializeRMI() throws RemoteException {
+        SinkRemoteFunctions stub = (SinkRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
+        Registry registry = LocateRegistry.getRegistry(Globals.DEFAULT_RMI_PORT);
+        registry.rebind(alias, stub);
+    }
 
+    private void refreshGUI() {
+        switch (this.status.getStep()) {
+        case DISCONNECTED:
+            this.statusLabel.setIcon(Globals.YELLOW_SIGN);
+            break;
+        case CONNECTED:
+        case READY:
+        case PAUSED:
+        case STOPPED:
+            this.statusLabel.setIcon(Globals.BLUE_SIGN);
+            break;
+        case LOADING:
+        case RUNNING:
+            this.statusLabel.setIcon(Globals.GREEN_SIGN);
+            break;
+        case ERROR:
+            this.statusLabel.setIcon(Globals.RED_SIGN);
+            break;
+        }
+
+        eventCountLabel.setText("Rcvd events: " +
+                Globals.LONG_FORMAT.format(receivedEvents));
+
+        if (this.status.getStep() == Step.READY && receivedEvents > 0) {
+            this.status.setStep(Step.RUNNING);
+        }
+
+        this.statusLabel.setText(this.status.getStep().toString());
+
+        statusPanel.revalidate();
+    }
+
+
+    @Override
+    public boolean load(SinkConfig sinkCfg, int rtMode, int rtResolution)
+    throws RemoteException, InvalidStateException, Exception {
+        if (this.status.getStep() == Step.DISCONNECTED
+            || this.status.getStep() == Step.ERROR
+            || this.status.getStep() == Step.STOPPED) {
+            Properties connProps = new Properties();
+            for (Entry<String, String> e: sinkCfg.getConnection().properties.entrySet()) {
+                connProps.put(e.getKey(), e.getValue());
+            }
+            if (sinkCfg.getConnection().type == ConnectionConfig.JMS) {
+                this.adapterType = AdapterType.JMS;
+                String cfName = (String) connProps.get("cfName");
+                showInfo("Connecting to JMS Provider...");
+                HashMap<String, String[]> lsnrs = new HashMap<String, String[]>();
+                lsnrs.put("Lsnr-1", sinkCfg.getOutputStreamList());
+                this.jmsInterface = new JMS_Reader(connProps, cfName, lsnrs, rtMode, rtResolution, this);
+                showInfo("Done!");
+            } else if (sinkCfg.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
+                this.adapterType = AdapterType.CEP;
+                cepEngineInterface = CEPEngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
+                if (cepEngineInterface == null) {
+                    throw new Exception("Unsupported CEP engine");
+                }
+                showInfo("Connecting to CEP engine...");
+                cepEngineInterface.connect();
+                cepEngineInterface.load(sinkCfg.getOutputStreamList(), this);
+                showInfo("Done!");
+            }
+
+            this.rtMode = rtMode;
+            this.rtResolution = rtResolution;
+
+            // Logging
+            if (sinkCfg.isLoggingEnabled()) {
+                String rtModeStr;
+                switch (rtMode) {
+                case Globals.END_TO_END_RT:
+                    rtModeStr = "END_TO_END";
+                    break;
+                case Globals.ADAPTER_RT:
+                    rtModeStr = "ADAPTER";
+                    break;
+                default:
+                    rtModeStr = "NO_RT";
+                }
+                String rtResolutionStr = "";
+                switch (rtResolution) {
+                case Globals.MILLIS_RT:
+                    rtResolutionStr = "milliseconds";
+                    break;
+                case Globals.NANO_RT:
+                    rtResolutionStr = "nanoseconds";
+                    break;
+                }
+
+                try {
+                    String logHeader = "FINCoS Sink Log File."
+                        + "\n Sink Alias: " + sinkCfg.getAlias()
+                        + "\n Sink Address: " + sinkCfg.getAddress().getHostAddress()
+                        + "\n Connection: " + sinkCfg.getConnection().alias
+                        + "\n Start time: " + new Date()
+                        + "\n Response Time Mode: " + rtModeStr
+                        + "\n Response Time Resolution: " + rtResolutionStr
+                        + "\n Log Sampling rate: " + sinkCfg.getLoggingSamplingRate();
+                    logger = new Logger(Globals.APP_PATH + "log" + File.separator + sinkCfg.getAlias() + ".log",
+                                        logHeader, sinkCfg.getLogFlushInterval(), sinkCfg.getLoggingSamplingRate(),
+                                        sinkCfg.getFieldsToLog());
+                    logSamplMod = (int) (1 / sinkCfg.getLoggingSamplingRate());
+                    fieldsToLog = sinkCfg.getFieldsToLog();
+                } catch (IOException ioe2) {
+                    System.err.println("Could not open logger (" + ioe2.getMessage() + ").");
+                    showInfo("Could not open logger (" + ioe2.getMessage() + ").");
+                    this.status.setStep(Step.ERROR);
+                    return false;
+                }
+            }
+            this.status.setStep(Step.READY);
+            showInfo(alias + " has been successfully loaded.");
+            return true;
+        } else {
+            throw new InvalidStateException("Could not load sink. Sink has already been loaded.");
+        }
+    }
+
+
+    public void unload() {
+        if (cepEngineInterface != null) {
+            cepEngineInterface.disconnect();
+            cepEngineInterface = null;
+        }
+        if (jmsInterface != null) {
+            try {
+                jmsInterface.disconnect();
+            } catch (JMSException e) {
+                showInfo("WARN: Error while disconnecting from JMS provider.");
+            }
+            jmsInterface = null;
+        }
+        if (this.logger != null) {
+            this.logger.close();
+            this.logger = null;
+        }
+
+        this.status.setStep(Step.STOPPED);
+        showInfo("Sink has been stopped.");
+        receivedEvents = 0;
+    }
+
+
+    private void showInfo(String msg) {
+        Date now = new Date();
+        infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
+        infoArea.setCaretPosition(infoArea.getDocument().getLength());
+    }
+
+    private String toCSV(Object[] event) {
+        StringBuilder sb = new StringBuilder("type:");
+        sb.append(event[0]);
+
+        for (int i = 1; i < event.length; i++) {
+            sb.append(Globals.CSV_SEPARATOR);
+            sb.append(event[i]);
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Processes an event coming from the CEP engine.
+     *
+     * @param event         the event, represented as an array of Objects
+     */
+    public void processOutputEvent(Object[] event) {
+        if (rtMode == Globals.END_TO_END_RT) {
+            if (rtResolution == Globals.MILLIS_RT) {
+                event[event.length - 1] = System.currentTimeMillis();
+            } else if (rtResolution == Globals.NANO_RT) {
+                event[event.length - 1] = System.nanoTime();
+            }
+        }
+        long receivedCount = 0;
+        synchronized (this) {
+            receivedEvents++;
+            receivedCount = receivedEvents;
+        }
+
+        try {
+            // Log event, if configured to
+            if (logger != null && receivedCount % logSamplMod == 0) {
+                long logEntryTS = System.currentTimeMillis();
+                if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
+                    logger.writeRecord(toCSV(event), logEntryTS);
+                } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("type:");
+                    sb.append(event[0]);
+                    if (rtMode != Globals.NO_RT) {
+                        sb.append(Globals.CSV_SEPARATOR);
+                        sb.append(event[event.length - 2]); // input event timestamp
+                        sb.append(Globals.CSV_SEPARATOR);
+                        sb.append(event[event.length - 1]); // answer event timestamp
+                    }
+                    logger.writeRecord(sb.toString(), logEntryTS);
+                }
+            }
+        } catch (IOException ioe) {
+            System.err.println("Error while processing event \"" + event +
+                    "\" (" + ioe.getMessage() + ").");
+        }
+    }
+
+    @Override
+    public Status getStatus() throws RemoteException {
+        return this.status;
+    }
 }

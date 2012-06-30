@@ -16,20 +16,18 @@ import pt.uc.dei.fincos.controller.ConnectionConfig;
 
 /**
  *
- * @author Marcelo
+ * @author Marcelo R.N. Mendes
  */
 public class ConnectionsDialog extends ComponentDetail {
 
     private ArrayList<ConnectionConfig> connections;
 
-    private Controller_GUI parent;
-
+    /** Flag indicating if one or more configurations have been added, updated or removed. */
     private boolean dirty = false;
 
     /** Creates new form ConnectionsDialog */
-    public ConnectionsDialog(Controller_GUI parent, ArrayList<ConnectionConfig> connections) {
+    public ConnectionsDialog(ArrayList<ConnectionConfig> connections) {
         super(null);
-        this.parent = parent;
         this.connections = new ArrayList<ConnectionConfig>();
         this.connections.addAll(connections);
         initComponents();
@@ -176,9 +174,9 @@ public class ConnectionsDialog extends ComponentDetail {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (dirty) {
-                    parent.setConnections(connections);
+                    Controller_GUI.getInstance().setConnections(connections);
                     try {
-                        parent.saveConnections();
+                        Controller_GUI.getInstance().saveConnections();
                     } catch (Exception e1) {
                         JOptionPane.showMessageDialog(null, "Error while saving connections file. Message: "
                                 + e1.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
@@ -241,29 +239,13 @@ public class ConnectionsDialog extends ComponentDetail {
     }
 
     /**
-     * Checks unique constraint for a given connection name.
-     *
-     * @param alias     connection alias
-     * @return          <tt>true</tt> if there is no other connection in the set with the alias
-     *                  passed as argument, <tt>false</tt> otherwise.
-     */
-    protected boolean isUnique(String alias) {
-        for (ConnectionConfig c : this.connections) {
-            if (c.alias.equals(alias)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
      * Add a new connection to the list of available connections.
      *
      * @param connCfg   the new connection
      */
     protected void addConnection(ConnectionConfig connCfg) {
         this.connections.add(connCfg);
-        ((DefaultTableModel)this.connectionsTable.getModel()).addRow(
+        ((DefaultTableModel) this.connectionsTable.getModel()).addRow(
                 new Object[] {connCfg.alias, connCfg.type == ConnectionConfig.CEP_ADAPTER ? "CEP Adapter" : "JMS"});
         dirty = true;
     }
