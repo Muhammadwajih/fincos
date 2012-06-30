@@ -3,7 +3,6 @@ package pt.uc.dei.fincos.adapters.cep;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -32,7 +31,6 @@ import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
-import pt.uc.dei.fincos.data.CSVReader;
 import pt.uc.dei.fincos.sink.Sink;
 
 import com.espertech.esper.client.Configuration;
@@ -83,8 +81,11 @@ public class EsperInterface extends CEPEngineInterface {
     /**
      *
      * @param connectionProperties      Parameters required for connecting with Esper
+     * @param rtMode                    response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution              response time measurement resolution (either Milliseconds or Nanoseconds)
      */
-    public EsperInterface(Properties connectionProperties) {
+    public EsperInterface(Properties connectionProperties, int rtMode, int rtResolution) {
+        super(rtMode, rtResolution);
         this.status = new Status(Step.DISCONNECTED, 0);
         this.setConnProperties(connectionProperties);
     }
@@ -224,16 +225,16 @@ public class EsperInterface extends CEPEngineInterface {
 
     @Override
     public void disconnect() {
-        this.runtime.resetStats();
         this.status.setStep(Step.DISCONNECTED);
 
         // Stops all queries with a listener attached
-        stopAllEventListeners();
+        stopAllListeners();
 
         // Stops all "internal" queries
         for (EPStatement q: unlistenedQueries) {
             q.stop();
         }
+        this.epService.destroy();
     }
 
     @Override
@@ -246,60 +247,6 @@ public class EsperInterface extends CEPEngineInterface {
         return outputStreamList != null
         ? outputStreamList
                 : new String[0];
-    }
-
-    @Override
-    public boolean load(HashMap<String, ArrayList<InetSocketAddress>> outputToSink)
-    throws Exception {
-        // This interface instance has already been loaded
-        if (this.status.getStep() == Step.READY) {
-            return true;
-        } else { // If it is not connected yet, try to connect
-            if (this.status.getStep() != Step.CONNECTED) {
-                this.connect();
-            }
-        }
-
-        if (this.status.getStep() == Step.CONNECTED) {
-            this.status.setStep(Step.LOADING);
-
-            this.outputListeners = new EsperListener[outputToSink.size()];
-
-            int i = 0;
-            ArrayList<InetSocketAddress> sinksList;
-            // TODO: Change this to a mapping Listener->List-of-streams
-            for (Entry<String, String> query : this.queryNamesAndTexts.entrySet()) {
-                sinksList = outputToSink.get(query.getKey());
-                if (sinksList != null && !sinksList.isEmpty()) {
-                    outputListeners[i] =
-                        new EsperListener("lsnr-0" + (i + 1), this.getRtMeasurementMode(),
-                                this.getSocketBufferSize(), Globals.DEFAULT_LOG_FLUSH_INTERVAL,
-                                sinksList, this.epService,
-                                query.getKey(), query.getValue(),
-                                this.streamsSchemas.get(query.getKey()),
-                                this.eventFormat);
-                    outputListeners[i].load();
-                    i++;
-                } else {
-                    System.err.println("WARNING: Query \"" + query.getKey() + "\" has no registered listener.");
-                    System.out.println("Loading query: \n"  + query.getValue());
-                    EPStatement st = epService.getEPAdministrator().createEPL(query.getValue(), query.getKey());
-                    unlistenedQueries.add(st);
-                }
-            }
-
-            try {
-                this.startAllEventListeners();
-                this.status.setStep(Step.READY);
-            } catch (Exception e) {
-                throw new Exception("Could not load event listener (" + e.getMessage() + ").");
-            }
-
-
-            return true;
-        } else {
-            return false;
-        }
     }
 
     @Override
@@ -322,15 +269,15 @@ public class EsperInterface extends CEPEngineInterface {
                 // TODO: Change this to a mapping Listener->List-of-streams
                 for (int i = 0; i < outputStreams.length; i++) {
                     System.out.println("Listening to "  + outputStreams[i]);
-                    outputListeners[i] = new EsperListener("lsnr-0" + (i + 1), this.getRtMeasurementMode(),
-                            Globals.DEFAULT_LOG_FLUSH_INTERVAL, sinkInstance, this.epService,
+                    outputListeners[i] = new EsperListener("lsnr-0" + (i + 1),
+                            rtMode, rtResolution, sinkInstance, this.epService,
                             outputStreams[i], queryNamesAndTexts.get(outputStreams[i]),
                             this.streamsSchemas.get(outputStreams[i]), this.eventFormat);
                     outputListeners[i].load();
                 }
 
                 try {
-                    this.startAllEventListeners();
+                    this.startAllListeners();
                 } catch (Exception e) {
                     throw new Exception("Could not load event listener (" + e.getMessage() + ").");
                 }
@@ -344,18 +291,7 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     @Override
-    public void sendEvent(String e) throws Exception {
-        if (this.status.getStep() == Step.READY) {
-            if (this.eventFormat == POJO_FORMAT) {
-                sendPOJOEvent(e);
-            } else {
-                sendMapEvent(e);
-            }
-        }
-    }
-
-    @Override
-    public void sendEvent(Event e) throws Exception {
+    public void send(Event e) throws Exception {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
             if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(e);
@@ -367,160 +303,60 @@ public class EsperInterface extends CEPEngineInterface {
 
     /**
      * Send a Map event to Esper.
-     * Event record is initially represented a CSV String
-     * and it is converted to a Map format before sending to Esper.
-     *
-     * @param event
-     */
-    private void sendMapEvent(String event) {
-        Map<String, Object> mapEvent = new HashMap<String, Object>();
-        int i = 1;
-        String timestampFieldName = "";
-        String[] eventPayload = CSVReader.split(event, Globals.CSV_SEPARATOR);
-        String eventTypeName = eventPayload[0].substring(5);
-        LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
-        try {
-            if (eventSchema != null) {
-                for (Entry <String, String> field: eventSchema.entrySet()) {
-                    if (field.getValue().equals("int")) {
-                        mapEvent.put(field.getKey(), Integer.parseInt(eventPayload[i]));
-                    } else if (field.getValue().equals("long")) {
-                        mapEvent.put(field.getKey(), Long.parseLong(eventPayload[i]));
-                    } else if (field.getValue().equals("string")) {
-                        mapEvent.put(field.getKey(), eventPayload[i]);
-                    } else if (field.getValue().equals("double")) {
-                        mapEvent.put(field.getKey(), Double.parseDouble(eventPayload[i]));
-                    } else if (field.getValue().equals("float")) {
-                        mapEvent.put(field.getKey(), Float.parseFloat(eventPayload[i]));
-                    }
-
-                    i++;
-                    timestampFieldName = field.getKey();
-                }
-
-                // If response time is measured at Adapter, add timestamp immediately before sending event to Esper
-                if (this.getRtMeasurementMode() == Globals.ADAPTER_RT_NANOS) {
-                    /* "event" already contains a timestamp at its last field (timestampFieldName)
-					   added before calling sendEvent. Replaced here for removing the time spent
-					   spent in format conversion from response time .
-                     */
-                    long timestamp = System.nanoTime();
-                    mapEvent.put(timestampFieldName, timestamp);
-                }
-                /*System.out.println("Received event: [" + e + "] from Driver. Sending" +
-						event.toString()+ " to Esper" + " at " +  new Date(System.currentTimeMillis()));*/
-                synchronized (runtime) {
-                    runtime.sendEvent(mapEvent, eventTypeName);
-                }
-            } else {
-                System.err.println("Unknown event type \"" + eventTypeName + "\"." + "It is not possible to send event.");
-            }
-        } catch (ArrayIndexOutOfBoundsException arrExc) {
-            System.err.println("ERROR: Number of fields in event \"" + event + "\" ("
-                    + (eventPayload.length - 1) + ") does not match schema of event type \""
-                    + eventTypeName + "\" (" + eventSchema.size() + ").");
-        }
-    }
-
-    /**
-     * Send a POJO event to Esper.
-     * Event record is initially represented as a CSV String
-     * and it is converted to a Plain Java Object before sending to Esper.
-     *
-     * @param event
-     */
-    private void sendPOJOEvent(String event) {
-        String[] eventPayload = CSVReader.split(event, Globals.CSV_SEPARATOR);
-        String eventTypeName = eventPayload[0].substring(5);
-        try {
-            Class<?> eventSchema = Class.forName(eventTypeName);
-            Field[] eventFields = eventSchema.getDeclaredFields();
-            Object pojoEvent = eventSchema.newInstance();
-
-            if (eventFields.length != eventPayload.length - 1) {
-                System.err.println("ERROR: Number of fields in event \"" + event + "\" ("
-                        + (eventPayload.length - 1) + ") does not match schema of event type \""
-                        + eventTypeName + "\" (" + eventFields.length + ").");
-                return;
-            }
-
-            // Fill object attributes with event data
-            Field f;
-            for (int j = 0; j < eventFields.length; j++) {
-                f = eventFields[j];
-                if (f.getType() == int.class) {
-                    f.setInt(pojoEvent, Integer.parseInt(eventPayload[j + 1]));
-                } else if (f.getType() == long.class) {
-                    f.setLong(pojoEvent, Long.parseLong(eventPayload[j + 1]));
-                } else if (f.getType() == String.class) {
-                    f.set(pojoEvent, eventPayload[j + 1]);
-                } else if (f.getType() == double.class) {
-                    f.setDouble(pojoEvent, Double.parseDouble(eventPayload[j + 1]));
-                } else if (f.getType() == float.class) {
-                    f.setFloat(pojoEvent, Float.parseFloat(eventPayload[j + 1]));
-                }
-            }
-
-            // If response time is measured at Adapter, add timestamp immediately before sending event to Esper
-            if (this.getRtMeasurementMode() == Globals.ADAPTER_RT_NANOS) {
-                /* "event" already contains a timestamp at its last field (eventFields[eventFields.length-1])
-				   added before calling sendEvent. Replaced here for removing the time
-				   spent in format conversion from response time.*/
-
-                long timestamp = System.nanoTime();
-                eventFields[eventFields.length - 1].setLong(pojoEvent, timestamp);
-            }
-
-            synchronized (runtime) {
-                runtime.sendEvent(pojoEvent);
-            }
-
-        } catch (ClassNotFoundException cnfe) {
-            System.err.println("Unknown event type \"" + eventTypeName + "\"."
-                    + "It is not possible to send event.");
-            return;
-        } catch (Exception e) {
-            System.err.println("Unexpected exception: " + e.getMessage()
-                    + ". It is not possible to send event.");
-            e.printStackTrace();
-            return;
-        }
-    }
-
-    /**
-     * Send a Map event to Esper.
      * Event record is initially represented using the FINCoS internal
      * format and it is converted to a Map format before sending to Esper.
      *
      * @param event
      */
     private void sendMapEvent(Event event) {
-        Map<String, Object> mapEvent = new HashMap<String, Object>();
-        int i = 0;
         String eventTypeName = event.getType().getName();
         LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
-        try {
-            if (eventSchema != null) {
-                for (Entry <String, String> field: eventSchema.entrySet()) {
-                    // If response time is measured and this is the last field, assign timestamp
-                    if (this.getRtMeasurementMode() == Globals.END_TO_END_RT_MILLIS
-                            && i == eventSchema.size() - 1) {
+
+        if (eventSchema != null) {
+
+            int fieldCount = this.rtMode != Globals.NO_RT
+                                  ? event.getType().getAttributeCount() + 1
+                                  : event.getType().getAttributeCount();
+
+            if (eventSchema.size() != fieldCount) {
+                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (fieldCount)
+                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
+                        + eventSchema.size() + ").");
+                return;
+            }
+
+            Map<String, Object> mapEvent = new HashMap<String, Object>();
+            int i = 0;
+
+            for (Entry <String, String> field: eventSchema.entrySet()) {
+                if (i == eventSchema.size() - 1) { // Timestamp field (last one, if there is)
+                    if (this.rtMode == Globals.ADAPTER_RT) {
+                        /* Assigns a timestamp to the event just after conversion
+                              (i.e., just before sending the event to the target system) */
+                        long timestamp = 0;
+                        if (rtResolution == Globals.MILLIS_RT) {
+                            timestamp = System.currentTimeMillis();
+                        } else if (rtResolution == Globals.NANO_RT) {
+                            timestamp = System.nanoTime();
+                        }
+                        mapEvent.put(field.getKey(), timestamp);
+                    } else if (rtMode == Globals.END_TO_END_RT) {
+                        // The timestamp comes from the Driver
                         mapEvent.put(field.getKey(), event.getTimestamp());
-                    } else {
+                    } else if (rtMode == Globals.NO_RT) {
                         mapEvent.put(field.getKey(), event.getAttributeValue(i));
                     }
-                    i++;
+                } else {
+                    mapEvent.put(field.getKey(), event.getAttributeValue(i));
                 }
-                synchronized (runtime) {
-                    runtime.sendEvent(mapEvent, eventTypeName);
-                }
-            } else {
-                System.err.println("Unknown event type \"" + eventTypeName + "\"."
-                        + "It is not possible to send event.");
+                i++;
             }
-        } catch (ArrayIndexOutOfBoundsException arrExc) {
-            System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (event.getType().getAttributeCount())
-                    + ") does not match schema of event type \"" + eventTypeName + "\" (" + eventSchema.size() + ").");
+            synchronized (runtime) {
+                runtime.sendEvent(mapEvent, eventTypeName);
+            }
+        } else {
+            System.err.println("Unknown event type \"" + eventTypeName + "\"."
+                    + "It is not possible to send event.");
         }
     }
 
@@ -538,11 +374,11 @@ public class EsperInterface extends CEPEngineInterface {
             Field[] eventFields = eventSchema.getDeclaredFields();
             Object pojoEvent = eventSchema.newInstance();
 
-            int eventFieldCount = this.getRtMeasurementMode() == Globals.END_TO_END_RT_MILLIS
-            ? event.getType().getAttributeCount() + 1
-                    : event.getType().getAttributeCount();
+            int eventFieldCount = this.rtMode != Globals.NO_RT
+                                  ? event.getType().getAttributeCount() + 1
+                                  : event.getType().getAttributeCount();
 
-            if (eventFields.length != eventFieldCount) {
+            if (eventFields.length != event.getType().getAttributeCount()) {
                 System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (eventFieldCount)
                         + ") does not match schema of event type \"" + eventTypeName + "\" ("
                         + eventFields.length + ").");
@@ -555,9 +391,21 @@ public class EsperInterface extends CEPEngineInterface {
                 f = eventFields[i];
 
                 // Assigns Timestamp
-                if (this.getRtMeasurementMode() == Globals.END_TO_END_RT_MILLIS
-                        && i == eventFields.length - 1) {
-                    f.setLong(pojoEvent, event.getTimestamp());
+                if (i == eventFields.length - 1) { // timestamp field (the last one)
+                    if (this.rtMode == Globals.ADAPTER_RT) {
+                        /* Assigns a timestamp to the event just after conversion
+                          (i.e., just before sending the event to the target system) */
+                        long timestamp = 0;
+                        if (rtResolution == Globals.MILLIS_RT) {
+                            timestamp = System.currentTimeMillis();
+                        } else if (rtResolution == Globals.NANO_RT) {
+                            timestamp = System.nanoTime();
+                        }
+                        f.setLong(pojoEvent, timestamp);
+                    } else if (rtMode == Globals.END_TO_END_RT) {
+                        // The timestamp comes from the Driver
+                        f.setLong(pojoEvent, event.getTimestamp());
+                    }
                 } else {
                     if (f.getType() == int.class) {
                         f.setInt(pojoEvent, (Integer) event.getAttributeValue(i));

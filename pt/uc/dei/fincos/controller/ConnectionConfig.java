@@ -1,12 +1,18 @@
 package pt.uc.dei.fincos.controller;
 
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 
 /**
  * Encapsulates the configuration of a connection with a CEP engine or a JMS provider.
+ *
+ * @author Marcelo R.N. Mendes
  */
-public class ConnectionConfig {
+public class ConnectionConfig implements Serializable {
+    /** Serial id. */
+    private static final long serialVersionUID = -2795429110558612161L;
+
     /** A unique identifier for this connection. */
     public String alias;
 
@@ -50,18 +56,24 @@ public class ConnectionConfig {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         ConnectionConfig other = (ConnectionConfig) obj;
         if (alias == null) {
-            if (other.alias != null)
+            if (other.alias != null) {
                 return false;
-        } else if (!alias.equals(other.alias))
+            }
+        } else if (!alias.equals(other.alias)) {
             return false;
+        }
+
         return true;
     }
 

@@ -29,12 +29,14 @@ public class CEPEngineFactory {
      *
      * @param prop          A set of vendor-specific connection Properties
      *                      (must include a "Engine" property that indicates which subclass will be created)
+     * @param rtMode        response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
      * @return              A concrete subclass of {@link CEPEngineInterface}
      * @throws Exception    If there is no "Engine" property
      *
      */
-    public static CEPEngineInterface getCEPEngineInterface(Properties prop) throws Exception {
-        return getCEPEngineInterface(prop.getProperty("Engine"), prop);
+    public static CEPEngineInterface getCEPEngineInterface(Properties prop, int rtMode, int rtResolution) throws Exception {
+        return getCEPEngineInterface(prop.getProperty("engine"), prop, rtMode, rtResolution);
     }
 
     /**
@@ -44,17 +46,19 @@ public class CEPEngineFactory {
      *
      * @param engine        Indicates which subclass will be created
      * @param prop          A set of vendor-specific connection Properties
+     * @param rtMode        response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
      * @return              A concrete subclass of {@link CEPEngineInterface}
      * @throws Exception    If the engine argument is null or empty
      *
      */
-    public static CEPEngineInterface getCEPEngineInterface(String engine, Properties prop) throws Exception
-    {
+    public static CEPEngineInterface getCEPEngineInterface(String engine, Properties prop,
+            int rtMode, int rtResolution) throws Exception {
         if (engine == null || engine.isEmpty()) {
-            throw new Exception("\"Engine\" propery is missing.");
+            throw new Exception("\"Engine\" property is missing.");
         }
         if (engine.equalsIgnoreCase("Esper")) {
-            return new EsperInterface(prop);
+            return new EsperInterface(prop, rtMode, rtResolution);
         } else {
             /* !!! ADD SUPPORT FOR OTHER CEP ENGINES HERE !!! */
             throw new Exception("ERROR: Engine not supported. "

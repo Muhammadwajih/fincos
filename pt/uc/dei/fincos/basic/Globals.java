@@ -28,20 +28,20 @@ public class Globals {
     /** Port used by the components of the framework to communicate through Remote Method Invocation. */
     public static final int DEFAULT_RMI_PORT = 1099;
 
-    /** Response time is measured from Drivers to Sinks, in milliseconds. */
-    public static final int END_TO_END_RT_MILLIS = 0;
+    /** Response time is measured from Drivers to Sinks. */
+    public static final int END_TO_END_RT = 0;
 
-    /** Response time is measured inside Adapter, in nanoseconds. */
-    public static final int ADAPTER_RT_NANOS = 1;
+    /** Response time is measured inside the adapter. */
+    public static final int ADAPTER_RT = 1;
 
     /** Response time is not measured. */
     public static final int NO_RT = 2;
 
-    /** Events are sent/received to/from CEP engine through Adapters as CSV messages. */
-    public static final int ADAPTER_CSV_COMMUNICATION = 0;
+    /** Response time measurement resolution is in milliseconds. */
+    public static final int MILLIS_RT = 0;
 
-    /** Events are sent/received to/from CEP engine directly using API. */
-    public static final int DIRECT_API_COMMUNICATION = 1;
+    /** Response time measurement resolution is in milliseconds. */
+    public static final int NANO_RT = 1;
 
     /** All fields of events are logged to disk. */
     public static final int LOG_ALL_FIELDS = 0;
@@ -49,8 +49,8 @@ public class Globals {
     /** Only the timestamps of events are logged to disk. */
     public static final int LOG_ONLY_TIMESTAMPS = 1;
 
-    /** Default frequency at which log is flushed to disk, in milliseconds. */
-    public static final int DEFAULT_LOG_FLUSH_INTERVAL = 10;
+    /** Default sampling rate used when monitoring performance online. */
+    public static final double PERFMON_ONLINE_SAMPLING_RATE = 0.1;
 
     /** Used for formatting dates, times and numbers on GUI.  */
     public static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");

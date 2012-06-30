@@ -1,8 +1,6 @@
 package pt.uc.dei.fincos.adapters.cep;
 
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 import pt.uc.dei.fincos.adapters.OutputListener;
@@ -28,8 +26,12 @@ public class EsperListener extends OutputListener implements UpdateListener {
     private EPServiceProvider epService;
 
     /** The query this listener listens to. */
-    EPStatement query;
+    private EPStatement query;
+
+    /** The name of the output stream of the query this listener listens to. */
     private String queryOutputName;
+
+    /** The EPL code of the query this listener listens to. */
     private String queryText;
 
     /** The schema of the output produced by the query. */
@@ -39,40 +41,12 @@ public class EsperListener extends OutputListener implements UpdateListener {
     private int eventFormat;
 
     /**
-     * This Listener runs at FINCoS Adapter and events received from Esper are forwarded to Sink through
-     * socket communication.
-     *
-     * @param lsnrID                an alias for this listener
-     * @param rtMeasurementMode     response time measurement (either in milliseconds or nanoseconds)
-     * @param socketBufferSize      the number of events to be buffered before flushing socket with a sink
-     * @param logFlushInterval      frequency of log flushes to disk, in milliseconds
-     * @param sinksList             address(es) and port(s) of Sink(s) to which received events must be forwarded
-     * @param epService             Esper Service Instance
-     * @param queryOutputName       name of output stream which this listener subscribes to
-     * @param queryText             query text, expressed in Esper's EPL
-     * @param querySchema           schema of output stream
-     * @param eventFormat           either MAP or POJO
-     */
-    public EsperListener(String lsnrID, int rtMeasurementMode, int socketBufferSize,
-            int logFlushInterval, ArrayList<InetSocketAddress> sinksList,
-            EPServiceProvider epService, String queryOutputName,
-            String queryText, LinkedHashMap<String, String> querySchema,
-            int eventFormat) {
-        super(lsnrID, rtMeasurementMode, socketBufferSize, logFlushInterval, sinksList);
-        this.epService = epService;
-        this.queryText = queryText;
-        this.querySchema = querySchema;
-        this.queryOutputName = queryOutputName;
-        this.setEventFormat(eventFormat);
-    }
-
-    /**
      * Constructor for direct communication between Esper and Sink. Events received from Esper are
      * forwarded to Sink through method call.
      *
      * @param lsnrID                an alias for this listener
-     * @param rtMeasurementMode     response time measurement (either in milliseconds or nanoseconds)
-     * @param logFlushInterval      frequency of log flushes to disk, in milliseconds
+     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
      * @param sinkInstance          reference to the Sink instance to which results must be forwarded
      * @param epService             Esper Service Instance
      * @param queryOutputName       Name of output stream which this listener subscribes to
@@ -80,10 +54,10 @@ public class EsperListener extends OutputListener implements UpdateListener {
      * @param querySchema           Schema of output stream
      * @param eventFormat           Either MAP or POJO
      */
-    public EsperListener(String lsnrID, int rtMeasurementMode, int logFlushInterval,
-            Sink sinkInstance, EPServiceProvider epService, String queryOutputName,
-            String queryText, LinkedHashMap<String, String> querySchema, int eventFormat) {
-        super(lsnrID, rtMeasurementMode, logFlushInterval, sinkInstance);
+    public EsperListener(String lsnrID, int rtMode, int rtResolution, Sink sinkInstance,
+            EPServiceProvider epService, String queryOutputName,String queryText,
+            LinkedHashMap<String, String> querySchema, int eventFormat) {
+        super(lsnrID, rtMode, rtResolution, sinkInstance);
         this.epService = epService;
         this.queryText = queryText;
         this.querySchema = querySchema;
@@ -94,6 +68,7 @@ public class EsperListener extends OutputListener implements UpdateListener {
     @Override
     public void load() throws Exception {
         try {
+            // TODO: Loading of queries on Esper should not be done here, but instead at the EsperAdapter!
             System.out.println("Loading query: \n" + queryText);
             query = epService.getEPAdministrator().createEPL(queryText, queryOutputName);
         } catch (Exception e) {
@@ -108,9 +83,13 @@ public class EsperListener extends OutputListener implements UpdateListener {
 
     @Override
     public void update(EventBean[] newEvents, EventBean[] oldEvents) {
-        String timestamp = "";
-        if (this.rtMeasurementMode == Globals.ADAPTER_RT_NANOS) {
-            timestamp += Globals.CSV_SEPARATOR + System.nanoTime();
+        long timestamp = -1;
+        if (this.rtMode == Globals.ADAPTER_RT) {
+            if (this.rtResolution == Globals.MILLIS_RT) {
+                timestamp = System.currentTimeMillis();
+            } else if (this.rtResolution == Globals.NANO_RT) {
+                timestamp = System.nanoTime();
+            }
         }
 
         for (int i = 0; i < newEvents.length; i++) {
@@ -118,29 +97,31 @@ public class EsperListener extends OutputListener implements UpdateListener {
         }
     }
 
-    private void processIncomingEvent(EventBean event, String timestamp) {
-        if (this.communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-            onOutput(toFieldArray(event)); //TODO: Remove this or optimize code
-        } else {
-            onOutput(toCSV(event) + timestamp);
-        }
-
-
+    private void processIncomingEvent(EventBean event, long timestamp) {
+        onOutput(toFieldArray(event, timestamp)); //TODO: Remove this or optimize code
     }
 
     /**
      * Translates the event from the Esper native format to Array of Objects.
      *
-     * @param event	The event in Esper's native representation
-     * @return		The event as an array of objects
+     * @param event The event in Esper's native representation
+     * @return      The event as an array of objects
      *
      */
-    private Object[] toFieldArray(EventBean event) {
+    private Object[] toFieldArray(EventBean event, long timestamp) {
         Object[] eventObj = null;
-
+        /* If response time is being measured, leave a slot for the arrival time of the
+           event (filled here or at the Sink). */
+        int fieldCount = rtMode != Globals.NO_RT ? querySchema.size() + 2
+                                                 : querySchema.size() + 1;
+        eventObj = new Object[fieldCount];
+        // First element is the stream name
+        eventObj[0] = queryOutputName;
+        // Last element is the arrival time
+        if (rtMode == Globals.ADAPTER_RT) {
+            eventObj[fieldCount - 1] = timestamp;
+        }
         if (querySchema != null) { ////Input events are MAPs
-            eventObj = new Object[querySchema.size() + 1];
-            eventObj[0] = queryOutputName;
             int i = 1;
             for (String att: querySchema.keySet()) {
                 eventObj[i] = event.get(att);
@@ -149,8 +130,6 @@ public class EsperListener extends OutputListener implements UpdateListener {
         } else { //Input events are POJO
             try {
                 Field[] fields = Class.forName(queryOutputName).getFields();
-                eventObj = new Object[fields.length + 1];
-                eventObj[0] = queryOutputName;
                 int i = 1;
                 for (Field f : fields) {
                     eventObj[i] = event.get(f.getName());
@@ -160,7 +139,6 @@ public class EsperListener extends OutputListener implements UpdateListener {
                 e.printStackTrace();
             }
         }
-
         return eventObj;
     }
 
@@ -168,8 +146,8 @@ public class EsperListener extends OutputListener implements UpdateListener {
      *
      * Translates the event from the Esper native format to the framework's CSV format.
      *
-     * @param event	The event in Esper's native representation
-     * @return		The event in CSV representation
+     * @param event The event in Esper's native representation
+     * @return      The event in CSV representation
      */
     public String toCSV(EventBean event) {
         StringBuilder sb = new StringBuilder("type:");
@@ -200,8 +178,6 @@ public class EsperListener extends OutputListener implements UpdateListener {
             query.removeListener(this);
             query.stop();
         }
-
-        disconnectFromAllSinks();
     }
 
     /**

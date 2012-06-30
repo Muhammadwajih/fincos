@@ -29,25 +29,25 @@ public class OfflinePerformanceValidator {
     private boolean keepProcessing = true;
 
     /** A flag that indicates that the Sink log file has been processed. */
-    boolean finished = true;
+    public boolean finished = true;
 
     /** Stores query stats over time. */
     private TreeSet<PerformanceStats> statsOverTime;
 
     /** The paths of the Sink files to be processed. */
-    private String[] inputLogFilesPaths;
+    public String[] inputLogFilesPaths;
 
     /** One processor for each log file. */
     private LogProcessor[] processors;
 
     /** Total number of records processed (for all files). */
-    long totalProcessedCount = 0;
+    public long totalProcessedCount = 0;
 
     /** Total processing time (in milliseconds). */
-    long processingTime;
+    public long processingTime;
 
     /** Current progress of log processing. */
-    double progress = 0;
+    public double progress = 0;
 
     /** Index of the column in the log file which stores the timestamp of the record. */
     private static final int TIMESTAMP_FIELD = 0;
@@ -56,7 +56,7 @@ public class OfflinePerformanceValidator {
     private static final int STREAM_NAME_FIELD = 1;
 
     /** Number of lines of the header of the log file .*/
-    private static final int SINK_LOG_HEADER_SIZE = 6;
+    private static final int SINK_LOG_HEADER_SIZE = 8;
 
     /**
      *
@@ -284,6 +284,9 @@ public class OfflinePerformanceValidator {
         /** Latency measurement mode used in the test during which the log file was generated. */
         int rtMeasurementMode;
 
+        /** Resolution of latency measurement (either milliseconds or nanoseconds). */
+        int rtResolution;
+
         /** Variables to keep track of the progress of this log processing task. */
         long processedCount = 0;
         long totalReadBytes = 0;
@@ -308,7 +311,7 @@ public class OfflinePerformanceValidator {
                 long charsPerByte = (long) java.nio.charset.Charset.defaultCharset().newDecoder().averageCharsPerByte();
 
                 // parses log header
-                String server;
+                String connection;
                 int streamType;
                 String header = logReader.getNextLine();
                 totalReadBytes += (header.length() / charsPerByte + 2);
@@ -329,29 +332,46 @@ public class OfflinePerformanceValidator {
                 totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Driver/Sink alias
                 totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Driver/Sink address
 
-                // Server address
-                server = logReader.getNextLine();
-                totalReadBytes += (server.length() / charsPerByte + 2);
-                if (server != null) {
-                    server = server.substring(server.indexOf(":") + 2);
+                // Connection alias
+                connection = logReader.getNextLine();
+                totalReadBytes += (connection.length() / charsPerByte + 2);
+                if (connection != null) {
+                    connection = connection.substring(connection.indexOf(":") + 2);
                 }
 
                 // ignores next line of log header
                 totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Log Start time
 
                 // Determines Response time measurement mode of the test
-                String rtMode = logReader.getNextLine().substring(server.indexOf(":") + 2);
-                totalReadBytes += (rtMode.length() / charsPerByte + 2);
-                double rtFactor = 1.0;
-                if (rtMode.contains("ADAPTER_RT_NANOS")) {
-                    this.rtMeasurementMode = Globals.ADAPTER_RT_NANOS;
-                    rtFactor = 1E6;
-                } else if (rtMode.contains("END_TO_END_RT_MILLIS")) {
-                    this.rtMeasurementMode = Globals.END_TO_END_RT_MILLIS;
-                    rtFactor = 1.0;
+                String rtModeStr = logReader.getNextLine().substring(connection.indexOf(":") + 2);
+                totalReadBytes += (rtModeStr.length() / charsPerByte + 2);
+                if (rtModeStr.contains("ADAPTER")) {
+                    this.rtMeasurementMode = Globals.ADAPTER_RT;
+                } else if (rtModeStr.contains("END_TO_END")) {
+                    this.rtMeasurementMode = Globals.END_TO_END_RT;
                 } else {
                     this.rtMeasurementMode = Globals.NO_RT;
                 }
+
+                // Determines Response time resolution of the test
+                String rtResolutionStr = logReader.getNextLine().substring(connection.indexOf(":") + 2);
+                totalReadBytes += (rtModeStr.length() / charsPerByte + 2);
+                double rtFactor = 1.0;
+                if (rtResolutionStr.contains("milliseconds")) {
+                    this.rtResolution = Globals.MILLIS_RT;
+                    rtFactor = 1.0;
+                } else {
+                    this.rtResolution = Globals.NANO_RT;
+                    rtFactor = 1E6;
+                }
+
+                // Log sampling rate
+                String logSamplingRateStr = logReader.getNextLine();
+                totalReadBytes += (logSamplingRateStr.length() / charsPerByte + 2);
+                if (logSamplingRateStr != null) {
+                    logSamplingRateStr = logSamplingRateStr.substring(logSamplingRateStr.indexOf(":") + 2);
+                }
+                int logSamplingFactor = (int) Math.round(1 / Double.parseDouble(logSamplingRateStr));
 
                 double rt;
                 while (keepProcessing && (event = logReader.getNextLine()) != null) {
@@ -372,19 +392,15 @@ public class OfflinePerformanceValidator {
                         // For every new event, update stats of corresponding stream
                         currentStreamStats = streamsStats.get(streamName);
                         if (currentStreamStats == null) {
-                            currentStreamStats = new PerformanceStats(server, new Stream(streamType, streamName));
+                            currentStreamStats = new PerformanceStats(connection, new Stream(streamType, streamName));
                             streamsStats.put(streamName, currentStreamStats);
                         }
-                        currentStreamStats.lastEventCount++;
-                        currentStreamStats.totalEventCount++;
+                        currentStreamStats.lastEventCount += logSamplingFactor;
+                        currentStreamStats.totalEventCount += logSamplingFactor;
                         if (rtMeasurementMode != Globals.NO_RT) {
-                            if (rtMeasurementMode == Globals.END_TO_END_RT_MILLIS) {
-                                outputArrivalTime = timestamp;
-                                causerEmissionTime = Long.parseLong(splitEv[splitEv.length - 1]);
-                            } else if (rtMeasurementMode == Globals.ADAPTER_RT_NANOS) {
-                                outputArrivalTime = Long.parseLong(splitEv[splitEv.length - 1]);
-                                causerEmissionTime = Long.parseLong(splitEv[splitEv.length - 2]);
-                            }
+                            outputArrivalTime = Long.parseLong(splitEv[splitEv.length - 1]);
+                            causerEmissionTime = Long.parseLong(splitEv[splitEv.length - 2]);
+
                             rt = (outputArrivalTime - causerEmissionTime) / rtFactor;
                             if (rt >= 0) {
                                 currentStreamStats.lastRT = rt;

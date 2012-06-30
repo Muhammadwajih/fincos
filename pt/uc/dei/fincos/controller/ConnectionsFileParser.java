@@ -18,9 +18,15 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Manages the connections file.
+ *
+ * @author Marcelo R.N. Mendes
+ */
 public class ConnectionsFileParser {
+
     /**
-     * Opens and parses a FINCoS xml file containing connections configuratios-
+     * Opens and parses a FINCoS xml file containing connections configurations.
      *
      * @param path  Path to xml file containing configured connections
      * @return      the list of configured connections

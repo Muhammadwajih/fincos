@@ -16,9 +16,12 @@ import pt.uc.dei.fincos.basic.Attribute;
 import pt.uc.dei.fincos.basic.Datatype;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
+import pt.uc.dei.fincos.basic.Globals;
 
 /**
- * Provides connectivity with JMS messaging middlewares.
+ * Provides connectivity with JMS messaging systems.
+ *
+ * @author Marcelo R.N. Mendes
  */
 public abstract class JMS_Adapter {
 
@@ -67,7 +70,7 @@ public abstract class JMS_Adapter {
 
 
     /**
-     * Test method
+     * Test method.
      */
     public static void main(String[] args) throws Exception {
         // Parameters for connection with JMS provider
@@ -86,13 +89,14 @@ public abstract class JMS_Adapter {
                 new Attribute(Datatype.DOUBLE, "Price"),
                 new Attribute(Datatype.INTEGER, "Volume")
         });
-        Converter converter = new StreamMessageConverter();
+        Converter converter = new StreamMessageConverter(Globals.END_TO_END_RT, Globals.NANO_RT);
         // Sets up a JMS Writer
         JMS_Writer writer = new JMS_Writer(connProps, "ThroughputConnectionFactory", channels, converter);
         // Sets up a JMS Reader
-        HashMap<String, EventType[]> outputListeners = new HashMap<String, EventType[]>();
-        outputListeners.put("lsnr-01", new EventType[] {stockType});
-        JMS_Reader reader = new JMS_Reader(connProps, "ThroughputConnectionFactory", converter, outputListeners, null);
+        HashMap<String, String[]> outputListeners = new HashMap<String, String[]>();
+        outputListeners.put("lsnr-01", new String[] {"Stock"});
+        JMS_Reader reader = new JMS_Reader(connProps, "ThroughputConnectionFactory", converter, outputListeners,
+                Globals.END_TO_END_RT, Globals.NANO_RT, null);
         // Sends data
         long t0 = System.currentTimeMillis();
         long ts;
