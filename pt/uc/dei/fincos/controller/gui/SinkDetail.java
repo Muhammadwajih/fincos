@@ -79,7 +79,6 @@ public class SinkDetail extends ComponentDetail {
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        this.setVisible(true);
     }
 
     public void fillProperties(SinkConfig sink) {
@@ -530,7 +529,11 @@ public class SinkDetail extends ComponentDetail {
         this.logAllRadio.setEnabled(false);
         this.logTSRadio.setEnabled(false);
         this.logSamplingComboBox.setEnabled(false);
+        this.logSamplingLabel.setEnabled(false);
+        this.logFlushLbl.setEnabled(false);
+        this.logFlushField.setEnabled(false);
         this.okBtn.setEnabled(false);
+
     }
 
 }

@@ -8,9 +8,8 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
-import pt.uc.dei.fincos.validation.OfflinePerformanceValidator;
-import pt.uc.dei.fincos.validation.PerformanceMonitor;
-import pt.uc.dei.fincos.validation.PerformanceStats;
+import pt.uc.dei.fincos.perfmon.OfflinePerformanceValidator;
+import pt.uc.dei.fincos.perfmon.PerformanceStats;
 
 /**
  * Processes Sink log files in background.

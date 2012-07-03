@@ -24,10 +24,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.data.CSVReader;
-import pt.uc.dei.fincos.validation.OfflinePerformanceValidator;
-import pt.uc.dei.fincos.validation.PerformanceMonitor;
-import pt.uc.dei.fincos.validation.PerformanceStats;
-import pt.uc.dei.fincos.validation.Stream;
+import pt.uc.dei.fincos.perfmon.OfflinePerformanceValidator;
+import pt.uc.dei.fincos.perfmon.PerformanceStats;
+import pt.uc.dei.fincos.perfmon.Stream;
 
 public class SourceDialog extends javax.swing.JDialog {
 
@@ -478,10 +477,10 @@ public class SourceDialog extends javax.swing.JDialog {
                         }
                         stats = new PerformanceStats(server, stream);
                         stats.timestamp = Long.parseLong(splitEv[0]);
-                        stats.avg_throughput = Double.parseDouble(splitEv[3]);
-                        stats.min_throughput = Double.NaN;
-                        stats.max_throughput = Double.NaN;
-                        stats.last_throughput = Integer.parseInt(splitEv[4]);
+                        stats.avgThroughput = Double.parseDouble(splitEv[3]);
+                        stats.minThroughput = Double.NaN;
+                        stats.maxThroughput = Double.NaN;
+                        stats.lastThroughput = Integer.parseInt(splitEv[4]);
                         stats.avgRT = Double.parseDouble(splitEv[5]);
                         stats.minRT = Double.parseDouble(splitEv[6]);
                         stats.maxRT = Double.parseDouble(splitEv[7]);
@@ -500,10 +499,10 @@ public class SourceDialog extends javax.swing.JDialog {
                         try {
                             stats = new PerformanceStats(server, stream);
                             stats.timestamp = Long.parseLong(splitEv[0]);
-                            stats.avg_throughput = Double.parseDouble(splitEv[3]);
-                            stats.min_throughput = Double.parseDouble(splitEv[4]);
-                            stats.max_throughput = Double.parseDouble(splitEv[5]);
-                            stats.last_throughput = Double.parseDouble(splitEv[6]);
+                            stats.avgThroughput = Double.parseDouble(splitEv[3]);
+                            stats.minThroughput = Double.parseDouble(splitEv[4]);
+                            stats.maxThroughput = Double.parseDouble(splitEv[5]);
+                            stats.lastThroughput = Double.parseDouble(splitEv[6]);
                             stats.avgRT = Double.parseDouble(splitEv[7]);
                             stats.minRT = Double.parseDouble(splitEv[8]);
                             stats.maxRT = Double.parseDouble(splitEv[9]);

@@ -25,6 +25,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import pt.uc.dei.fincos.basic.Attribute;
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Datatype;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
@@ -301,6 +302,17 @@ public class EsperInterface extends CEPEngineInterface {
         }
     }
 
+    @Override
+    public void send(CSV_Event event) {
+        if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
+            if (this.eventFormat == POJO_FORMAT) {
+                sendPOJOEvent(event);
+            } else {
+                sendMapEvent(event);
+            }
+        }
+    }
+
     /**
      * Send a Map event to Esper.
      * Event record is initially represented using the FINCoS internal
@@ -313,7 +325,6 @@ public class EsperInterface extends CEPEngineInterface {
         LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
 
         if (eventSchema != null) {
-
             int fieldCount = this.rtMode != Globals.NO_RT
                                   ? event.getType().getAttributeCount() + 1
                                   : event.getType().getAttributeCount();
@@ -378,7 +389,7 @@ public class EsperInterface extends CEPEngineInterface {
                                   ? event.getType().getAttributeCount() + 1
                                   : event.getType().getAttributeCount();
 
-            if (eventFields.length != event.getType().getAttributeCount()) {
+            if (eventFields.length != eventFieldCount) {
                 System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (eventFieldCount)
                         + ") does not match schema of event type \"" + eventTypeName + "\" ("
                         + eventFields.length + ").");
@@ -417,6 +428,150 @@ public class EsperInterface extends CEPEngineInterface {
                         f.setDouble(pojoEvent, (Double) event.getAttributeValue(i));
                     } else if (f.getType() == float.class) {
                         f.setFloat(pojoEvent, (Float) event.getAttributeValue(i));
+                    }
+                }
+            }
+
+            synchronized (runtime) {
+                runtime.sendEvent(pojoEvent);
+            }
+        } catch (ClassNotFoundException cnfe) {
+            System.err.println("Unknown event type \"" + eventTypeName + "\"." + "It is not possible to send event.");
+            return;
+        } catch (ClassCastException cce) {
+            System.err.println("Invalid field value. It is not possible to send event.");
+            return;
+        } catch (Exception e) {
+            System.err.println("Unexpected exception: " + e.getMessage()
+                    + ". It is not possible to send event.");
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    /**
+     * Send a Map event to Esper.
+     * Event record is initially represented as a FINCoS CSV record
+     * and it is converted to a Map format before sending to Esper.
+     *
+     * @param event
+     */
+    private void sendMapEvent(CSV_Event event) {
+        String eventTypeName = event.getType();
+        LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
+
+        if (eventSchema != null) {
+            int fieldCount = this.rtMode != Globals.NO_RT
+                                  ? event.getPayload().length + 1
+                                  : event.getPayload().length;
+
+            if (eventSchema.size() != fieldCount) {
+                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (fieldCount)
+                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
+                        + eventSchema.size() + ").");
+                return;
+            }
+
+            Map<String, Object> mapEvent = new HashMap<String, Object>();
+            int i = 0;
+
+            for (Entry <String, String> field: eventSchema.entrySet()) {
+                if (i == eventSchema.size() - 1 && rtMode != Globals.NO_RT) { // Timestamp field (last one, if there is)
+                    if (this.rtMode == Globals.ADAPTER_RT) {
+                        /* Assigns a timestamp to the event just after conversion
+                              (i.e., just before sending the event to the target system) */
+                        long timestamp = 0;
+                        if (rtResolution == Globals.MILLIS_RT) {
+                            timestamp = System.currentTimeMillis();
+                        } else if (rtResolution == Globals.NANO_RT) {
+                            timestamp = System.nanoTime();
+                        }
+                        mapEvent.put(field.getKey(), timestamp);
+                    } else if (rtMode == Globals.END_TO_END_RT) {
+                        // The timestamp comes from the Driver
+                        mapEvent.put(field.getKey(), event.getTimestamp());
+                    }
+                } else {
+                    if (field.getValue().equals("int")) {
+                        mapEvent.put(field.getKey(), Integer.parseInt(event.getPayload()[i]));
+                    } else if (field.getValue().equals("long")) {
+                        mapEvent.put(field.getKey(), Long.parseLong(event.getPayload()[i]));
+                    } else if (field.getValue().equals("string")) {
+                        mapEvent.put(field.getKey(), event.getPayload()[i]);
+                    } else if (field.getValue().equals("double")) {
+                        mapEvent.put(field.getKey(), Double.parseDouble(event.getPayload()[i]));
+                    } else if (field.getValue().equals("float")) {
+                        mapEvent.put(field.getKey(), Float.parseFloat(event.getPayload()[i]));
+                    }
+                }
+                i++;
+            }
+            synchronized (runtime) {
+                runtime.sendEvent(mapEvent, eventTypeName);
+            }
+        } else {
+            System.err.println("Unknown event type \"" + eventTypeName + "\"."
+                    + "It is not possible to send event.");
+        }
+    }
+
+    /**
+     * Send a POJO event to Esper.
+     * Event record is initially represented using the FINCoS internal
+     * format and it is converted to a Plain Java Object before sending to Esper.
+     *
+     * @param event
+     */
+    private void sendPOJOEvent(CSV_Event event) {
+        String eventTypeName = event.getType();
+        try {
+            Class<?> eventSchema = Class.forName(eventTypeName);
+            Field[] eventFields = eventSchema.getDeclaredFields();
+            Object pojoEvent = eventSchema.newInstance();
+
+            int eventFieldCount = this.rtMode != Globals.NO_RT
+                                  ? event.getPayload().length + 1
+                                  : event.getPayload().length;
+
+            if (eventFields.length != eventFieldCount) {
+                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (eventFieldCount)
+                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
+                        + eventFields.length + ").");
+                return;
+            }
+
+            // Fill object attributes with event data
+            Field f;
+            for (int i = 0; i < eventFields.length; i++) {
+                f = eventFields[i];
+
+                // Assigns Timestamp
+                if (i == eventFields.length - 1) { // timestamp field (the last one)
+                    if (this.rtMode == Globals.ADAPTER_RT) {
+                        /* Assigns a timestamp to the event just after conversion
+                          (i.e., just before sending the event to the target system) */
+                        long timestamp = 0;
+                        if (rtResolution == Globals.MILLIS_RT) {
+                            timestamp = System.currentTimeMillis();
+                        } else if (rtResolution == Globals.NANO_RT) {
+                            timestamp = System.nanoTime();
+                        }
+                        f.setLong(pojoEvent, timestamp);
+                    } else if (rtMode == Globals.END_TO_END_RT) {
+                        // The timestamp comes from the Driver
+                        f.setLong(pojoEvent, event.getTimestamp());
+                    }
+                } else {
+                    if (f.getType() == int.class) {
+                        f.setInt(pojoEvent, Integer.parseInt(event.getPayload()[i]));
+                    } else if (f.getType() == long.class) {
+                        f.setLong(pojoEvent, Long.parseLong(event.getPayload()[i]));
+                    } else if (f.getType() == String.class) {
+                        f.set(pojoEvent, event.getPayload()[i]);
+                    } else if (f.getType() == double.class) {
+                        f.setDouble(pojoEvent, Double.parseDouble(event.getPayload()[i]));
+                    } else if (f.getType() == float.class) {
+                        f.setFloat(pojoEvent, Float.parseFloat(event.getPayload()[i]));
                     }
                 }
             }
@@ -481,8 +636,8 @@ public class EsperInterface extends CEPEngineInterface {
                 if (cfield != null) {
                     cfield.setModifiers(Modifier.PUBLIC);
                     schemaClass.addField(cfield);
-                    schemaClass.addMethod(CtNewMethod.getter("get" + att.getName(), cfield));
-                    schemaClass.addMethod(CtNewMethod.setter("set" + att.getName(), cfield));
+                    schemaClass.addMethod(CtNewMethod.getter("get" + att.getName().substring(0, 1).toUpperCase() + att.getName().substring(1), cfield));
+                    schemaClass.addMethod(CtNewMethod.setter("set" + att.getName().substring(0, 1).toUpperCase() + att.getName().substring(1), cfield));
                 }
             }
 

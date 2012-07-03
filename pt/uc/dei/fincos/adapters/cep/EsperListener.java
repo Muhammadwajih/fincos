@@ -110,19 +110,15 @@ public class EsperListener extends OutputListener implements UpdateListener {
      */
     private Object[] toFieldArray(EventBean event, long timestamp) {
         Object[] eventObj = null;
-        /* If response time is being measured, leave a slot for the arrival time of the
-           event (filled here or at the Sink). */
-        int fieldCount = rtMode != Globals.NO_RT ? querySchema.size() + 2
-                                                 : querySchema.size() + 1;
-        eventObj = new Object[fieldCount];
-        // First element is the stream name
-        eventObj[0] = queryOutputName;
-        // Last element is the arrival time
-        if (rtMode == Globals.ADAPTER_RT) {
-            eventObj[fieldCount - 1] = timestamp;
-        }
+        int fieldCount = 0;
+
         if (querySchema != null) { ////Input events are MAPs
             int i = 1;
+            /* If response time is being measured, leave a slot for the arrival time of the
+            event (filled here or at the Sink). */
+            fieldCount = rtMode != Globals.NO_RT ? querySchema.size() + 2
+                    : querySchema.size() + 1;
+            eventObj = new Object[fieldCount];
             for (String att: querySchema.keySet()) {
                 eventObj[i] = event.get(att);
                 i++;
@@ -130,6 +126,11 @@ public class EsperListener extends OutputListener implements UpdateListener {
         } else { //Input events are POJO
             try {
                 Field[] fields = Class.forName(queryOutputName).getFields();
+                /* If response time is being measured, leave a slot for the arrival time of the
+                event (filled here or at the Sink). */
+                fieldCount = rtMode != Globals.NO_RT ? fields.length + 2
+                                                     : fields.length + 1;
+                eventObj = new Object[fieldCount];
                 int i = 1;
                 for (Field f : fields) {
                     eventObj[i] = event.get(f.getName());
@@ -139,6 +140,14 @@ public class EsperListener extends OutputListener implements UpdateListener {
                 e.printStackTrace();
             }
         }
+
+        // First element is the stream name
+        eventObj[0] = queryOutputName;
+        // Last element is the arrival time
+        if (rtMode == Globals.ADAPTER_RT) {
+            eventObj[fieldCount - 1] = timestamp;
+        }
+
         return eventObj;
     }
 

@@ -3,6 +3,7 @@ package pt.uc.dei.fincos.driver;
 import java.io.IOException;
 
 import pt.uc.dei.fincos.adapters.InputAdapter;
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.Status;
@@ -219,13 +220,14 @@ public class Sender extends Thread {
         long pauseT0;
 
         Event event = null;
+        CSV_Event csvEvent = null;
 
         try {
             this.status.setStep(Step.RUNNING);
             // String csvEvent = null;
 
             if (dataFileReader != null) {
-                event = dataFileReader.getNextEvent();
+                csvEvent = dataFileReader.getNextCSVEvent();
             } else if (datagen != null) {
                 synchronized (datagen) {
                     event = datagen.getNextEvent();
@@ -245,7 +247,7 @@ public class Sender extends Thread {
                 double diffSleep;
                 //------------------------------------------------------------------------
 
-                while (event != null) {
+                while (event != null || csvEvent != null) {
                     try {
                         /* Sleeps for a interval defined by scheduler according to event rate.
                          * The effective sleep time is adjusted to compensate for possible delays:
@@ -295,11 +297,18 @@ public class Sender extends Thread {
                             } else if (rtResolution == Globals.MILLIS_RT) {
                                 scheduledTime = firstTimestamp + (1.0 * (expectedElapsedTime - timeInPause) / SLEEP_TIME_RESOLUTION + diffSleep);
                             }
-                            event.setTimestamp((long) scheduledTime);
+                            if (event != null) {
+                                event.setTimestamp((long) scheduledTime);
+                            } else {
+                                csvEvent.setTimestamp((long) scheduledTime);
+                            }
                         }
                         // Sends the event
-                        this.sendEvent(event);
-
+                        if (event != null) {
+                            this.sendEvent(event);
+                        } else {
+                            this.sendEvent(csvEvent);
+                        }
                     } catch (Exception exc) {
                         System.err.println("Cannot send event (" + exc.getMessage() + ")");
                         exc.printStackTrace();
@@ -309,7 +318,7 @@ public class Sender extends Thread {
                     }
 
                     if (dataFileReader != null) { // read event from data file
-                        event = dataFileReader.getNextEvent();
+                        csvEvent = dataFileReader.getNextCSVEvent();
                     } else if (datagen != null)  { // generate event
                         event = datagen.getNextEvent();
                     }
@@ -355,7 +364,7 @@ public class Sender extends Thread {
 
         try {
             this.status.setStep(Step.RUNNING);
-            Event event = dataFileReader.getNextEvent();
+            CSV_Event event = dataFileReader.getNextCSVEvent();
             String timestamp;
 
             // initializes lastTS variable
@@ -436,18 +445,19 @@ public class Sender extends Thread {
                         event.setTimestamp(scheduledTime);
                         this.sendEvent(event);
 
-                    } catch (Exception ioe2) {
-                        System.err.println("Cannot send event (" + ioe2.getMessage() + ")");
+                    } catch (Exception e2) {
+                        e2.printStackTrace();
+                        System.err.println("Cannot send event (" + e2.getMessage() + ")");
                         if (this.status.getStep() == Step.RUNNING) {
                             this.status.setStep(Step.ERROR);
                         }
                     }
 
-                    event = dataFileReader.getNextEvent();
+                    event = dataFileReader.getNextCSVEvent();
                 }
 
                 dataFileReader.reOpen();
-                event = dataFileReader.getNextEvent();
+                event = dataFileReader.getNextCSVEvent();
             }
 
             this.status.setStep(Step.FINISHED);
@@ -467,6 +477,30 @@ public class Sender extends Thread {
     }
 
     private void sendEvent(Event event) throws Exception {
+        // Response time measurement:
+        if (rtMode == Globals.END_TO_END_RT && !useScheduledTime) {  // Do not use scheduled time...
+            // ...use measured send time
+            long sendTime = 0;
+            if (rtResolution == Globals.MILLIS_RT) {
+                sendTime = System.currentTimeMillis();
+            } else if (rtResolution == Globals.NANO_RT) {
+                sendTime = System.nanoTime();
+            }
+            event.setTimestamp(sendTime);
+        }
+
+        // Send the event to server;
+        adapter.send(event);
+
+        // Logs the sent event
+        if (logger != null) {
+            logger.log(event);
+        }
+
+        sentEventCount++;
+    }
+
+    private void sendEvent(CSV_Event event) throws Exception {
         // Response time measurement:
         if (rtMode == Globals.END_TO_END_RT && !useScheduledTime) {  // Do not use scheduled time...
             // ...use measured send time

@@ -145,9 +145,9 @@ public class ConnectionsFileParser {
     public static void createEmptyFile(String filePath) throws ParserConfigurationException, IOException, TransformerException {
         File f = new File(filePath);
         if (!f.exists()) {
-            f.mkdirs();
             f.createNewFile();
         }
+        System.out.println("AQUI");
         saveToFile(new ConnectionConfig[0], filePath);
     }
 }
