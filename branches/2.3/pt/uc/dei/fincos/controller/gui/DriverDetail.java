@@ -1,5 +1,6 @@
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -104,7 +105,6 @@ public class DriverDetail extends ComponentDetail {
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        this.setVisible(true);
     }
 
     private void initComponents() {
@@ -601,6 +601,9 @@ public class DriverDetail extends ComponentDetail {
     		}
     		logFlushField.setText("" + dr.getLogFlushInterval());
     	}
+    	for (Component comp : this.getComponents()) {
+    	    comp.repaint();
+        }
     }
 
     private boolean validateFields() {

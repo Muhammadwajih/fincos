@@ -1,4 +1,4 @@
-package pt.uc.dei.fincos.validation;
+package pt.uc.dei.fincos.perfmon;
 
 public class Stream {
 	public static final int INPUT = 0;

@@ -11,6 +11,7 @@ import javax.jms.Queue;
 import javax.naming.NamingException;
 
 import pt.uc.dei.fincos.adapters.InputAdapter;
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 
 /**
@@ -103,5 +104,10 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
         senders.clear();
         session.close();
         conn.close();
+    }
+
+    @Override
+    public void send(CSV_Event event) {
+        throw new RuntimeException("Not implemented.");
     }
 }

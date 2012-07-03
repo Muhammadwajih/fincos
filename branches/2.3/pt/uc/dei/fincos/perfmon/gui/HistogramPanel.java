@@ -1,4 +1,4 @@
-package pt.uc.dei.fincos.validation;
+package pt.uc.dei.fincos.perfmon.gui;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -26,6 +26,7 @@ import org.jfree.data.xy.CategoryTableXYDataset;
 
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.data.CSVReader;
+import pt.uc.dei.fincos.perfmon.Histogram;
 
 /**
  *
@@ -355,6 +356,44 @@ public class HistogramPanel extends JPanel {
                 }
             }
         });
+
+        FocusListener lsnr = new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) { }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (binField.isEnabled()) {
+                    if (binField.getText() != null && !binField.getText().isEmpty()) {
+                        try {
+                            double binWidth  = Double.parseDouble(binField.getText());
+                            double max = Double.parseDouble(maxField.getText());
+                            double min = Double.parseDouble(minField.getText());
+                            int numOfBuckets = (int) Math.round((max - min) / binWidth) + 1;
+                            bucketsField.setText("" + numOfBuckets);
+                        } catch (Exception e2) {
+                            bucketsField.setText("ERR");
+                        }
+                    }
+                }
+                if(bucketsField.isEnabled()) {
+                    if (bucketsField.getText() != null && !bucketsField.getText().isEmpty())
+                    {
+                        try {
+                            int numOfBuckets = Integer.parseInt(bucketsField.getText());
+                            double max = Double.parseDouble(maxField.getText());
+                            double min = Double.parseDouble(minField.getText());
+                            double binWidth = (max - min) / numOfBuckets;
+                            binField.setText(Globals.FLOAT_FORMAT_3.format(binWidth));
+                        } catch (Exception e2) {
+
+                        }
+                    }
+                }
+            }
+        };
+        maxField.addFocusListener(lsnr);
+        minField.addFocusListener(lsnr);
 
         bucketsField.setText("100");
         minField.setText("0");

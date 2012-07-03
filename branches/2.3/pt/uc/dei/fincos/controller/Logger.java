@@ -2,6 +2,7 @@ package pt.uc.dei.fincos.controller;
 
 import java.io.IOException;
 
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.data.CSVReader;
@@ -129,6 +130,27 @@ public class Logger extends CSVWriter {
      * @throws IOException
      */
     public void log(Event evt) throws IOException {
+        synchronized (this) {
+            this.entriesCount++;
+        }
+
+        if (entriesCount % logSamplMod == 0) {
+            String entry = evt.toCSV();
+            if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + entry);
+            } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + CSVReader.split(entry, Globals.CSV_SEPARATOR)[0]);
+            }
+        }
+    }
+
+    /**
+     * Logs a CSV event.
+     *
+     * @param evt           The event to be logged
+     * @throws IOException
+     */
+    public void log(CSV_Event evt) throws IOException {
         synchronized (this) {
             this.entriesCount++;
         }

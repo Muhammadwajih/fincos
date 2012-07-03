@@ -40,9 +40,8 @@ import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.SinkConfig;
 import pt.uc.dei.fincos.driver.SyntheticWorkloadPhase;
 import pt.uc.dei.fincos.driver.WorkloadPhase;
-import pt.uc.dei.fincos.validation.PerformanceMonitor;
-import pt.uc.dei.fincos.validation.PerformanceStats;
-import pt.uc.dei.fincos.validation.Stream;
+import pt.uc.dei.fincos.perfmon.PerformanceStats;
+import pt.uc.dei.fincos.perfmon.Stream;
 
 /**
  *
@@ -180,7 +179,7 @@ public class GraphPanel extends JPanel {
                 streamAvgThData = new TreeMap<Long, Double>();
                 seriesData.put(keyPrefix + "Avg Throughput", streamAvgThData);
             }
-            streamAvgThData.put(stats.timestamp, stats.avg_throughput);
+            streamAvgThData.put(stats.timestamp, stats.avgThroughput);
 
             // Last Throughput
             TreeMap<Long, Double> streamLastThData = seriesData.get(keyPrefix + "Last Throughput");
@@ -188,7 +187,7 @@ public class GraphPanel extends JPanel {
                 streamLastThData = new TreeMap<Long, Double>();
                 seriesData.put(keyPrefix + "Last Throughput", streamLastThData);
             }
-            streamLastThData.put(stats.timestamp, stats.last_throughput);
+            streamLastThData.put(stats.timestamp, stats.lastThroughput);
 
             // Min Throughput
             TreeMap<Long, Double> streamMinThData = seriesData.get(keyPrefix + "Min Throughput");
@@ -196,7 +195,7 @@ public class GraphPanel extends JPanel {
                 streamMinThData = new TreeMap<Long, Double>();
                 seriesData.put(keyPrefix + "Min Throughput", streamMinThData);
             }
-            streamMinThData.put(stats.timestamp, stats.min_throughput);
+            streamMinThData.put(stats.timestamp, stats.minThroughput);
 
             // Max Throughput
             TreeMap<Long, Double> streamMaxThData = seriesData.get(keyPrefix + "Max Throughput");
@@ -204,7 +203,7 @@ public class GraphPanel extends JPanel {
                 streamMaxThData = new TreeMap<Long, Double>();
                 seriesData.put(keyPrefix + "Max Throughput", streamMaxThData);
             }
-            streamMaxThData.put(stats.timestamp, stats.max_throughput);
+            streamMaxThData.put(stats.timestamp, stats.maxThroughput);
 
             // Average Response time
             TreeMap<Long, Double> streamAvgRT = seriesData.get(keyPrefix + "Avg Response Time");

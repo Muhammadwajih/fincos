@@ -5,7 +5,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JDialog;
 
-import pt.uc.dei.fincos.validation.OfflinePerformanceValidator;
+import pt.uc.dei.fincos.perfmon.OfflinePerformanceValidator;
 
 /**
  * Dialog showing progress of log processing.

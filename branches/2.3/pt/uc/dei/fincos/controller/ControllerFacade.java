@@ -209,6 +209,23 @@ public class ControllerFacade {
     }
 
     /**
+    *
+    * @return  the list of Drivers in a test setup file (if already loaded)
+    */
+   public synchronized HashMap<DriverConfig, DriverRemoteFunctions> getRemoteDrivers() {
+       return this.remoteDrivers;
+   }
+
+   /**
+    *
+    * @return  the list of Sinks in a test setup file (if already loaded)
+    */
+   public synchronized HashMap<SinkConfig, SinkRemoteFunctions> getRemoteSinks() {
+       return this.remoteSinks;
+   }
+
+
+    /**
      * Returns the total duration of the test in seconds
      * (applies only if all Drivers have synthetic workloads).
      *

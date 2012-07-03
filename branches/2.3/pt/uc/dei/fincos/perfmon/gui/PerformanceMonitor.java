@@ -1,4 +1,4 @@
-package pt.uc.dei.fincos.validation;
+package pt.uc.dei.fincos.perfmon.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -41,11 +41,11 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 import pt.uc.dei.fincos.controller.gui.PopupListener;
 import pt.uc.dei.fincos.driver.DriverRemoteFunctions;
 import pt.uc.dei.fincos.perfmon.DriverPerfStats;
-import pt.uc.dei.fincos.perfmon.gui.GraphPanel;
-import pt.uc.dei.fincos.perfmon.gui.SourceDialog;
+import pt.uc.dei.fincos.perfmon.PerfMonValidator;
+import pt.uc.dei.fincos.perfmon.PerformanceStats;
+import pt.uc.dei.fincos.perfmon.Stream;
+import pt.uc.dei.fincos.perfmon.ThroughputEstimator;
 import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
-import pt.uc.dei.fincos.validation.realtime.PerfMonValidator;
-import pt.uc.dei.fincos.validation.realtime.ThroughputEstimator;
 
 
 /**
@@ -168,6 +168,7 @@ public class PerformanceMonitor extends JFrame {
         this.remoteDrivers = remoteDrivers;
         this.remoteSinks = remoteSinks;
         this.setIconImage(Toolkit.getDefaultToolkit().getImage("imgs/perfmon.png"));
+        this.dataSource = REALTIME;
         initGUI();
     }
 
@@ -197,7 +198,9 @@ public class PerformanceMonitor extends JFrame {
                 public void windowClosing(WindowEvent e) {
                     for (DriverRemoteFunctions dr : remoteDrivers.values()) {
                         try {
-                            dr.setPerfTracing(false);
+                            if (dr != null) {
+                                dr.setPerfTracing(false);
+                            }
                         } catch (RemoteException e1) {
                             System.err.println(e1.getMessage());
                         }

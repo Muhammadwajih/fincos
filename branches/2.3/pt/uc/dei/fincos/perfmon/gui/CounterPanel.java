@@ -13,7 +13,7 @@ import javax.swing.JColorChooser;
 import javax.swing.JOptionPane;
 
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.validation.Stream;
+import pt.uc.dei.fincos.perfmon.Stream;
 
 /**
  * A panel that allows to choose the counters to be shown on the GUI of FINCoS Perfmon.

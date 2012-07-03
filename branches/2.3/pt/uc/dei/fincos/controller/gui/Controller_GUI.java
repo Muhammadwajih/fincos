@@ -54,6 +54,7 @@ import pt.uc.dei.fincos.controller.ConnectionsFileParser;
 import pt.uc.dei.fincos.controller.ControllerFacade;
 import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.perfmon.gui.PerformanceMonitor;
 import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 /**
@@ -75,6 +76,9 @@ public class Controller_GUI extends JFrame {
     /** Multiplier factor for input rate. */
     private double eventRateFactor = 1.0;
 
+    /** Path for the file containing connections. */
+    public static final String CONNECTIONS_FILE = Globals.APP_PATH + "config" + File.separator + "Connections.fcf";
+
     //	=========================== GUI ===================================
 	private Timer guiRefresher;
 
@@ -85,7 +89,7 @@ public class Controller_GUI extends JFrame {
 				newDriverMenuItem, editDriverMenuItem, deleteDriverMenuItem,
 				newSinkMenuItem, editSinkMenuItem, deleteSinkMenuItem,
 				loadMenuItem, startMenuItem, pauseMenuItem, stopMenuItem, switchMenuItem, optionsMenuItem,
-				connectionsMenuItem;
+				connectionsMenuItem, perfmonMenuItem;
 	private ButtonGroup rateFactorGroup;
 
 	// ToolBar
@@ -98,6 +102,7 @@ public class Controller_GUI extends JFrame {
 	private JButton pauseBtn = new JButton(new ImageIcon("imgs/pause.png"));
 	private JButton stopBtn = new JButton(new ImageIcon("imgs/stop.png"));
 	private JButton switchPhaseBtn = new JButton(new ImageIcon("imgs/switchPhase.png"));
+	private JButton perfmonBtn = new JButton(new ImageIcon("imgs/perfmon.png"));
 
 	// Components
 	JPanel driversPanel, sinksPanel, componentsPanel;
@@ -192,20 +197,19 @@ public class Controller_GUI extends JFrame {
 		try {
             openConnectionsFile();
         } catch (Exception e1) {
-            // TODO: improve this exception handling (application shouldn't close)
+            e1.printStackTrace();
             JOptionPane.showMessageDialog(null, "Could not open connections file. Application will abort execution.", "ERROR", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
 	}
 
 	private void openConnectionsFile() throws Exception {
-	    String connFile = Globals.APP_PATH + "config" + File.separator + "Connections.xml";
-	    File f = new File(connFile);
+	    File f = new File(CONNECTIONS_FILE);
 	    if (!f.exists()) {
-	        ConnectionsFileParser.createEmptyFile(connFile);
+	        ConnectionsFileParser.createEmptyFile(CONNECTIONS_FILE);
 	    }
         this.connections = new ArrayList<ConnectionConfig>();
-        this.connections.addAll(Arrays.asList(ConnectionsFileParser.getConnections(connFile)));
+        this.connections.addAll(Arrays.asList(ConnectionsFileParser.getConnections(CONNECTIONS_FILE)));
     }
 
 	public void setConnections(ArrayList<ConnectionConfig> connections) {
@@ -278,8 +282,8 @@ public class Controller_GUI extends JFrame {
 	 * @throws Exception   if an error occurs when writing data to the file
 	 */
 	public void saveConnections() throws Exception {
-	    String filePath = Globals.APP_PATH + "config" + File.separator + "Connections.xml";
-	    ConnectionsFileParser.saveToFile(this.connections.toArray(new ConnectionConfig[connections.size()]), filePath);
+	    ConnectionsFileParser.saveToFile(this.connections.toArray(new ConnectionConfig[connections.size()]),
+	            CONNECTIONS_FILE);
 	}
 
     private void initializeMenuBar() {
@@ -324,7 +328,7 @@ public class Controller_GUI extends JFrame {
 		newDriverMenuItem.addActionListener(new ActionListener() {
 		    @Override
 		    public void actionPerformed(ActionEvent e) {
-		        new DriverDetail(null);
+		        new DriverDetail(null).setVisible(true);
 		    }
 		});
 		editDriverMenuItem = new JMenuItem("Edit...");
@@ -333,7 +337,7 @@ public class Controller_GUI extends JFrame {
 		    public void actionPerformed(ActionEvent e) {
 		        int selected = driversTable.getSelectedRow();
 		        if (selected > -1) {
-		            new DriverDetail(facade.getDriverList().get(selected));
+		            new DriverDetail(facade.getDriverList().get(selected)).setVisible(true);
 		        } else {
 		            JOptionPane.showMessageDialog(null, "Select a driver to edit");
 		        }
@@ -360,7 +364,7 @@ public class Controller_GUI extends JFrame {
 		newSinkMenuItem.addActionListener(new ActionListener() {
 		    @Override
 		    public void actionPerformed(ActionEvent e) {
-		        new SinkDetail(null);
+		        new SinkDetail(null).setVisible(true);
 		    }
 		});
 		editSinkMenuItem = new JMenuItem("Edit...");
@@ -369,7 +373,7 @@ public class Controller_GUI extends JFrame {
 		    public void actionPerformed(ActionEvent e) {
 		        int selected = sinksTable.getSelectedRow();
 		        if (selected > -1) {
-		            new SinkDetail(facade.getSinkList().get(selected));
+		            new SinkDetail(facade.getSinkList().get(selected)).setVisible(true);
 		        } else {
 		            JOptionPane.showMessageDialog(null, "Select a sink to edit");
 		        }
@@ -495,11 +499,21 @@ public class Controller_GUI extends JFrame {
 		viewMenu = new JMenu("View");
 		connectionsMenuItem = new JMenuItem("Connections");
 		connectionsMenuItem.addActionListener(new ActionListener() {
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        showConnectionsDialog();
+		    }
+		});
+		perfmonMenuItem = new JMenuItem("Performance Monitor");
+		perfmonMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showConnectionsDialog();
-            }});
+                showPerfmon();
+            }
+        });
+		perfmonMenuItem.setEnabled(false);
 		viewMenu.add(connectionsMenuItem);
+		viewMenu.add(perfmonMenuItem);
 
 		menuBar.add(fileMenu);
 		menuBar.add(driverMenu);
@@ -522,6 +536,7 @@ public class Controller_GUI extends JFrame {
 		toolBar.add(pauseBtn);
 		toolBar.add(stopBtn);
 		toolBar.add(switchPhaseBtn);
+		toolBar.add(perfmonBtn);
 
 		openBtn.setToolTipText("Open configuration file.");
 		saveBtn.setToolTipText("Save configuration file.");
@@ -531,70 +546,84 @@ public class Controller_GUI extends JFrame {
 		pauseBtn.setToolTipText("Pause load submission.");
 		stopBtn.setToolTipText("Stop load submission/data generation.");
 		switchPhaseBtn.setToolTipText("Switch Drivers to next phase.");
+		perfmonBtn.setToolTipText("View online performance stats.");
+		perfmonBtn.setEnabled(false);
 
 		openBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				int action = fileChooser.showOpenDialog(null);
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        int action = fileChooser.showOpenDialog(null);
 
-				if(action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
-					loadProfile(fileChooser.getSelectedFile());
-				}
-			}});
+		        if (action == JFileChooser.APPROVE_OPTION && fileChooser.getSelectedFile() != null) {
+		            loadProfile(fileChooser.getSelectedFile());
+		        }
+		    }
+		});
 		saveBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				saveProfile();
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        saveProfile();
+		    }
+		});
 		saveAsBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				saveProfileAs();
-			}});
-
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        saveProfileAs();
+		    }
+		});
 		loadBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				loadAllComponents();
-			}});
-
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        loadAllComponents();
+		    }
+		});
 		startBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				startLoadSubmission();
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        startLoadSubmission();
+		    }
+		});
 		pauseBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				pauseLoadSubmission();
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        pauseLoadSubmission();
+		    }
+		});
 		stopBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				stopLoadSubmission();
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        stopLoadSubmission();
+		    }
+		});
 		switchPhaseBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				switchToNextPhase();
-			}});
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        switchToNextPhase();
+		    }
+		});
+		perfmonBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showPerfmon();
+            }
+        });
 	}
 
 	private void initializeComponentsPanel() {
-		componentsPanel = new JPanel(new GridLayout(1,2));
+		componentsPanel = new JPanel(new GridLayout(1, 2));
 
 		//Drivers Panel
 		driversPanel = new JPanel(new BorderLayout());
 		driversPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Drivers"));
 		driversTable = new JTable();
 		driversTable.setModel(
-				new DefaultTableModel(new String [] {"Status", "Alias", "Address"},
-									0)	{
-											@Override
-											public boolean isCellEditable(int row, int column) {
-												return false;
-											}
-										}
+		        new DefaultTableModel(new String [] {"Status", "Alias", "Address"},
+		                0)	{
+		            @Override
+		            public boolean isCellEditable(int row, int column) {
+		                return false;
+		            }
+		        }
 		);
 
 		driversTable.getTableHeader().setReorderingAllowed(false);
@@ -616,7 +645,7 @@ public class Controller_GUI extends JFrame {
 		                            && !source.getModel().getValueAt(selected, 0).equals("FINISHED")) {
 		                        dd.disableGUI();
 		                    }
-
+		                    dd.setVisible(true);
 		                }
 		            }
 		        }
@@ -642,6 +671,7 @@ public class Controller_GUI extends JFrame {
 					DriverConfig copy = facade.getDriverList().get(selected);
 					DriverDetail dscreen = new DriverDetail(null);
 					dscreen.fillProperties(copy);
+					dscreen.setVisible(true);
 				} else {
 					JOptionPane.showMessageDialog(null, "Select a Driver to copy");
 				}
@@ -755,6 +785,7 @@ public class Controller_GUI extends JFrame {
 							if (source.getModel().getValueAt(selected, 0).equals("RUNNING")) {
 								sd.disableGUI();
 							}
+							sd.setVisible(true);
 						}
 					}
 				}
@@ -778,6 +809,7 @@ public class Controller_GUI extends JFrame {
 					SinkConfig copy = facade.getSinkList().get(selected);
 					SinkDetail sinkScreen = new SinkDetail(null);
 					sinkScreen.fillProperties(copy);
+					sinkScreen.setVisible(true);
 				} else {
 					JOptionPane.showMessageDialog(null, "Select a Sink to copy");
 				}
@@ -858,6 +890,8 @@ public class Controller_GUI extends JFrame {
 			this.reloadDriversTable();
 			this.reloadSinksTable();
 			this.setTitle("FINCoS Controller (" + f.getPath() + ")");
+			this.perfmonBtn.setEnabled(true);
+			this.perfmonMenuItem.setEnabled(true);
 		} catch (Exception e) { // Error parsing configuration file
 			JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			this.reloadDriversTable();
@@ -1000,7 +1034,7 @@ public class Controller_GUI extends JFrame {
 	public void addDriver(DriverConfig dr) {
 		synchronized (driversTable) {
 			facade.addDriver(dr);
-			((DefaultTableModel) driversTable.getModel()).addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress()});
+			((DefaultTableModel) driversTable.getModel()).addRow(new Object[] {"DISCONNECTED", dr.getAlias(), dr.getAddress().getHostAddress()});
 		}
 		if (!configModified) {
 			this.setTitle(this.getTitle() + "*");
@@ -1248,6 +1282,12 @@ public class Controller_GUI extends JFrame {
 	}
 
 	// ============================ Control Functions ==============================
+
+	private void showPerfmon() {
+	    new PerformanceMonitor(facade.getDriverList().toArray(new DriverConfig[0]),
+	            facade.getSinkList().toArray(new SinkConfig[0]),
+	            facade.getRemoteDrivers(), facade.getRemoteSinks());
+    }
 
 	/**
 	 * Initializes a given Driver.

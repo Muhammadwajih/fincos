@@ -729,7 +729,8 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
         senders = new Sender[1];
 
         reader = new DataFileReader(filePhase.getFilePath(), filePhase.containsTimestamps(),
-                filePhase.containsEventTypes(), filePhase.getSingleEventTypeName());
+                filePhase.getTimestampUnit(), filePhase.containsEventTypes(),
+                filePhase.getSingleEventTypeName());
         if (adapterType == AdapterType.JMS) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
