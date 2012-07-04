@@ -22,16 +22,16 @@ import pt.uc.dei.fincos.sink.Sink;
  */
 public class DaemonServer implements RemoteDaemonServerFunctions{
 	private HashMap<String, Driver> driverList;
-	private HashMap<String, Sink> monitorList;
+	private HashMap<String, Sink> sinkList;
 
 	public DaemonServer() {
 		driverList = new HashMap<String, Driver>();
-		monitorList = new HashMap<String, Sink>();
+		sinkList = new HashMap<String, Sink>();
 	}
 
 	public DaemonServer(String ID) {
 		driverList = new HashMap<String, Driver>();
-		monitorList = new HashMap<String, Sink>();
+		sinkList = new HashMap<String, Sink>();
 	}
 
 	/**
@@ -84,12 +84,14 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
 
 	@Override
 	public void startSink(String alias) throws RemoteException {
-		System.out.println("Initializing new Sink application.");
-		Sink monitor = this.monitorList.get(alias);
-		if(monitor == null)
-			this.monitorList.put(alias, new Sink(alias));
-		else
-			monitor.setVisible(true);
+		Sink sink = this.sinkList.get(alias);
+		if (sink == null) {
+		    System.out.println("Initializing new Sink application.");
+			this.sinkList.put(alias, new Sink(alias));
+		} else {
+		    System.out.println("Loading Sink \"" + alias + "\".");
+			sink.setVisible(true);
+		}
 	}
 
 

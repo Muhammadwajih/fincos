@@ -10,6 +10,7 @@ import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
 import pt.uc.dei.fincos.controller.Logger;
 import pt.uc.dei.fincos.data.DataFileReader;
+import pt.uc.dei.fincos.perfmon.DriverPerfStats;
 
 
 /**
@@ -68,6 +69,12 @@ public class Sender extends Thread {
     /** A multiplication factor used to increase or decrease the rate at which events are submitted. */
     private double factor = 1.0;
 
+    /** Indicates if online performance monitoring is enabled. */
+    private boolean perfTracingEnabled;
+
+    /** Collected performance metrics. */
+    private DriverPerfStats perfStats;
+
     /**
      * Constructor #1: event submission is controlled by the Scheduler passed as argument;
      *                 events' data is generated in runtime.
@@ -80,9 +87,11 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataGen dataGen,
-            ThreadGroup group, String id, int loopCount, int rtMode, int rtResolution) {
+            ThreadGroup group, String id, int loopCount, int rtMode, int rtResolution,
+            boolean perfTracingEnabled) {
         super(group, id);
         this.adapter = adapter;
         this.scheduler = scheduler;
@@ -92,6 +101,8 @@ public class Sender extends Thread {
         this.fileRepeatCount = loopCount;
         this.rtMode = rtMode;
         this.rtResolution = rtResolution;
+        this.perfTracingEnabled = perfTracingEnabled;
+        this.perfStats = new DriverPerfStats();
     }
 
     /**
@@ -107,10 +118,11 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataFileReader dataReader,
             boolean containsTimestamps, ThreadGroup group, String id,
-            int loopCount, int rtMode, int rtResolution) {
+            int loopCount, int rtMode, int rtResolution, boolean perfTracingEnabled) {
         super(group, id);
         this.adapter = adapter;
         this.scheduler = scheduler;
@@ -120,6 +132,8 @@ public class Sender extends Thread {
         this.fileRepeatCount = loopCount;
         this.rtMode = rtMode;
         this.rtResolution = rtResolution;
+        this.perfTracingEnabled = perfTracingEnabled;
+        this.perfStats = new DriverPerfStats();
     }
 
     /**
@@ -131,9 +145,11 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, DataFileReader dataReader,
-            int timestampUnit, int loopCount, int rtMode, int rtResolution) {
+            int timestampUnit, int loopCount, int rtMode, int rtResolution,
+            boolean perfTracingEnabled) {
         this.adapter = adapter;
         this.scheduler = null;
         this.dataFileReader = dataReader;
@@ -143,6 +159,8 @@ public class Sender extends Thread {
         this.fileRepeatCount = loopCount;
         this.rtMode = rtMode;
         this.rtResolution = rtResolution;
+        this.perfTracingEnabled = perfTracingEnabled;
+        this.perfStats = new DriverPerfStats();
     }
 
     /**
@@ -497,6 +515,11 @@ public class Sender extends Thread {
             logger.log(event);
         }
 
+        // Updates perf stats
+        if (perfTracingEnabled) {
+            this.perfStats.incrementCount(event.getType().getName());
+        }
+
         sentEventCount++;
     }
 
@@ -519,6 +542,11 @@ public class Sender extends Thread {
         // Logs the sent event
         if (logger != null) {
             logger.log(event);
+        }
+
+        // Updates perf stats
+        if (perfTracingEnabled) {
+            this.perfStats.incrementCount(event.getType());
         }
 
         sentEventCount++;
@@ -551,5 +579,24 @@ public class Sender extends Thread {
      */
     public boolean isUsingScheduledTime() {
         return useScheduledTime;
+    }
+
+    /**
+     * Enables or disables online performance tracing at the Sender.
+     *
+     * @param enabled           <tt>true</tt> for enabling performance tracing,
+     *                          <tt>false</tt> for disabling it.
+     * @throws RemoteException
+     */
+    protected void setPerfTracing(boolean enabled) {
+        this.perfTracingEnabled = true;
+    }
+
+    protected DriverPerfStats getPerfStats() {
+        return this.perfStats;
+    }
+
+    protected void resetPerfStats() {
+        this.perfStats.reset();
     }
 }

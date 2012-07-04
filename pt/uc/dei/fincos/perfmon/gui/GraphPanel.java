@@ -377,7 +377,7 @@ public class GraphPanel extends JPanel {
     }
 
     public void refreshGraphs() {
-        /*String connection, streamName, streamType, counter;
+        String connection, streamName, streamType, counter;
         String [] key;
         synchronized (this.graphSeries) {
             if (this.graphSeries != null) {
@@ -387,25 +387,24 @@ public class GraphPanel extends JPanel {
                     streamName = key[1];
                     streamType = key[2];
                     counter = key[3];
-
                     if (streamType.equalsIgnoreCase("Input")) {
-                        Double totalThroughput = parent.getThroughputFor(connection, streamName);
-                        chart.updateChart(e.getValue(), System.currentTimeMillis(), totalThroughput);
+                        Double throughput = parent.getThroughputFor(connection, streamName);
+                        if (throughput != null) {
+                            chart.updateChart(e.getValue(), System.currentTimeMillis(), throughput);
+                        }
                     } else if (streamType.equalsIgnoreCase("Output")) {
-                        PerfMonValidator validator = outputPerfValidators.get(connection + "/" + streamName);
-                        if (validator != null) {
+                        Double throughput = parent.getOutThroughputFor(connection, streamName);
+                        if (throughput != null && !throughput.isNaN()) {
                             if (counter.equalsIgnoreCase("Throughput")) {
-                                chart.updateChart(e.getValue(), System.currentTimeMillis(), validator.getCurrentThroughput());
+                                chart.updateChart(e.getValue(), System.currentTimeMillis(), throughput);
                             } else if (counter.equalsIgnoreCase("Response Time")) {
-                                chart.updateChart(e.getValue(), System.currentTimeMillis(), validator.getCurrentRT());
+                                chart.updateChart(e.getValue(), System.currentTimeMillis(), parent.getResponseTimeFor(connection, streamName));
                             }
-                        } else {
-                            chart.updateChart(e.getValue(), System.currentTimeMillis(), 0);
                         }
                     }
                 }
             }
-        }*/
+        }
     }
 
 

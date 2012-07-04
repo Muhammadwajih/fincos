@@ -37,6 +37,7 @@ import pt.uc.dei.fincos.basic.Step;
 import pt.uc.dei.fincos.controller.ConnectionConfig;
 import pt.uc.dei.fincos.controller.Logger;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.perfmon.SinkPerfStats;
 
 /**
  * Sink application. Receives and processes results from a CEP engine.
@@ -80,6 +81,12 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     /** Total number of events received so far. */
     private long receivedEvents = 0;
 
+    /** Indicates if online performance monitoring is enabled. */
+    private boolean perfTracingEnabled = false;
+
+    /** Collected performance metrics. */
+    private SinkPerfStats perfStats;
+
     //========================= GUI ===================================
     JLabel statusLabel, eventCountLabel;
     JPanel statusPanel;
@@ -105,6 +112,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
 
         this.alias = alias;
         this.status = new Status();
+        this.perfStats = new SinkPerfStats();
 
         statusPanel =  new JPanel();
         statusPanel.setLayout(null);
@@ -355,6 +363,17 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
             receivedCount = receivedEvents;
         }
 
+        // Updates perf stats, if realtime performance monitoring is enabled
+        if (perfTracingEnabled) {
+            Long inputTS = 0L;
+            Long outputTS = 0L;
+            if (rtMode != Globals.NO_RT) {
+                inputTS = (Long) event[event.length - 2];
+                outputTS = (Long) event[event.length - 1];
+            }
+            this.perfStats.offer((String) event[0], inputTS, outputTS, rtResolution);
+        }
+
         try {
             // Log event, if configured to
             if (logger != null && receivedCount % logSamplMod == 0) {
@@ -383,5 +402,17 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     @Override
     public Status getStatus() throws RemoteException {
         return this.status;
+    }
+
+    @Override
+    public void setPerfTracing(boolean enabled) throws RemoteException {
+        this.perfTracingEnabled = enabled;
+    }
+
+    @Override
+    public SinkPerfStats getPerfStats() throws RemoteException {
+        SinkPerfStats ret = this.perfStats.clone();
+        this.perfStats.reset();
+        return ret;
     }
 }

@@ -233,7 +233,12 @@ public class EsperInterface extends CEPEngineInterface {
 
         // Stops all "internal" queries
         for (EPStatement q: unlistenedQueries) {
-            q.stop();
+            if (!q.isStopped() && !q.isDestroyed()) {
+                q.stop();
+            }
+            if (!q.isDestroyed()) {
+                q.destroy();
+            }
         }
         this.epService.destroy();
     }

@@ -41,10 +41,10 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 import pt.uc.dei.fincos.controller.gui.PopupListener;
 import pt.uc.dei.fincos.driver.DriverRemoteFunctions;
 import pt.uc.dei.fincos.perfmon.DriverPerfStats;
-import pt.uc.dei.fincos.perfmon.PerfMonValidator;
+import pt.uc.dei.fincos.perfmon.OutStreamCounters;
 import pt.uc.dei.fincos.perfmon.PerformanceStats;
+import pt.uc.dei.fincos.perfmon.SinkPerfStats;
 import pt.uc.dei.fincos.perfmon.Stream;
-import pt.uc.dei.fincos.perfmon.ThroughputEstimator;
 import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 
@@ -90,29 +90,11 @@ public class PerformanceMonitor extends JFrame {
     /** For each combination of Connection/input stream, there is a performance counter. */
     private HashMap<String, Double> inputStreamsStats;
 
-    /** For each combination of query/CEP server, there will be a specific performance validator. */
-    private HashMap<String, PerfMonValidator> outputPerfValidators;
+    /** For each combination of Connection/output stream, there is a set of performance counters. */
+    private HashMap<String, OutStreamCounters> outputStreamStats;
 
     /** Background thread that periodically refreshes GUI when the Pefmon is in reatime mode. */
     Timer guiRefresher;
-
-    /** Defines when throughput is computed. */
-    public enum WindowEvaluationModel {
-        /** At specified intervals (in this case every time GUI is refreshed, 1 per second). */
-        TIME_BASED,
-        /** Every time a new event arrives. */
-        TUPLE_BASED
-    };
-
-    /** The evaluation model used in this Perfmon instance. */
-    private WindowEvaluationModel throughputWindowModel = WindowEvaluationModel.TUPLE_BASED;
-
-    /**
-     * For each combination of input stream/CEP server, there will be a list of throughput estimators (one for each Driver)
-     * Throughput of a given input stream will be computed as the sum of the throughputs of all the different Drivers
-     * that send events of that type.
-     */
-    private HashMap<String, ArrayList<ThroughputEstimator>> inputThroughputEstimators;
     //---------------------------------------------------------------------------------------------
 
 
@@ -170,6 +152,7 @@ public class PerformanceMonitor extends JFrame {
         this.setIconImage(Toolkit.getDefaultToolkit().getImage("imgs/perfmon.png"));
         this.dataSource = REALTIME;
         initGUI();
+        loadForRealTime();
     }
 
     private void initGUI() {
@@ -196,6 +179,8 @@ public class PerformanceMonitor extends JFrame {
             this.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent e) {
+                    guiRefresher.stop();
+                    guiRefresher = null;
                     for (DriverRemoteFunctions dr : remoteDrivers.values()) {
                         try {
                             if (dr != null) {
@@ -242,20 +227,28 @@ public class PerformanceMonitor extends JFrame {
      * @param msg   the message to be exhibited
      */
     public void showInfo(String msg) {
-        System.err.println("Not implemented yet.");
+        System.out.println(msg);
     }
 
     /**
      * Loads the FINCoS Performance Monitor tool for real time monitoring.
      *
-     * @param rtMeasurementMode  Either END_TO_END_RT_MILLIS, ADAPTER_RT_NANOS, or NO_RT
+     * @param rtMode  Either END_TO_END, ADAPTER, or NO_RT
      */
-    private void loadForRealTime(int rtMeasurementMode) {
-        // Initializes Validation mapping stream -> Validator
-        initializeValidators();
+    private void loadForRealTime() {
+        // Initializes input stream stats
+        inputStreamsStats = new HashMap<String, Double>();
 
-        // Initializes Throughput estimators for Input Streams
-        inputThroughputEstimators = new HashMap<String, ArrayList<ThroughputEstimator>>();
+        // Initializes output stream stats
+        outputStreamStats = new HashMap<String, OutStreamCounters>();
+        if (this.sinks != null) {
+            for (SinkConfig sink : this.sinks) {
+                for (String outputStream : sink.getOutputStreamList()) {
+                    String key = sink.getConnection().alias + "/" + outputStream;
+                    outputStreamStats.put(key, null);
+                }
+            }
+        }
 
         // Load stats panel
         statsTables = new ArrayList<JTable>();
@@ -263,6 +256,32 @@ public class PerformanceMonitor extends JFrame {
 
         // Load graphs panel
         graphsPanel.loadForRealTimeMonitoring(drivers, sinks);
+
+        // Enables performance monitoring at the Drivers
+        for (Entry<DriverConfig, DriverRemoteFunctions> entry: remoteDrivers.entrySet()) {
+            DriverRemoteFunctions remoteDr = entry.getValue();
+            if (remoteDr != null) {
+                try {
+                    remoteDr.setPerfTracing(true);
+                } catch (RemoteException e) {
+                    System.err.println("Could not enable performance monitoring at \""
+                            + entry.getKey().getAlias() + "\" (" + e.getMessage() + ").");
+                }
+            }
+        }
+
+        // Enables performance monitoring at the Sinks
+        for (Entry<SinkConfig, SinkRemoteFunctions> entry: remoteSinks.entrySet()) {
+            SinkRemoteFunctions remoteSink = entry.getValue();
+            if (remoteSink != null) {
+                try {
+                    remoteSink.setPerfTracing(true);
+                } catch (RemoteException e) {
+                    System.err.println("Could not enable performance monitoring at \""
+                            + entry.getKey().getAlias() + "\" (" + e.getMessage() + ").");
+                }
+            }
+        }
 
         // Initializes GUI refresher thread
         if (guiRefresher == null) {
@@ -300,9 +319,6 @@ public class PerformanceMonitor extends JFrame {
         this.sinklogFilesPaths = logFiles;
         this.miStart = miStart;
         this.miEnd = miEnd;
-
-        // Load stats panel
-        statsTables = new ArrayList<JTable>();
 
         // Load graphs panel
         graphsPanel.loadForLogFiles(statsSeries);
@@ -344,11 +360,18 @@ public class PerformanceMonitor extends JFrame {
 
         serverPanel.setBorder(BorderFactory.createTitledBorder(connectionAlias));
         statsTable = new JXTable();
-        DefaultTableModel model = new DefaultTableModel(
-                new String [] {"Key", "Query",
-                        "Avg Throughput", "Min Throughput", "Max Throughput", "Last Throughput",
-                        "Avg RT (ms)", "Min RT (ms)", "Max RT (ms)", "Last RT (ms)",
-                "Stdev RT (ms)"}, 0)
+        String[] columns;
+        if (dataSource != REALTIME) {
+            columns = new String [] {"Key", "Query",
+                    "Avg Throughput", "Min Throughput", "Max Throughput", "Last Throughput",
+                    "Avg RT (ms)", "Min RT (ms)", "Max RT (ms)", "Last RT (ms)",
+                    "Stdev RT (ms)"};
+        } else {
+            columns = new String [] {"Key", "Query",
+                    "Throughput", "Avg RT (ms)", "Min RT (ms)", "Max RT (ms)",
+                    "Last RT (ms)", "Stdev RT (ms)"};
+        }
+        DefaultTableModel model = new DefaultTableModel(columns, 0)
         {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -383,10 +406,12 @@ public class PerformanceMonitor extends JFrame {
         JScrollPane statsScroll = new JScrollPane();
         statsScroll.setViewportView(statsTable);
 
-        // Hides Min Throughput, Max throughput and Stdev RT columns
-        ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Min Throughput"))).setVisible(false);
-        ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Max Throughput"))).setVisible(false);
-        ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Stdev RT (ms)"))).setVisible(false);
+        if (dataSource != REALTIME) {
+            // Hides Min Throughput, Max throughput and Stdev RT columns
+            ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Min Throughput"))).setVisible(false);
+            ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Max Throughput"))).setVisible(false);
+            ((TableColumnExt) statsTable.getColumnModel().getColumn(statsTable.getColumnModel().getColumnIndex("Stdev RT (ms)"))).setVisible(false);
+        }
 
         serverPanel.add(statsScroll, BorderLayout.CENTER);
         serverPanel.setPreferredSize(new Dimension(50, statsTable.getRowCount() * 30));
@@ -523,7 +548,7 @@ public class PerformanceMonitor extends JFrame {
 
             DefaultTableModel model = (DefaultTableModel) addStatsTable(connAlias).getModel();
 
-            for (String serverAndOutput: outputPerfValidators.keySet()) {
+            for (String serverAndOutput: outputStreamStats.keySet()) {
                 server = serverAndOutput.split("/")[0];
                 outputName = serverAndOutput.split("/")[1];
                 if (server.equals(connAlias)) {
@@ -537,37 +562,98 @@ public class PerformanceMonitor extends JFrame {
         statsPanel.revalidate();
     }
 
-    private void refreshGUI2() {
+    private void refreshGUI() {
         // For each Driver
         for (DriverConfig dr: drivers) {
             DriverRemoteFunctions remoteDr = remoteDrivers.get(dr);
-            try {
-                DriverPerfStats stats = remoteDr.getPerfStats();
-                long interval = stats.end - stats.start;
-                // Computes throughput per stream
-                for (Entry<String, Integer> e : stats.streamStats.entrySet()) {
-                    // The throughput of this stream on this Driver
-                    String streamName = e.getKey();
-                    Integer sentCount = e.getValue();
-                    double throughput = 1.0 * sentCount / interval;
-                    String streamID = dr.getConnection().alias + "/" + streamName;
-                    // The throughput of this stream for *all* Drivers
-                    Double totalThroughput = inputStreamsStats.get(streamID);
-                    if (totalThroughput == null) {
-                        inputStreamsStats.put(streamID, throughput);
-                    } else {
-                        inputStreamsStats.put(streamID, totalThroughput + throughput);
+            if (remoteDr != null) {
+                try {
+                    DriverPerfStats stats = remoteDr.getPerfStats();
+                    long interval = stats.getEnd() - stats.getStart(); // in milliseconds
+                    // Computes throughput per stream
+                    for (Entry<String, Integer> e : stats.getStreamStats().entrySet()) {
+                        // The throughput of this stream on this Driver
+                        String streamName = e.getKey();
+                        Integer sentCount = e.getValue();
+                        double throughput = interval != 0 ? 1000.0 * sentCount / interval : 0;
+                        String streamID = dr.getConnection().alias + "/" + streamName;
+                        // The throughput of this stream for *all* Drivers
+                        Double totalThroughput = inputStreamsStats.get(streamID);
+                        if (totalThroughput == null) {
+                            inputStreamsStats.put(streamID, throughput);
+                        } else {
+                            inputStreamsStats.put(streamID, totalThroughput + throughput);
+                        }
                     }
+                } catch (RemoteException e) {
+                    System.err.println(e.getMessage());
                 }
-            } catch (RemoteException e) {
-                System.err.println(e.getMessage());
             }
         }
+
+        // For each Sink
+        for (SinkConfig sink: sinks) {
+            SinkRemoteFunctions remoteSink = remoteSinks.get(sink);
+            if (remoteSink != null) {
+                try {
+                    SinkPerfStats stats = remoteSink.getPerfStats();
+                    long interval = stats.getEnd() - stats.getStart();
+                    // Computes throughput per stream
+                    for (Entry<String, OutStreamCounters> e : stats.getStreamStats().entrySet()) {
+                        String streamName = e.getKey();
+                        OutStreamCounters counters = e.getValue();
+                        counters.setThroughput(interval != 0 ? 1E3 * counters.getLastCount() / interval : 0);
+                        String streamID = sink.getConnection().alias + "/" + streamName;
+                        outputStreamStats.put(streamID, counters);
+                    }
+                } catch (RemoteException e) {
+                    System.err.println(e.getMessage());
+                }
+            }
+        }
+
         // Updates UI
         graphsPanel.refreshGraphs();
+        refreshStatsTable();
 
         // Resets stats
         inputStreamsStats.clear();
+    }
+
+    private void refreshStatsTable() {
+        if (this.statsTables != null) {
+            DefaultTableModel model;
+            OutStreamCounters streamStats;
+
+            for (JTable table : statsTables) {
+                String outputName;
+                model = (DefaultTableModel) table.getModel();
+                for (int i = 0; i < table.getRowCount(); i++) {
+                    outputName = (String) model.getValueAt(i, 0);
+                    streamStats = outputStreamStats.get(outputName);
+                    double minRT;
+                    if (streamStats != null) {
+                        model.setValueAt(Globals.FLOAT_FORMAT_2.format(streamStats.getThroughput()), i, 2);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(streamStats.getAvgRT()), i, 3);
+                        minRT = streamStats.getMinRT();
+                        if (minRT != Double.MAX_VALUE) {
+                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(minRT), i, 4);
+                        }
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(streamStats.getMaxRT()), i, 5);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(streamStats.getLastRT()), i, 6);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(streamStats.getStdevRT()), i, 7);
+                    } else {
+                        model.setValueAt(Globals.FLOAT_FORMAT_2.format(0), i, 2);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 3);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 4);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 5);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 6);
+                        model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 7);
+                    }
+                }
+            }
+        }
+
     }
 
     /**
@@ -577,92 +663,42 @@ public class PerformanceMonitor extends JFrame {
      * @return              the throughput of a given input stream on a given connection
      */
     public Double getThroughputFor(String connection, String inputStream) {
-        return inputStreamsStats.get(connection + "/" + inputStream);
+        Double throughput = inputStreamsStats.get(connection + "/" + inputStream);
+        if (throughput != null) {
+            return throughput;
+        }
+        return 0.0;
     }
 
     /**
      *
      * @param connection     the connection alias
      * @param outputstream   the stream name
-     * @return               the throughput and response time for a given output stream on a given connection
+     * @return               the throughput for a given output stream on a given connection
      */
-    public Double[] getStatsFor(String connection, String outputstream) {
-        throw new RuntimeException("Not implemented.");
-    }
-
-    private void refreshGUI() {
-        if (this.outputPerfValidators != null) {
-            PerfMonValidator validator;
-
-            // Updates Query Table(s)
-            if (this.statsTables != null) {
-                DefaultTableModel model;
-                for (JTable table : statsTables) {
-                    String outputName;
-                    model = (DefaultTableModel) table.getModel();
-                    for (int i = 0; i < table.getRowCount(); i++) {
-                        outputName = (String) model.getValueAt(i, 0);
-                        validator = outputPerfValidators.get(outputName);
-                        double minRT, minThroughput;
-                        if (validator != null) {
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(validator.getAvgThroughput()), i, 2);
-                            // If window evaluation model is time-based, recompute throughput at clock tick
-                            if (throughputWindowModel == WindowEvaluationModel.TIME_BASED) {
-                                validator.computeCurrentThroughput();
-                            }
-                            minThroughput = validator.getMinThroughput();
-                            if (minThroughput != Double.MAX_VALUE) {
-                                model.setValueAt(Globals.FLOAT_FORMAT_2.format(minThroughput), i, 3);
-                            }
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(validator.getMaxThroughput()), i, 4);
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(validator.getCurrentThroughput()), i, 5);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(validator.getAvgRT()), i, 6);
-                            minRT = validator.getMinRT();
-                            if (minRT != Double.MAX_VALUE) {
-                                model.setValueAt(Globals.FLOAT_FORMAT_3.format(minRT), i, 7);
-                            }
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(validator.getMaxRT()), i, 8);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(validator.getCurrentRT()), i, 9);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(validator.getStdevRT()), i, 10);
-                        } else {
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(0), i, 2);
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(0), i, 3);
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(0), i, 4);
-                            model.setValueAt(Globals.FLOAT_FORMAT_2.format(0), i, 5);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 6);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 7);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 8);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 9);
-                            model.setValueAt(Globals.FLOAT_FORMAT_3.format(0), i, 10);
-                        }
-                    }
-                }
-            }
-
-            //Update Counters Graph
-            graphsPanel.refreshGraphs();
+    public Double getOutThroughputFor(String connection, String outputstream) {
+        OutStreamCounters counters = outputStreamStats.get(connection + "/" + outputstream);
+        if (counters != null) {
+           return counters.getThroughput();
         }
+
+        return 0.0;
     }
 
     /**
-     * Initializes the list of Validators.
-     */
-    private void initializeValidators() {
-        outputPerfValidators = new HashMap<String, PerfMonValidator>();
+    *
+    * @param connection     the connection alias
+    * @param outputstream   the stream name
+    * @return               the response time for a given output stream on a given connection
+    */
+   public Double getResponseTimeFor(String connection, String outputstream) {
+       OutStreamCounters counters = outputStreamStats.get(connection + "/" + outputstream);
+       if (counters != null) {
+          return counters.getLastRT();
+       }
 
-        String key;
-
-        if (this.sinks != null) {
-            for (SinkConfig sink : this.sinks) {
-                for (String outputStream : sink.getOutputStreamList()) {
-                    key = sink.getConnection().alias + "/" + outputStream;
-                    outputPerfValidators.put(key, null);
-                }
-
-            }
-        }
-    }
-
+       return 0.0;
+   }
 
     /**
      * Retrieves the list of all servers (i.e. unique connections) used in the test

@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.perfmon.SinkPerfStats;
 
 
 /**
@@ -41,11 +42,29 @@ public interface SinkRemoteFunctions extends Remote {
     void unload() throws RemoteException;
 
 
-
     /**
      *
      * @return the status of a remote Sink
      * @throws RemoteException  for unsuccessful RMI calls
      */
     Status getStatus() throws RemoteException;
+
+
+    /**
+     * Enables or disables online performance tracing at the Sink.
+     *
+     * @param enabled           <tt>true</tt> for enabling performance tracing,
+     *                          <tt>false</tt> for disabling it.
+     * @throws RemoteException  for unsuccessful RMI calls
+     */
+    void setPerfTracing(boolean enabled)throws RemoteException;
+
+
+    /**
+     * Retrieves performance stats from this Driver.
+     *
+     * @return  a map stream -> number of events received since the
+     * @throws RemoteException  for unsuccessful RMI calls
+     */
+    SinkPerfStats getPerfStats() throws RemoteException;
 }
