@@ -95,7 +95,7 @@ public interface DriverRemoteFunctions extends Remote {
      *
      * @param enabled           <tt>true</tt> for enabling performance tracing,
      *                          <tt>false</tt> for disabling it.
-     * @throws RemoteException
+     * @throws RemoteException  for unsuccessful RMI calls
      */
     void setPerfTracing(boolean enabled)throws RemoteException;
 

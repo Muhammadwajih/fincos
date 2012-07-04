@@ -136,6 +136,8 @@ public class EsperListener extends OutputListener implements UpdateListener {
                     eventObj[i] = event.get(f.getName());
                     i++;
                 }
+            } catch (ClassNotFoundException cne) {
+                System.err.println("The type \"" + queryOutputName + "\" has not been defined. ");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -185,7 +187,12 @@ public class EsperListener extends OutputListener implements UpdateListener {
     public void disconnect() {
         if (query != null) {
             query.removeListener(this);
-            query.stop();
+            if (!query.isStopped() && !query.isDestroyed()) {
+                query.stop();
+            }
+            if (!query.isDestroyed()) {
+                query.destroy();
+            }
         }
     }
 

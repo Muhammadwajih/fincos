@@ -14,6 +14,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -125,6 +126,9 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
 
     /** Number of events sent so far in the current phase only. */
     private long phaseEventsSent = 0;
+
+    /** Indicates if online performance monitoring is enabled. */
+    private boolean perfTracingEnabled = false;
     // ========================================================================
 
 
@@ -684,18 +688,22 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
             if (adapterType == AdapterType.JMS) {
                 if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.DATASET) {
                     senders[j] = new Sender(jmsInterface, sch, reader, false,
-                                            senderGroup, "" + (j + 1), 1, rtMode, rtResolution);
+                                            senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
+                                            perfTracingEnabled);
                 } else if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
                     senders[j] = new Sender(jmsInterface, sch, dg,
-                                            senderGroup, "" + (j + 1), 1, rtMode, rtResolution);
+                                            senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
+                                            perfTracingEnabled);
                 }
             } else if (adapterType == AdapterType.CEP) {
                 if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.DATASET) {
                     senders[j] = new Sender(cepEngineInterface, sch, reader, false,
-                                            senderGroup, "" + (j + 1), 1, rtMode, rtResolution);
+                                            senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
+                                            perfTracingEnabled);
                 } else if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
                     senders[j] = new Sender(cepEngineInterface, sch, dg,
-                                            senderGroup, "" + (j + 1), 1, rtMode, rtResolution);
+                                            senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
+                                            perfTracingEnabled);
                 }
             }
 
@@ -735,25 +743,29 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
                 senders[0] = new Sender(jmsInterface, reader, filePhase.getTimestampUnit(),
-                                        filePhase.getLoopCount(), rtMode, rtResolution);
+                                        filePhase.getLoopCount(), rtMode, rtResolution,
+                                        perfTracingEnabled);
             } else { // Event submission is scheduled based on a fixed rate
                 sch = new Scheduler(filePhase.getEventSubmissionRate(),
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
                 senders[0] = new Sender(jmsInterface, sch, reader, filePhase.containsTimestamps(),
-                                        null, "thread-1", filePhase.getLoopCount(), rtMode, rtResolution);
+                                        null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
+                                        perfTracingEnabled);
             }
         } else if (adapterType == AdapterType.CEP) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
                 senders[0] = new Sender(cepEngineInterface, reader, filePhase.getTimestampUnit(),
-                                        filePhase.getLoopCount(), rtMode, rtResolution);
+                                        filePhase.getLoopCount(), rtMode, rtResolution,
+                                        perfTracingEnabled);
             } else { // Event submission is scheduled based on a fixed rate
                 sch = new Scheduler(filePhase.getEventSubmissionRate(),
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
                     senders[0] = new Sender(cepEngineInterface, sch, reader, filePhase.containsTimestamps(),
-                                            null, "thread-1", filePhase.getLoopCount(), rtMode, rtResolution);
+                                            null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
+                                            perfTracingEnabled);
             }
         }
         senders[0].setUseScheduledTime(useScheduledTime);
@@ -864,12 +876,46 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
 
     @Override
     public void setPerfTracing(boolean enabled) throws RemoteException {
-        throw new RuntimeException("Not implemented yet.");
+        this.perfTracingEnabled = enabled;
+        if (this.senders != null) {
+            for (Sender sender: this.senders) {
+                if (sender != null) {
+                    sender.setPerfTracing(enabled);
+                }
+            }
+        }
     }
 
     @Override
     public DriverPerfStats getPerfStats() throws RemoteException {
-        throw new RuntimeException("Not implemented yet.");
+        long start = Long.MAX_VALUE;
+        long end = 0;
+        HashMap<String, Integer> streamStats = new HashMap<String, Integer>();
+        if (this.senders != null) {
+            for (Sender sender: this.senders) {
+                if (sender != null) {
+                    DriverPerfStats senderStats = sender.getPerfStats();
+                    if (senderStats.getStart() != -1) { // there is some stat
+                        start = Math.min(start, senderStats.getStart());
+                        end = Math.max(end, senderStats.getEnd());
+                        for (Entry<String, Integer> e: senderStats.getStreamStats().entrySet()) {
+                            String stream = e.getKey();
+                            Integer senderCount = e.getValue();
+                            Integer totalCount = streamStats.get(stream);
+                            if (totalCount == null) {
+                                streamStats.put(stream, senderCount);
+                            } else {
+                                streamStats.put(stream, totalCount + senderCount);
+                            }
+                        }
+                        senderStats.reset();
+                    } else {
+                        continue;
+                    }
+                }
+            }
+        }
+        return new DriverPerfStats(start, end, streamStats);
     }
 
 }
