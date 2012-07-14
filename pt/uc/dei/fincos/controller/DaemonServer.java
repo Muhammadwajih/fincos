@@ -41,12 +41,12 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
 	public void start() {
 		try {
 			System.out.println("Trying to start rmi regitry application...");
-			Runtime.getRuntime().exec("rmiregistry");
+			Runtime.getRuntime().exec("rmiregistry " + Globals.RMI_PORT);
 			System.out.println("Done!");
 
 			System.out.println("Trying to initialize RMI interface...");
 			RemoteDaemonServerFunctions stub = (RemoteDaemonServerFunctions) UnicastRemoteObject.exportObject(this, 0);
-			Registry registry = LocateRegistry.getRegistry(Globals.DEFAULT_RMI_PORT);
+			Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
 			registry.rebind("FINCoS", stub);
 			System.out.println("Done!");
 		} catch (IOException e1) {

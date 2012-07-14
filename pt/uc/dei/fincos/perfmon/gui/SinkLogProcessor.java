@@ -93,7 +93,6 @@ public class SinkLogProcessor extends SwingWorker<Set<PerformanceStats>, Void> {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         } finally {
             if (progressUpdater != null) {

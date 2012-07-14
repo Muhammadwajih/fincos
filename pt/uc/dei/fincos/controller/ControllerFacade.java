@@ -422,11 +422,11 @@ public class ControllerFacade {
         Boolean ret = null;
 
         DriverRemoteFunctions remoteDr;
-        Registry daemonRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.DEFAULT_RMI_PORT);
+        Registry daemonRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.RMI_PORT);
         RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
         remoteDaemon.startDriver(dr.getAlias());
 
-        Registry driverRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.DEFAULT_RMI_PORT);
+        Registry driverRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.RMI_PORT);
         remoteDr = (DriverRemoteFunctions) driverRegistry.lookup(dr.getAlias());
         synchronized (remoteDrivers) {
             remoteDrivers.put(dr, remoteDr);
@@ -457,11 +457,11 @@ public class ControllerFacade {
         Boolean ret = null;
 
         SinkRemoteFunctions remoteSink;
-        Registry daemonRegistry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.DEFAULT_RMI_PORT);
+        Registry daemonRegistry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.RMI_PORT);
         RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
         remoteDaemon.startSink(sink.getAlias());
 
-        Registry registry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.DEFAULT_RMI_PORT);
+        Registry registry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.RMI_PORT);
         remoteSink = (SinkRemoteFunctions) registry.lookup(sink.getAlias());
         synchronized (remoteSinks) {
             remoteSinks.put(sink, remoteSink);
@@ -602,7 +602,7 @@ public class ControllerFacade {
     public void terminateFINCoSDaemonService(String ipAddress)
     throws RemoteException, NotBoundException
     {
-        Registry daemonRegistry = LocateRegistry.getRegistry(ipAddress, Globals.DEFAULT_RMI_PORT);
+        Registry daemonRegistry = LocateRegistry.getRegistry(ipAddress, Globals.RMI_PORT);
         RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
         remoteDaemon.finalizeService();
     }

@@ -322,7 +322,6 @@ public class SourceDialog extends javax.swing.JDialog {
                                 sinkLogStartSpinner.setValue(sinkLogStartTime);
                                 sinkLogEndSpinner.setValue(sinkLogEndTime);
                             } catch (Exception exc) {
-                                exc.printStackTrace();
                                 JOptionPane.showMessageDialog(null, exc.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
                             }
                         } else {

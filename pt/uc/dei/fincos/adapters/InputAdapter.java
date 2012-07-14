@@ -26,10 +26,9 @@ public interface InputAdapter {
     * Converts and sends events read from data files to the target system.
     * Events attributes are not typed (all Strings).
     *
-    * (IMPLEMENTATIONS OF THIS METHOD MUST BE THREAD-SAFE!)
     *
-    * @param e             the event to be converted and sent
-    * @throws Exception    if an error occurs during event submission
+    * @param event          the event to be converted and sent
+     * @throws Exception    if an error occurs during event submission
     */
-    void send(CSV_Event event);
+    void send(CSV_Event event) throws Exception;
 }

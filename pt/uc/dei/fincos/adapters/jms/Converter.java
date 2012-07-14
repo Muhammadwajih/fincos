@@ -4,6 +4,7 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
 
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
 
@@ -38,13 +39,23 @@ public abstract class Converter {
      *
      * @param evt               the event to be converted
      * @param jmsSession        the JMS session used to create messages
-     * @param rtMode either END-TO-END or ADAPTER
-     * @param rtResolution      either Milliseconds or Nanoseconds
      *
      * @return                  an instance of a subclass of {@link Message}
      * @throws JMSException     if an error occur while creating the message
      */
     abstract Message toMessage(Event evt, Session jmsSession) throws JMSException;
+
+
+    /**
+     * Converts an event, read from a datafile, to a JMS message.
+     *
+     * @param evt               the event to be converted
+     * @param jmsSession        the JMS session used to create messages
+     *
+     * @return                  an instance of a subclass of {@link Message}
+     * @throws JMSException     if an error occur while creating the message
+     */
+    abstract Message toMessage(CSV_Event event, Session jmsSession) throws JMSException;
 
     /**
      * Converts a JMS message to an event, as represented in FINCoS.
@@ -76,5 +87,4 @@ public abstract class Converter {
      * @throws JMSException if an error occur while reading the message
      */
     abstract Object[] toObjectArray(Message msg, String src, long timestamp) throws JMSException;
-
 }

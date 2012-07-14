@@ -9,6 +9,7 @@ import javax.jms.Message;
 import javax.jms.Session;
 
 import pt.uc.dei.fincos.basic.Attribute;
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
@@ -82,6 +83,31 @@ public class MapMessageConverter extends Converter {
     }
 
     @Override
+    Message toMessage(CSV_Event event, Session jmsSession) throws JMSException {
+        MapMessage msg = jmsSession.createMapMessage();
+        for (int i = 0; i < event.getPayload().length; i++) {
+            msg.setString("att_" + (i + 1), event.getPayload()[i]);
+        }
+
+        if (rtMode == Globals.ADAPTER_RT) {
+            // Assigns a timestamp to the event just after conversion
+            // (i.e., just before sending the event to the target system)
+            long timestamp = 0;
+            if (rtResolution == Globals.MILLIS_RT) {
+                timestamp = System.currentTimeMillis();
+            } else if (rtResolution == Globals.NANO_RT) {
+                timestamp = System.nanoTime();
+            }
+            msg.setLong("TS", timestamp);
+        } else if (rtMode == Globals.END_TO_END_RT) {
+            // The timestamp comes from the Driver
+            msg.setLong("TS", event.getTimestamp());
+        }
+
+        return msg;
+    }
+
+    @Override
     Event toEvent(Message msg, EventType type) throws JMSException {
         long timestamp = System.currentTimeMillis();
         MapMessage map = (MapMessage) msg;
@@ -114,7 +140,7 @@ public class MapMessageConverter extends Converter {
         MapMessage map = (MapMessage) msg;
         Enumeration<String> atts = map.getMapNames();
         while (atts.hasMoreElements()) {
-            evtData.add(msg.getObjectProperty(atts.nextElement()));
+            evtData.add(map.getObject(atts.nextElement()));
         }
         if (rtMode == Globals.ADAPTER_RT) {
             evtData.add(timestamp);

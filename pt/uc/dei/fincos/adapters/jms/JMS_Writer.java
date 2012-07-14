@@ -62,13 +62,7 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
         // Creates a sender for each input channel
         senders = new HashMap<String, MessageProducer>();
         for (int i = 0; i < inputChannels.length; i++) {
-            Queue q = (Queue) ctxt.lookup(inputChannels[i]);
-            MessageProducer producer = session.createProducer(q);
-            senders.put(inputChannels[i], producer);
-            // Performance Tuning Settings
-            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-            producer.setDisableMessageID(true);
-            producer.setDisableMessageTimestamp(true);
+            createMessageProducerFor(inputChannels[i]);
         }
     }
 
@@ -85,13 +79,12 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
         String dest = ev.getType().getName();
         MessageProducer sender = senders.get(dest);
         if (sender == null) {
-            throw new Exception("Could not find a destination for event of type \"" + dest + "\"");
+           sender = createMessageProducerFor(dest);
         }
         //Converts the event into a JMS message
         Message msg = this.msgConverter.toMessage(ev, this.session);
         // Sends the message
         sender.send(msg);
-       // System.out.println("Sent: " + msg);
     }
 
 
@@ -107,7 +100,27 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
     }
 
     @Override
-    public void send(CSV_Event event) {
-        throw new RuntimeException("Not implemented.");
+    public void send(CSV_Event event) throws Exception {
+     // Retrieves the appropriate sender
+        String dest = event.getType();
+        MessageProducer sender = senders.get(dest);
+        if (sender == null) {
+            sender = createMessageProducerFor(dest);
+        }
+        //Converts the event into a JMS message
+        Message msg = this.msgConverter.toMessage(event, this.session);
+        // Sends the message
+        sender.send(msg);
+    }
+
+    private MessageProducer createMessageProducerFor(String dest) throws NamingException, JMSException {
+        Queue q = (Queue) ctxt.lookup(dest);
+        MessageProducer producer = session.createProducer(q);
+        senders.put(dest, producer);
+        // Performance Tuning Settings
+        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        producer.setDisableMessageID(true);
+        producer.setDisableMessageTimestamp(true);
+        return producer;
     }
 }

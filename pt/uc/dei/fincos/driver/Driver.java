@@ -39,7 +39,6 @@ import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
-import pt.uc.dei.fincos.communication.ClientSocketInterface;
 import pt.uc.dei.fincos.controller.ConnectionConfig;
 import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.Logger;
@@ -108,9 +107,6 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
 
     /** Direct interface with CEP engine. */
     private CEPEngineInterface cepEngineInterface;
-
-    /** Connection handle with FINCoS Performance Monitor. */
-    private ClientSocketInterface perfmon;
     // ========================================================================
 
 
@@ -234,7 +230,7 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
 
     private void initializeRMI() throws RemoteException {
         DriverRemoteFunctions stub = (DriverRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
-        Registry registry = LocateRegistry.getRegistry(Globals.DEFAULT_RMI_PORT);
+        Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
         registry.rebind(this.alias, stub);
     }
 
@@ -586,15 +582,6 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
                                         if (cepEngineInterface != null) {
                                             cepEngineInterface.disconnect();
                                             cepEngineInterface = null;
-                                        }
-                                    }
-
-                                    if (perfmon != null) {
-                                        try {
-                                            perfmon.disconnect();
-                                            perfmon = null;
-                                        } catch (IOException e) {
-                                            System.err.println("Could not disconnect from Validator.");
                                         }
                                     }
 

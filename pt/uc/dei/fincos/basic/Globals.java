@@ -26,7 +26,7 @@ public class Globals {
     public static final String CSV_SEPARATOR = ",";
 
     /** Port used by the components of the framework to communicate through Remote Method Invocation. */
-    public static final int DEFAULT_RMI_PORT = 1099;
+    public static final int RMI_PORT = 1212;
 
     /** Response time is measured from Drivers to Sinks. */
     public static final int END_TO_END_RT = 0;
