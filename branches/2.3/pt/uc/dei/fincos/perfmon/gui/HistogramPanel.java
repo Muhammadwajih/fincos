@@ -240,7 +240,7 @@ public class HistogramPanel extends JPanel {
                         // Determines Response time measurement mode of the test
                         String rtMode = logReader.getNextLine().substring(server.indexOf(":") + 2);
                         int rtMeasurementMode;
-                        if (rtMode.contains("ADAPTERS")) {
+                        if (rtMode.contains("ADAPTER")) {
                             rtMeasurementMode = Globals.ADAPTER_RT;
                         } else if (rtMode.contains("END_TO_END")) {
                             rtMeasurementMode = Globals.END_TO_END_RT;
@@ -298,7 +298,6 @@ public class HistogramPanel extends JPanel {
                     chartPanel.repaint();
                     chartPanel.revalidate();
                 } catch (Exception e1) {
-                    e1.printStackTrace();
                     JOptionPane.showMessageDialog(null, "Could not open source file. ", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }

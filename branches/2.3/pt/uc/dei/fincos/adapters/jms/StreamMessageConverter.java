@@ -9,6 +9,7 @@ import javax.jms.Session;
 import javax.jms.StreamMessage;
 
 import pt.uc.dei.fincos.basic.Attribute;
+import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
@@ -80,6 +81,31 @@ public class StreamMessageConverter extends Converter {
     }
 
     @Override
+    Message toMessage(CSV_Event event, Session jmsSession) throws JMSException {
+        StreamMessage msg = jmsSession.createStreamMessage();
+        for (int i = 0; i < event.getPayload().length; i++) {
+            msg.writeString(event.getPayload()[i]);
+        }
+
+        if (rtMode == Globals.ADAPTER_RT) {
+            /* Assigns a timestamp to the event just after conversion
+              (i.e., just before sending the event to the target system) */
+            long timestamp = 0;
+            if (rtResolution == Globals.MILLIS_RT) {
+                timestamp = System.currentTimeMillis();
+            } else if (rtResolution == Globals.NANO_RT) {
+                timestamp = System.nanoTime();
+            }
+            msg.writeLong(timestamp);
+        } else if (rtMode == Globals.END_TO_END_RT) {
+            // The timestamp comes from the Driver
+            msg.writeLong(event.getTimestamp());
+        }
+
+        return msg;
+    }
+
+    @Override
     Event toEvent(Message msg, EventType type) throws JMSException {
         long timestamp = System.currentTimeMillis();
         StreamMessage str = (StreamMessage) msg;
@@ -132,5 +158,4 @@ public class StreamMessageConverter extends Converter {
         }
         return evtData.toArray(new Object[0]);
     }
-
 }

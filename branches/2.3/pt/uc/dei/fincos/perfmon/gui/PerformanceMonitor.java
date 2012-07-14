@@ -38,6 +38,7 @@ import org.jdesktop.swingx.table.TableColumnExt;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.controller.gui.Controller_GUI;
 import pt.uc.dei.fincos.controller.gui.PopupListener;
 import pt.uc.dei.fincos.driver.DriverRemoteFunctions;
 import pt.uc.dei.fincos.perfmon.DriverPerfStats;
@@ -190,6 +191,7 @@ public class PerformanceMonitor extends JFrame {
                             System.err.println(e1.getMessage());
                         }
                     }
+                    Controller_GUI.getInstance().closePerfmon();
                 }
             });
         } else { // Offline processing

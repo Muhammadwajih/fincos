@@ -272,14 +272,24 @@ public class EsperInterface extends CEPEngineInterface {
 
             if (outputStreams != null) {
                 this.outputListeners = new EsperListener[outputStreams.length];
+                int i = 0;
                 // TODO: Change this to a mapping Listener->List-of-streams
-                for (int i = 0; i < outputStreams.length; i++) {
-                    System.out.println("Listening to "  + outputStreams[i]);
-                    outputListeners[i] = new EsperListener("lsnr-0" + (i + 1),
-                            rtMode, rtResolution, sinkInstance, this.epService,
-                            outputStreams[i], queryNamesAndTexts.get(outputStreams[i]),
-                            this.streamsSchemas.get(outputStreams[i]), this.eventFormat);
-                    outputListeners[i].load();
+                for (Entry<String, String> query : this.queryNamesAndTexts.entrySet()) {
+                    System.out.println("query: " + query.getKey() +
+                            " hasListener: " + hasListener(query.getKey(), outputStreams));
+                    if (hasListener(query.getKey(), outputStreams)) {
+                        outputListeners[i] = new EsperListener("lsnr-0" + (i + 1),
+                                rtMode, rtResolution, sinkInstance, this.epService,
+                                query.getKey(), query.getValue(),
+                                this.streamsSchemas.get(query.getKey()), this.eventFormat);
+                        outputListeners[i].load();
+                        i++;
+                    } else {
+                        System.err.println("WARNING: Query \"" + query.getKey() + "\" has no registered listener.");
+                        System.out.println("Loading query: \n"  + query.getValue());
+                        EPStatement st = epService.getEPAdministrator().createEPL(query.getValue(), query.getKey());
+                        unlistenedQueries.add(st);
+                    }
                 }
 
                 try {
@@ -405,35 +415,40 @@ public class EsperInterface extends CEPEngineInterface {
             Field f;
             for (int i = 0; i < eventFields.length; i++) {
                 f = eventFields[i];
-
-                // Assigns Timestamp
-                if (i == eventFields.length - 1) { // timestamp field (the last one)
-                    if (this.rtMode == Globals.ADAPTER_RT) {
-                        /* Assigns a timestamp to the event just after conversion
-                          (i.e., just before sending the event to the target system) */
-                        long timestamp = 0;
-                        if (rtResolution == Globals.MILLIS_RT) {
-                            timestamp = System.currentTimeMillis();
-                        } else if (rtResolution == Globals.NANO_RT) {
-                            timestamp = System.nanoTime();
+                try {
+                    // Assigns Timestamp
+                    if (i == eventFields.length - 1) { // timestamp field (the last one)
+                        if (this.rtMode == Globals.ADAPTER_RT) {
+                            /* Assigns a timestamp to the event just after conversion
+                              (i.e., just before sending the event to the target system) */
+                            long timestamp = 0;
+                            if (rtResolution == Globals.MILLIS_RT) {
+                                timestamp = System.currentTimeMillis();
+                            } else if (rtResolution == Globals.NANO_RT) {
+                                timestamp = System.nanoTime();
+                            }
+                            f.setLong(pojoEvent, timestamp);
+                        } else if (rtMode == Globals.END_TO_END_RT) {
+                            // The timestamp comes from the Driver
+                            f.setLong(pojoEvent, event.getTimestamp());
                         }
-                        f.setLong(pojoEvent, timestamp);
-                    } else if (rtMode == Globals.END_TO_END_RT) {
-                        // The timestamp comes from the Driver
-                        f.setLong(pojoEvent, event.getTimestamp());
+                    } else {
+                        if (f.getType() == int.class) {
+                            f.setInt(pojoEvent, (Integer) event.getAttributeValue(i));
+                        } else if (f.getType() == long.class) {
+                            f.setLong(pojoEvent, (Long) event.getAttributeValue(i));
+                        } else if (f.getType() == String.class) {
+                            f.set(pojoEvent, event.getAttributeValue(i));
+                        } else if (f.getType() == double.class) {
+                            f.setDouble(pojoEvent, (Double) event.getAttributeValue(i));
+                        } else if (f.getType() == float.class) {
+                            f.setFloat(pojoEvent, (Float) event.getAttributeValue(i));
+                        }
                     }
-                } else {
-                    if (f.getType() == int.class) {
-                        f.setInt(pojoEvent, (Integer) event.getAttributeValue(i));
-                    } else if (f.getType() == long.class) {
-                        f.setLong(pojoEvent, (Long) event.getAttributeValue(i));
-                    } else if (f.getType() == String.class) {
-                        f.set(pojoEvent, event.getAttributeValue(i));
-                    } else if (f.getType() == double.class) {
-                        f.setDouble(pojoEvent, (Double) event.getAttributeValue(i));
-                    } else if (f.getType() == float.class) {
-                        f.setFloat(pojoEvent, (Float) event.getAttributeValue(i));
-                    }
+                } catch (ClassCastException cce) {
+                    System.err.println("Invalid field value (" + event.getAttributeValue(i)
+                                       + ") for field [" + f + "]. It is not possible to send event.");
+                    return;
                 }
             }
 
@@ -442,9 +457,6 @@ public class EsperInterface extends CEPEngineInterface {
             }
         } catch (ClassNotFoundException cnfe) {
             System.err.println("Unknown event type \"" + eventTypeName + "\"." + "It is not possible to send event.");
-            return;
-        } catch (ClassCastException cce) {
-            System.err.println("Invalid field value. It is not possible to send event.");
             return;
         } catch (Exception e) {
             System.err.println("Unexpected exception: " + e.getMessage()
@@ -648,5 +660,15 @@ public class EsperInterface extends CEPEngineInterface {
 
             schemaClass.toClass();
         }
+    }
+
+    private boolean hasListener(String queryName, String[] listenedQueries) {
+        for (int i = 0; i < listenedQueries.length; i++) {
+            if (queryName.equals(listenedQueries[i])) {
+                return true;
+            }
+        }
+        return false;
+
     }
 }

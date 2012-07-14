@@ -76,6 +76,9 @@ public class Controller_GUI extends JFrame {
     /** Multiplier factor for input rate. */
     private double eventRateFactor = 1.0;
 
+    /** Instance of FINCoS Perfmon, used for realtime performance monitoring. */
+    private PerformanceMonitor perfmon;
+
     /** Path for the file containing connections. */
     public static final String CONNECTIONS_FILE = Globals.APP_PATH + "config" + File.separator + "Connections.fcf";
 
@@ -782,7 +785,8 @@ public class Controller_GUI extends JFrame {
 						int selected = source.getSelectedRow();
 						if (selected > -1) {
 							SinkDetail sd = new SinkDetail(facade.getSinkList().get(selected));
-							if (source.getModel().getValueAt(selected, 0).equals("RUNNING")) {
+							if (source.getModel().getValueAt(selected, 0).equals("RUNNING")
+							    || source.getModel().getValueAt(selected, 0).equals("READY")) {
 								sd.disableGUI();
 							}
 							sd.setVisible(true);
@@ -1284,10 +1288,18 @@ public class Controller_GUI extends JFrame {
 	// ============================ Control Functions ==============================
 
 	private void showPerfmon() {
-	    new PerformanceMonitor(facade.getDriverList().toArray(new DriverConfig[0]),
-	            facade.getSinkList().toArray(new SinkConfig[0]),
-	            facade.getRemoteDrivers(), facade.getRemoteSinks());
+	    if (this.perfmon == null) {
+	        this.perfmon = new PerformanceMonitor(facade.getDriverList().toArray(new DriverConfig[0]),
+	                facade.getSinkList().toArray(new SinkConfig[0]),
+	                facade.getRemoteDrivers(), facade.getRemoteSinks());
+	    } else {
+	        this.perfmon.requestFocus();
+	    }
     }
+
+	public void closePerfmon() {
+	    this.perfmon = null;
+	}
 
 	/**
 	 * Initializes a given Driver.

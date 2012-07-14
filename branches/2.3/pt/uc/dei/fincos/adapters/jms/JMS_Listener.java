@@ -52,6 +52,8 @@ public class JMS_Listener extends OutputListener implements MessageListener {
             //System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toObjectArray(msg, src));
         } catch (JMSException jmsExc) {
             throw new RuntimeException(jmsExc.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

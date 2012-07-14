@@ -105,7 +105,7 @@ public class Event implements Serializable {
                     this.payload[attIndex] = Integer.parseInt((String) value);
                 } else {
                     if (value instanceof Double) {
-                        this.payload[attIndex] = Math.round((Double) value);
+                        this.payload[attIndex] = (int) Math.round((Double) value);
                     } else {
                         this.payload[attIndex] = value;
                     }

@@ -179,7 +179,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
 
     private void initializeRMI() throws RemoteException {
         SinkRemoteFunctions stub = (SinkRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
-        Registry registry = LocateRegistry.getRegistry(Globals.DEFAULT_RMI_PORT);
+        Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
         registry.rebind(alias, stub);
     }
 
@@ -303,6 +303,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
 
 
     public void unload() {
+        perfStats = new SinkPerfStats();
+
         if (cepEngineInterface != null) {
             cepEngineInterface.disconnect();
             cepEngineInterface = null;

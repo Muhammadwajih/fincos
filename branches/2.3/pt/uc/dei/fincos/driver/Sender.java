@@ -382,25 +382,17 @@ public class Sender extends Thread {
 
         try {
             this.status.setStep(Step.RUNNING);
-            CSV_Event event = dataFileReader.getNextCSVEvent();
-            String timestamp;
-
-            // initializes lastTS variable
-            if (event != null) {
-                /*timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
-                if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                    lastTS = Globals.DATE_TIME_FORMAT.parse(timestamp).getTime();
-                } else {
-                    lastTS = Long.parseLong(timestamp);
-                }*/
-                lastTS = event.getTimestamp();
-
-            } else {
-                return;
-            }
-
-
             for (int i = 0; i < fileRepeatCount; i++) {
+                CSV_Event event = dataFileReader.getNextCSVEvent();
+
+                // initializes lastTS variable
+                if (event != null) {
+                    lastTS = event.getTimestamp();
+
+                } else {
+                    return;
+                }
+
                 long expectedElapsedTime = 0;
                 long t0 = System.currentTimeMillis();
 
@@ -464,7 +456,6 @@ public class Sender extends Thread {
                         this.sendEvent(event);
 
                     } catch (Exception e2) {
-                        e2.printStackTrace();
                         System.err.println("Cannot send event (" + e2.getMessage() + ")");
                         if (this.status.getStep() == Step.RUNNING) {
                             this.status.setStep(Step.ERROR);
@@ -475,7 +466,6 @@ public class Sender extends Thread {
                 }
 
                 dataFileReader.reOpen();
-                event = dataFileReader.getNextCSVEvent();
             }
 
             this.status.setStep(Step.FINISHED);

@@ -114,7 +114,7 @@ public class DriverConfig extends ComponentConfig implements Cloneable {
             } else if (phase instanceof ExternalFileWorkloadPhase) {
                 externalFilePhase = (ExternalFileWorkloadPhase) phase;
                 if (externalFilePhase.containsEventTypes()) {
-                    streams.add(new EventType("Unknown", new Attribute[0]));
+                    //streams.add(new EventType("Unknown", new Attribute[0]));
                 } else {
                     streams.add(new EventType(externalFilePhase.getSingleEventTypeName(), new Attribute[0]));
                 }
