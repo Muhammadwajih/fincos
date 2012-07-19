@@ -1,120 +1,68 @@
 package pt.uc.dei.fincos.adapters;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-
-import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.communication.ClientSocketInterface;
 import pt.uc.dei.fincos.sink.Sink;
 
-
-
 /**
- *  
- * Thread for listening incoming events from an output stream at a CEP Engine and
- * forwarding them to a given Sink. 
- * 
+ *
+ * Thread for listening incoming events from the CEP Engine and
+ * forwarding them to a given Sink.
+ *
  * @author Marcelo R.N. Mendes
  *
  */
-public abstract class OutputListener extends Thread{
-	protected String listenerID; // for logging purposes	
-	protected int logFlushInterval=10;
-	protected int socketBufferSize;
-	protected int rtMeasurementMode;
-	protected int communicationMode;
-	
-	protected ArrayList<InetSocketAddress> sinksList; // Communication CEP-Engine -> Sink is through FINCoS Adapter
-	private ArrayList<ClientSocketInterface> sinkInterfaces;
-	
-	protected Sink sinkInstance; // Direct communication CEP-Engine -> Sink	
-	
-	protected boolean keepListening = true;		
-	
-	public void connectWithAllSinks() {				
-		disconnectFromAllSinks();
-				
-		this.sinkInterfaces = new ArrayList<ClientSocketInterface>();		
-		for (InetSocketAddress sinkAddressPort: sinksList) {
-			try {
-				sinkInterfaces.add(connectWithSink(sinkAddressPort.getAddress().getHostAddress(), 
-						sinkAddressPort.getPort()));	
-			} catch (IOException ioe) {
-				System.err.println("Could not connect to Sink at " + 
-						sinkAddressPort.getAddress()+ ":" + sinkAddressPort.getPort()+
-						"(" + ioe.getMessage() + ").");
-			}			
-		}				
-	}
-	
-	private ClientSocketInterface connectWithSink(String address, int port) throws IOException{				
-		return new ClientSocketInterface(address, port, socketBufferSize);
-	}
-	
-	public void disconnectFromAllSinks() {		
-		if(this.sinkInterfaces != null) {
-			System.out.println("disconnecting from sink(s)...");
-			for (ClientSocketInterface sinkInterface : sinkInterfaces) {
-				try {
-					sinkInterface.disconnect();
-				} catch (IOException e) {
-					System.err.println("Error while closing connection with Sink (" + e.getMessage() + ")");
-				}
-				finally {
-					sinkInterface = null;
-				}
-			}
-				
-			sinkInterfaces.clear();
-			sinkInterfaces = null;						
-		}
-	}
+public abstract class OutputListener extends Thread {
+    /** An alias for this listener (for logging purposes). */
+    protected final String listenerID;
 
-	public void forwardToSink(Object[] e) {
-		if(this.communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-			this.sinkInstance.processOutputEvent(e);
-		}
-	}
-	
-	public void forwardToSinks(String e) {			
-		if(this.communicationMode == Globals.ADAPTER_CSV_COMMUNICATION) {
-			// If it is the first event, open connection to Sink(s)
-			if(this.sinkInterfaces == null || sinkInterfaces.isEmpty()) {				
-				connectWithAllSinks();
-			}
+    /** Response time measurement mode (either END-TO-END or ADAPTER). */
+    protected final int rtMode;
 
-			// Send event to all Sinks that subscribe to this stream
-			for (ClientSocketInterface sinkInterface : sinkInterfaces) {
-				try {			
-					sinkInterface.sendCSVEvent(e);
-				} catch (IOException ioe) {
-					System.err.println("Error while forwarding event to Sink. ("+ ioe.getMessage() + "). Trying retransmission...");			
-					try {
-						sinkInterface.disconnect();
-						sinkInterface = connectWithSink(sinkInterface.getDestinationAddress(), 
-														sinkInterface.getDestinationPort());
-						forwardToSinks(e);
-					} catch (IOException ioe1) {
-						System.err.println("Could not reconnect to Sink (it seems to be offline). Message will be discarded.");					
-					}		
-				}				
-			}					
-		}
-		else if(this.communicationMode == Globals.DIRECT_API_COMMUNICATION) {
-			this.sinkInstance.processOutputEvent(e);
-		}
+    /** Response time measurement resolution (either Milliseconds or Nanoseconds). */
+    protected final int rtResolution;
 
-	}
+    /** Reference to the Sink instance to which results must be forwarded (DIRECT COMMUNICATION). */
+    protected final Sink sinkInstance;
 
-	/**
-	 * Performs any vendor-specific initialization on the listener
-	 */
-	public abstract void load() throws Exception;
+    /** Flag used to interrupt event listening. */
+    protected boolean keepListening = true;
 
-	/**
-	 * Disconnects from CEP Engine and from Sink
-	 */
-	protected abstract void disconnect();
+    /**
+     * Constructor for DIRECT COMMUNICATION.
+     *
+     * @param lsnrID        an alias for this listener
+     * @param rtMode        response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param sinkInstance  reference to the Sink instance to which results must be forwarded
+     */
+    public OutputListener(String lsnrID, int rtMode, int rtResolution, Sink sinkInstance) {
+        this.listenerID = lsnrID;
+        this.rtMode = rtMode;
+        this.rtResolution = rtResolution;
+        this.sinkInstance = sinkInstance;
+    }
+
+
+    /**
+     * Callback method used to receive incoming results from the CEP engine and
+     * forward them to an appropriate Sink.
+     *
+     * @param e     the incoming event, represented as an array of values
+     */
+    public void onOutput(Object[] e) {
+        this.sinkInstance.processOutputEvent(e);
+    }
+
+
+    /**
+     * Performs any vendor-specific initialization on the listener.
+     *
+     * @throws Exception    if an error occurs
+     */
+    public abstract void load() throws Exception;
+
+    /**
+     * Disconnects from CEP Engine and from Sink.
+     */
+    public abstract void disconnect();
 
 }
