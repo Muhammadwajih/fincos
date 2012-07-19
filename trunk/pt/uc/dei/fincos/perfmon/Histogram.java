@@ -1,4 +1,4 @@
-package pt.uc.dei.fincos.validation;
+package pt.uc.dei.fincos.perfmon;
 import java.util.TreeMap;
 
 /**

@@ -1,133 +1,196 @@
 package pt.uc.dei.fincos.basic;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 /**
- * A class that represents the schema for event instances. 
- * Consists in a name and a set of attributes
- * 
+ * A class that represents the schema for event instances, consisting
+ * in a name and a set of attributes.
+ *
  * @author Marcelo R.N. Mendes
- * 
- * @see		Attribute
+ *
+ * @see Attribute
  *
  */
-public class EventType implements Serializable{
-	private static final long serialVersionUID = 2785420172709613384L;
-	
-	private String name;
-	private Attribute[] attributes;
-	
-	private int hashCode;
-	
-	public EventType(String name, Attribute[] attributes){ 
-		this.setName(name);
-		this.setAttributes(attributes);		
-		this.hashCode = this.toString().hashCode();
-	}
-	
-	
-	private void setName(String name) {
-		this.name = name;		
-	}
+public class EventType implements Serializable {
 
-	public String getName() {
-		return this.name;
-	}
+    /** serial id. */
+    private static final long serialVersionUID = 2785420172709613384L;
 
-	private void setAttributes(Attribute[] attributes) {
-		LinkedHashSet<Attribute>  attSet = new LinkedHashSet<Attribute>(attributes.length);
-		boolean duplicateAtt;
-				
-		for (int i = 0; i < attributes.length; i++) {
-			duplicateAtt = !attSet.add(attributes[i]);
-			if (duplicateAtt)
-				System.err.println("Duplicate attribute: "+attributes[i].getName());		
-		}
-		
-		this.attributes = new Attribute[attSet.size()];
-		
-		Iterator<Attribute> iter  = attSet.iterator();		
-		for (int i = 0; iter.hasNext(); i++) {
-			this.attributes[i] = iter.next();
-		}	
-	}
+    /** A unique name for this type. */
+    private final String name;
 
-	public Attribute[] getAttributes() {
-		return this.attributes;
-	}
-	
-	
-	public int getAttributeCount(){
-		if(this.attributes != null)
-			return attributes.length;
-		else
-			return 0;
-	}
-	
-	public String[] getAttributesNames() {
-		String ret[] = new String[this.attributes.length];
-		
-		for (int i = 0; i < this.attributes.length; i++) {
-			ret[i] = attributes[i].getName();
-		}
-		
-		return ret;
-	}
-	
-	public String getAttributesNamesList() {
-		String ret = "";
-		
-		for (int i = 0; i < this.attributes.length; i++) {
-			ret += attributes[i].getName()+",";
-		}
-		
-		return ret.substring(0, ret.length()-1);
-	}
-	
-	public boolean equals(Object o) {
-		EventType comp;		
-		
-		if (o instanceof EventType){
-			comp = (EventType)o;
-			if(this.name.equals(comp.name)) {
-				if ( (this.attributes == null || comp.attributes == null) ||
-						 (this.attributes.length != comp.attributes.length)
-					   )
-						return false;
-					else {
-						for (int i = 0; i < this.attributes.length; i++) {
-							if(!this.attributes[i].equals(comp.attributes[i]))
-								return false;
-						}	
-						return true;
-					}
-			}
-			else {
-				return false;
-			}
-		}
-		else
-			return false;
-	}
-	
-	
-	public int hashCode() {
-		return this.hashCode;
-	}
-	
-	@Override
-	public String toString() {
-		String ret = ":" + this.name + "[ ";
-		
-		for (int i = 0; i < this.attributes.length; i++) {
-			ret+=this.attributes[i].getName()+":" + attributes[i].getType() + " ";
-		}
-		
-		ret+="]";
+    /** The list of attributes of this type. */
+    private final Attribute[] attributes;
 
-		return ret;
-		
-	}
+    /** Cached hash code. */
+    private final int hashCode;
+
+    /** Index for attributes name. */
+    private final LinkedHashMap<String, Integer> attIndex;
+
+    /** Cached list of attribute names. */
+    private final String[] attributeNames;
+
+    /**
+     * Creates a new type with the name and attributes passed as argument.
+     *
+     * @param name         Type's unique name
+     * @param attributes   Type's attribute
+     */
+    public EventType(String name, Attribute[] attributes) {
+        // Sets type's name
+        this.name = name;
+
+        // Sets type's attributes
+        LinkedHashSet<Attribute>  attSet = new LinkedHashSet<Attribute>(attributes.length);
+        boolean duplicateAtt;
+        for (int i = 0; i < attributes.length; i++) {
+            duplicateAtt = !attSet.add(attributes[i]);
+            if (duplicateAtt) {
+                System.err.println("WARN: Duplicate attribute \""
+                        + attributes[i].getName() + "\" will be ignored.");
+            }
+        }
+        this.attributes = new Attribute[attSet.size()];
+        this.attIndex = new LinkedHashMap<String, Integer>();
+        Iterator<Attribute> iter  = attSet.iterator();
+        for (int i = 0; iter.hasNext(); i++) {
+            this.attributes[i] = iter.next();
+            this.attIndex.put(attributes[i].getName(), i);
+        }
+
+        this.attributeNames = new String[this.attributes.length];
+        for (int i = 0; i < this.attributes.length; i++) {
+            attributeNames[i] = attributes[i].getName();
+        }
+
+        // Computes and caches the hash code for this type
+        this.hashCode = computeHashCode();
+    }
+
+    /**
+     *
+     * @return the name of this type.
+     */
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     *
+     * @return an array containing the attributes of this type.
+     */
+    public Attribute[] getAttributes() {
+        return this.attributes;
+    }
+
+    /**
+    *
+    * @param i  the index of the desired attribute
+    * @return   the i-th attribute of this type.
+    */
+   public Attribute getAttribute(int i) {
+       return this.attributes[i];
+   }
+
+    /**
+     *
+     * @return  the number of attributes of this type.
+     */
+    public int getAttributeCount() {
+            return attributes.length;
+    }
+
+    /**
+     *
+     * @return  an array containing the names of the attributes of this type.
+     */
+    public String[] getAttributesNames() {
+        return attributeNames;
+    }
+
+    /**
+     * Retrieves the index of a given attribute in this type.
+     *
+     * @param attName   the name of the attribute
+     * @return          the index of the attribute
+     */
+    public int indexOf(String attName) {
+        return this.attIndex.get(attName);
+    }
+
+    /**
+     *
+     * @return a comma-separated list with the names of the attributes of this type.
+     */
+    public String getAttributesNamesList() {
+        String ret = "";
+
+        for (int i = 0; i < this.attributes.length; i++) {
+            ret += attributeNames[i] + ",";
+        }
+
+        return ret.substring(0, ret.length() - 1);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        EventType other = (EventType) obj;
+        if (!Arrays.equals(attributes, other.attributes)) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.hashCode;
+    }
+
+    private int computeHashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode(attributes);
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(":");
+        sb.append(this.name);
+        sb.append("[ ");
+
+        for (int i = 0; i < this.attributes.length; i++) {
+            sb.append(this.attributes[i].getName());
+            sb.append(":");
+            sb.append(attributes[i].getType());
+            sb.append(" ");
+        }
+
+        sb.append("]");
+
+        return sb.toString();
+    }
 }
