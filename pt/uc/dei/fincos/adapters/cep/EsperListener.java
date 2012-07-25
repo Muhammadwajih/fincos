@@ -161,19 +161,19 @@ public class EsperListener extends OutputListener implements UpdateListener {
      * @return      The event in CSV representation
      */
     public String toCSV(EventBean event) {
-        StringBuilder sb = new StringBuilder("type:");
+        StringBuilder sb = new StringBuilder();
         sb.append(queryOutputName);
         if (eventFormat == EsperInterface.MAP_FORMAT) { // Input events are MAPs
             if (querySchema != null) {
                 for (String att: querySchema.keySet()) {
-                    sb.append(Globals.CSV_SEPARATOR);
+                    sb.append(Globals.CSV_DELIMITER);
                     sb.append(event.get(att));
                 }
             }
         } else { //Input events are POJO
             try {
                 for (Field f : Class.forName(queryOutputName).getFields()) {
-                    sb.append(Globals.CSV_SEPARATOR);
+                    sb.append(Globals.CSV_DELIMITER);
                     sb.append(event.get(f.getName()));
                 }
             } catch (Exception e) {

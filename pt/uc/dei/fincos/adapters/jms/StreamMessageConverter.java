@@ -120,14 +120,14 @@ public class StreamMessageConverter extends Converter {
 
     @Override
     String toCSV(Message msg, String src) throws JMSException {
-        StringBuilder sb = new StringBuilder("type:");
+        StringBuilder sb = new StringBuilder();
         sb.append(src);
         StreamMessage str = (StreamMessage) msg;
         // TODO: More elegant way of reading the message (without exception)
         while (true) {
             try {
                 String att = str.readObject().toString();
-                sb.append(Globals.CSV_SEPARATOR);
+                sb.append(Globals.CSV_DELIMITER);
                 sb.append(att);
             } catch (MessageEOFException e) {
                 break;

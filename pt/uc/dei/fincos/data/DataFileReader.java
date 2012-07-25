@@ -17,9 +17,13 @@ import pt.uc.dei.fincos.driver.ExternalFileWorkloadPhase;
 
 public class DataFileReader {
 
+    /** Path for the data file. */
 	private String path;
 
 	private CSVReader reader;
+
+	/** Sequence of characters used to separate the fields of the records in the data file. */
+	private final String delimiter;
 
 	/** Pre-defined types (from configuration file). */
 	private Set<EventType> types;
@@ -30,52 +34,76 @@ public class DataFileReader {
 	/** Indicates if the data file contains events' type. */
 	private final boolean containsEventsType;
 
+	/** The index of the field containing the type of the records in the data file. */
+    private final int typeIndex;
+
 	/** Indicates if the data file contains timestamps. */
 	private final boolean containsTimestamp;
 
 	/** The time unit of the timestamps in the data file (if it contains). */
     private final int timestampUnit;
 
+    /** The index of the field containing the timestamp of the records in the data file. */
+    private final int timestampIndex;
+
 	/** Event type name to be used when the data file does not contain event types. */
 	private String eventTypeName;
+
 
 	/**
 	 * Constructor for workloads using external data files.
 	 *
 	 * @param path                     The path for the data file
+	 * @param delimiter                Sequence of characters used to separate the fields of the records in the data file
 	 * @param containsTimestamp        Indicates if the data file contains timestamps
-	 * @param containsEventsType       Indicates if the data file contains events' type
 	 * @param timestampUnit            The time unit of the timestamps in the data file (if it contains)
+	 * @param timestampIndex           The index of the field containing the timestamp of the records in the data file
+	 * @param containsEventsType       Indicates if the data file contains events' type
+	 * @param typeIndex                The index of the field containing the type of the records in the data file.
 	 * @param eventTypeName            Event type name to be used when the data file does not contain event types
-	 * @throws FileNotFoundException
+	 * @throws FileNotFoundException   If the data file cannot be opened
 	 */
-	public DataFileReader(String path, boolean containsTimestamp, int timestampUnit,
-	        boolean containsEventsType, String eventTypeName)
+	public DataFileReader(String path, String delimiter,
+	        boolean containsTimestamp, int timestampUnit, int timestampIndex,
+	        boolean containsEventsType, int typeIndex, String eventTypeName)
 	throws FileNotFoundException {
 		this.path = path;
-		this.open(path);
+		this.delimiter = delimiter;
+		if (containsTimestamp) {
+		    this.timestampIndex = timestampIndex;
+		} else {
+		    this.timestampIndex = -1;
+		}
 		this.containsTimestamp = containsTimestamp;
 		this.timestampUnit = timestampUnit;
 		this.containsEventsType = containsEventsType;
+
 		if (!this.containsEventsType) {
 		    this.setEventTypeName(eventTypeName);
+		    this.typeIndex = -1;
+		} else {
+		    this.typeIndex = typeIndex;
 		}
+		this.open(path);
 	}
 
 	/**
 	 * Constructor for Synthetic workloads.
 	 *
-	 * @param path			The path for the data file
-	 * @param eventTypes	Pre-defined types obtained from configuration file
-	 * @throws FileNotFoundException
+	 * @param path                     The path for the data file
+	 * @param eventTypes               Pre-defined types obtained from configuration file
+	 * @throws FileNotFoundException   If the data file cannot be opened
 	 */
 	public DataFileReader(String path, Set<EventType> eventTypes) throws FileNotFoundException {
 		this.path = path;
-		this.open(path);
+		this.delimiter = Globals.CSV_DELIMITER;
 		this.types = eventTypes;
 		this.containsEventsType = true;
+		this.typeIndex = 0;
 		this.containsTimestamp = false;
+		this.timestampIndex = -1;
 		this.timestampUnit = ExternalFileWorkloadPhase.MILLISECONDS;
+		this.open(path);
 	}
 
 
@@ -95,21 +123,19 @@ public class DataFileReader {
 	    long timestamp = 0;
 	    if (containsTimestamp) {
             if (containsEventsType) {
-                // TODO: remove the substring due to the "type:"
-                typeName = record[1].substring(5);
+                typeName = record[getTypeIndex(record)];
                 payload = new String[record.length - 2];
             } else {
                 payload = new String[record.length - 1];
             }
             if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(record[0]).getTime();
+                timestamp = Globals.DATE_TIME_FORMAT.parse(record[getTSIndex(record)]).getTime();
             } else {
-                timestamp = Long.parseLong(record[0]);
+                timestamp = Long.parseLong(record[getTSIndex(record)]);
             }
         } else {
             if (containsEventsType) {
-                // TODO: remove the substring due to the "type:"
-                typeName = record[0].substring(5);
+                typeName = record[getTypeIndex(record)];
                 payload = new String[record.length - 1];
             } else {
                 payload = new String[record.length];
@@ -161,21 +187,19 @@ public class DataFileReader {
 
 		if (containsTimestamp) {
 		    if (containsEventsType) {
-		        // TODO: remove the substring due to the "type:"
-		        typeName = csvRecord[1].substring(5);
+		        typeName = csvRecord[getTypeIndex(csvRecord)];
 		        eventRecord = new Object[csvRecord.length - 2];
 		    } else {
 		        eventRecord = new Object[csvRecord.length - 1];
 		    }
 		    if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(csvRecord[0]).getTime();
+                timestamp = Globals.DATE_TIME_FORMAT.parse(csvRecord[getTSIndex(csvRecord)]).getTime();
             } else {
-                timestamp = Long.parseLong(csvRecord[0]);
+                timestamp = Long.parseLong(csvRecord[getTSIndex(csvRecord)]);
             }
 		} else {
 		    if (containsEventsType) {
-                // TODO: remove the substring due to the "type:"
-                typeName = csvRecord[0].substring(5);
+                typeName = csvRecord[getTypeIndex(csvRecord)];
                 eventRecord = new Object[csvRecord.length - 1];
             } else {
                 eventRecord = new Object[csvRecord.length];
@@ -248,11 +272,41 @@ public class DataFileReader {
 	}
 
 	private void open(String path) throws FileNotFoundException{
-		this.reader = new CSVReader(path, Globals.CSV_SEPARATOR);
+		this.reader = new CSVReader(path, this.delimiter);
 	}
 
 	public void reOpen() throws FileNotFoundException {
 		this.closeFile();
 		this.open(path);
+	}
+
+	private int getTSIndex(String[] csvRecord) {
+        switch (timestampIndex) {
+        case ExternalFileWorkloadPhase.FIRST_FIELD:
+            return 0;
+        case ExternalFileWorkloadPhase.SECOND_FIELD:
+            return 1;
+        case ExternalFileWorkloadPhase.LAST_FIELD:
+            return csvRecord.length - 1;
+        case ExternalFileWorkloadPhase.SECOND_LAST_FIELD:
+            return csvRecord.length - 2;
+        default:
+            return -1;
+        }
+    }
+
+	private int getTypeIndex(String[] csvRecord) {
+	    switch (typeIndex) {
+        case ExternalFileWorkloadPhase.FIRST_FIELD:
+            return 0;
+        case ExternalFileWorkloadPhase.SECOND_FIELD:
+            return 1;
+        case ExternalFileWorkloadPhase.LAST_FIELD:
+            return csvRecord.length - 1;
+        case ExternalFileWorkloadPhase.SECOND_LAST_FIELD:
+            return csvRecord.length - 2;
+        default:
+            return -1;
+        }
 	}
 }

@@ -273,9 +273,9 @@ public class CounterPanel extends javax.swing.JPanel {
 
     private void addBtnActionPerformed(java.awt.event.ActionEvent evt) {
         if (streamsList.getSelectedValue() != null) {
-            String key = serverCombo.getSelectedItem() + Globals.CSV_SEPARATOR
-            + streamsList.getSelectedValue() + Globals.CSV_SEPARATOR
-            + streamsCombo.getSelectedItem() + Globals.CSV_SEPARATOR
+            String key = serverCombo.getSelectedItem() + Globals.CSV_DELIMITER
+            + streamsList.getSelectedValue() + Globals.CSV_DELIMITER
+            + streamsCombo.getSelectedItem() + Globals.CSV_DELIMITER
             + (String) counterCombo.getSelectedItem();
 
             int seriesCount = parent.addSeries(key, colorPanel.getBackground(),

@@ -213,11 +213,11 @@ public class Event implements Serializable {
      * @return  the event's data as a CSV record
      */
     public String toCSV() {
-        StringBuilder sb = new StringBuilder("type:");
+        StringBuilder sb = new StringBuilder();
         sb.append(this.getType().getName());
 
         for (Object attributeValue : payload) {
-            sb.append(Globals.CSV_SEPARATOR);
+            sb.append(Globals.CSV_DELIMITER);
             sb.append(attributeValue.toString());
         }
 

@@ -20,7 +20,7 @@ public class CSVReader {
     private BufferedReader reader;
 
     /** character used to separate fields of the CSV records stored in the file. */
-    private String separator;
+    private String delimiter;
 
 
     /**
@@ -30,20 +30,20 @@ public class CSVReader {
      *                                 or for some other reason cannot be opened for reading.
      */
     public CSVReader(String path) throws FileNotFoundException {
-        this(path, Globals.CSV_SEPARATOR);
+        this(path, Globals.CSV_DELIMITER);
     }
 
     /**
      *
      * @param path                     path for a CSV file to be read.
-     * @param separator                character used to separate fields of the CSV records stored in the file
+     * @param delimiter                character used to separate fields of the CSV records stored in the file
      * @throws FileNotFoundException   if the named file does not exist, is a directory rather than a regular file,
      *                                 or for some other reason cannot be opened for reading.
      */
-    public CSVReader(String path, String separator) throws FileNotFoundException {
+    public CSVReader(String path, String delimiter) throws FileNotFoundException {
         this.filePath = path;
         reader = new BufferedReader(new FileReader(path));
-        this.separator = separator;
+        this.delimiter = delimiter;
     }
 
     /**
@@ -58,7 +58,7 @@ public class CSVReader {
         String line = reader.readLine();
 
         if (line != null) {
-            cols = split(line, this.separator);
+            cols = split(line, this.delimiter);
         }
 
         return cols;

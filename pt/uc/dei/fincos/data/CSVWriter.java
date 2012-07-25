@@ -45,7 +45,7 @@ public class CSVWriter {
 	 * @throws IOException
 	 */
 	public synchronized void writeRecord(String e, long timestamp) throws IOException {
-		writer.write(timestamp + Globals.CSV_SEPARATOR + e);
+		writer.write(timestamp + Globals.CSV_DELIMITER + e);
 		writer.newLine();
 
 		if (System.currentTimeMillis() - lastFlushTimestamp >= getFlushInterval()) {

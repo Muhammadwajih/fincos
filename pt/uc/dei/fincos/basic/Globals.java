@@ -22,8 +22,8 @@ public class Globals {
     /** Directory where the application is executed. */
     public static final String APP_PATH = System.getProperty("user.dir") + File.separator;
 
-    /** Character used to separate fields in events represented in CSV format. */
-    public static final String CSV_SEPARATOR = ",";
+    /** Default character used to separate fields of records in a data file. */
+    public static final String CSV_DELIMITER = ",";
 
     /** Port used by the components of the framework to communicate through Remote Method Invocation. */
     public static final int RMI_PORT = 1212;
