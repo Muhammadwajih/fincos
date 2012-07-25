@@ -46,6 +46,9 @@ public class DataFileReader {
     /** The index of the field containing the timestamp of the records in the data file. */
     private final int timestampIndex;
 
+    /** A flag indicating if the timestamp field (if present) must be included in the payload of the read events. */
+    private boolean includeTS;
+
 	/** Event type name to be used when the data file does not contain event types. */
 	private String eventTypeName;
 
@@ -58,13 +61,14 @@ public class DataFileReader {
 	 * @param containsTimestamp        Indicates if the data file contains timestamps
 	 * @param timestampUnit            The time unit of the timestamps in the data file (if it contains)
 	 * @param timestampIndex           The index of the field containing the timestamp of the records in the data file
+	 * @param includeTS                A flag indicating if the timestamp field (if present) must be included in the payload of the read events
 	 * @param containsEventsType       Indicates if the data file contains events' type
 	 * @param typeIndex                The index of the field containing the type of the records in the data file.
 	 * @param eventTypeName            Event type name to be used when the data file does not contain event types
 	 * @throws FileNotFoundException   If the data file cannot be opened
 	 */
 	public DataFileReader(String path, String delimiter,
-	        boolean containsTimestamp, int timestampUnit, int timestampIndex,
+	        boolean containsTimestamp, int timestampUnit, int timestampIndex, boolean includeTS,
 	        boolean containsEventsType, int typeIndex, String eventTypeName)
 	throws FileNotFoundException {
 		this.path = path;
@@ -76,6 +80,7 @@ public class DataFileReader {
 		}
 		this.containsTimestamp = containsTimestamp;
 		this.timestampUnit = timestampUnit;
+		this.includeTS = includeTS;
 		this.containsEventsType = containsEventsType;
 
 		if (!this.containsEventsType) {
@@ -102,6 +107,7 @@ public class DataFileReader {
 		this.typeIndex = 0;
 		this.containsTimestamp = false;
 		this.timestampIndex = -1;
+		this.includeTS = false;
 		this.timestampUnit = ExternalFileWorkloadPhase.MILLISECONDS;
 		this.open(path);
 	}
@@ -121,30 +127,43 @@ public class DataFileReader {
 	    String[] payload;
 	    String typeName = this.eventTypeName;
 	    long timestamp = 0;
+	    int tsIndex = -1;
+	    int typeIndex = -1;
 	    if (containsTimestamp) {
+	        tsIndex = getTSIndex(record);
             if (containsEventsType) {
-                typeName = record[getTypeIndex(record)];
-                payload = new String[record.length - 2];
+                typeIndex = getTypeIndex(record);
+                typeName = record[typeIndex];
+                if (includeTS) {
+                    payload = new String[record.length - 1];
+                } else  {
+                    payload = new String[record.length - 2];
+                }
             } else {
                 payload = new String[record.length - 1];
             }
             if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(record[getTSIndex(record)]).getTime();
+                timestamp = Globals.DATE_TIME_FORMAT.parse(record[tsIndex]).getTime();
             } else {
-                timestamp = Long.parseLong(record[getTSIndex(record)]);
+                timestamp = Long.parseLong(record[tsIndex]);
             }
         } else {
             if (containsEventsType) {
-                typeName = record[getTypeIndex(record)];
+                typeIndex = getTypeIndex(record);
+                typeName = record[typeIndex];
                 payload = new String[record.length - 1];
             } else {
                 payload = new String[record.length];
             }
         }
 
-	    int payloadIndex = record.length - payload.length;
-	    for (int i = 0; i < payload.length; i++) {
-	        payload[i] = record[payloadIndex + i];
+	    int skipCount = 0;
+	    for (int i = 0; i < record.length; i++) {
+	        if ((i == tsIndex && !includeTS) || i == typeIndex) {
+	            skipCount++;
+	            continue;
+	        }
+	        payload[i - skipCount] = record[i];
         }
 
 	    return new CSV_Event(typeName, timestamp, payload);
@@ -184,22 +203,30 @@ public class DataFileReader {
 
 		String typeName = this.eventTypeName;
 		long timestamp = 0;
-
+		int tsIndex = -1;
+        int typeIndex = -1;
 		if (containsTimestamp) {
+		    tsIndex = getTSIndex(csvRecord);
 		    if (containsEventsType) {
-		        typeName = csvRecord[getTypeIndex(csvRecord)];
-		        eventRecord = new Object[csvRecord.length - 2];
+		        typeIndex = getTypeIndex(csvRecord);
+		        typeName = csvRecord[typeIndex];
+		        if (includeTS) {
+		            eventRecord = new Object[csvRecord.length - 1];
+		        } else {
+		            eventRecord = new Object[csvRecord.length - 2];
+		        }
 		    } else {
 		        eventRecord = new Object[csvRecord.length - 1];
 		    }
 		    if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(csvRecord[getTSIndex(csvRecord)]).getTime();
+                timestamp = Globals.DATE_TIME_FORMAT.parse(csvRecord[tsIndex]).getTime();
             } else {
-                timestamp = Long.parseLong(csvRecord[getTSIndex(csvRecord)]);
+                timestamp = Long.parseLong(csvRecord[tsIndex]);
             }
 		} else {
 		    if (containsEventsType) {
-                typeName = csvRecord[getTypeIndex(csvRecord)];
+		        typeIndex = getTypeIndex(csvRecord);
+                typeName = csvRecord[typeIndex];
                 eventRecord = new Object[csvRecord.length - 1];
             } else {
                 eventRecord = new Object[csvRecord.length];
@@ -223,9 +250,13 @@ public class DataFileReader {
             }
         }
 
-        int payloadIndex = csvRecord.length - eventRecord.length;
-        for (int i = 0; i < eventRecord.length; i++) {
-            eventRecord[i] = csvRecord[payloadIndex + i];
+        int skipCount = 0;
+        for (int i = 0; i < csvRecord.length; i++) {
+            if ((i == tsIndex && !includeTS) || i == typeIndex) {
+                skipCount++;
+                continue;
+            }
+            eventRecord[i - skipCount] = csvRecord[i];
         }
         e = new Event(type, eventRecord);
         e.setTimestamp(timestamp);

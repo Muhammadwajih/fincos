@@ -196,18 +196,24 @@ public class ConfigurationParser {
                     Element path = doc.createElement("path");
                     path.appendChild(doc.createTextNode(externalFilePhase.getFilePath()));
                     Element delimiter = doc.createElement("delimiter");
-                    delimiter.appendChild(doc.createTextNode(externalFilePhase.getDelimiter()));
+                    String delimiterStr = externalFilePhase.getDelimiter();
+                    if (delimiterStr.equals("\t")) {
+                        delimiterStr = "tab";
+                    }
+                    delimiter.appendChild(doc.createTextNode(delimiterStr));
                     Element loopCount = doc.createElement("loopCount");
                     loopCount.appendChild(doc.createTextNode("" + externalFilePhase.getLoopCount()));
                     Element timestamps = doc.createElement("timestamps");
                     boolean containsTS = externalFilePhase.containsTimestamps();
                     boolean useTS = externalFilePhase.isUsingTimestamps();
+                    boolean includeTS = externalFilePhase.isIncludingTS();
                     int timeUnit = externalFilePhase.getTimestampUnit();
                     double eventRate = externalFilePhase.getEventSubmissionRate();
                     timestamps.setAttribute("contains", "" + containsTS);
                     timestamps.setAttribute("fieldIndex", "" + externalFilePhase.getTimestampIndex());
                     if (containsTS) {
                         timestamps.setAttribute("use", "" + useTS);
+                        timestamps.setAttribute("include", "" + includeTS);
                         if (useTS) {
                             timestamps.setAttribute("timeUnit", "" + timeUnit);
                         } else {
@@ -572,6 +578,9 @@ public class ConfigurationParser {
             } else {
                 delimiter = Globals.CSV_DELIMITER;
             }
+            if (delimiter != null && delimiter.equals("tab")) {
+                delimiter = "\t";
+            }
             int loopCount;
             if (phase.getElementsByTagName("loopCount").item(0) != null) {
                 loopCount = Integer.parseInt(phase.getElementsByTagName("loopCount").item(0).getFirstChild().getNodeValue());
@@ -582,6 +591,7 @@ public class ConfigurationParser {
             Element timestamps = (Element) phase.getElementsByTagName("timestamps").item(0);
             boolean containsTS = Boolean.parseBoolean(timestamps.getAttribute("contains"));
             boolean useTS = Boolean.parseBoolean(timestamps.getAttribute("use"));
+            boolean includeTS = Boolean.parseBoolean(timestamps.getAttribute("include"));
             String tsIndexStr = timestamps.getAttribute("fieldIndex");
             int tsIndex = (tsIndexStr != null && !tsIndexStr.isEmpty()) ? Integer.parseInt(tsIndexStr) : containsTS ? 0 : -1;
             int timeUnit = 0;
@@ -596,7 +606,7 @@ public class ConfigurationParser {
             String singleTypeName = eventTypes.getAttribute("singleTypeName");
             String typeIndexStr = eventTypes.getAttribute("fieldIndex");
             int typeIndex = (typeIndexStr != null  && !typeIndexStr.isEmpty()) ? Integer.parseInt(typeIndexStr) : !containsTypes ? -1 : containsTS ? 1 : 0;
-            ret = new ExternalFileWorkloadPhase(path, delimiter, containsTS, useTS, timeUnit, tsIndex,
+            ret = new ExternalFileWorkloadPhase(path, delimiter, containsTS, useTS, timeUnit, tsIndex, includeTS,
                     containsTypes, typeIndex, singleTypeName, loopCount, eventRate);
         } else {
             throw new Exception("Invalid phase type.");

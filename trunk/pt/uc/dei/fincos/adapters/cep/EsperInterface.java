@@ -275,8 +275,6 @@ public class EsperInterface extends CEPEngineInterface {
                 int i = 0;
                 // TODO: Change this to a mapping Listener->List-of-streams
                 for (Entry<String, String> query : this.queryNamesAndTexts.entrySet()) {
-                    System.out.println("query: " + query.getKey() +
-                            " hasListener: " + hasListener(query.getKey(), outputStreams));
                     if (hasListener(query.getKey(), outputStreams)) {
                         outputListeners[i] = new EsperListener("lsnr-0" + (i + 1),
                                 rtMode, rtResolution, sinkInstance, this.epService,

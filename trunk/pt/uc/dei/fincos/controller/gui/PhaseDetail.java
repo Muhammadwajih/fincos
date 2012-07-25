@@ -58,6 +58,7 @@ public class PhaseDetail extends ComponentDetail {
         } else {
             this.op = INSERT;
             setTitle("New Phase");
+            externalFileRadio.setSelected(true);
             syntheticRadio.setSelected(true);
         }
 
@@ -246,11 +247,12 @@ public class PhaseDetail extends ComponentDetail {
 
                             newCfg = new ExternalFileWorkloadPhase(
                                     externalFilePanel.filePathField.getText(),
-                                    externalFilePanel.getDelimiter(),
+                                    externalFilePanel.getDelimiter(false),
                                     externalFilePanel.tsCheckBox.isSelected(),
                                     externalFilePanel.useTSRdBtn.isSelected(),
                                     externalFilePanel.tsUnitCombo.getSelectedIndex(),
                                     externalFilePanel.getTSIndex(),
+                                    externalFilePanel.sendTSCheck.isSelected(),
                                     externalFilePanel.typeYesRdBtn.isSelected(),
                                     externalFilePanel.getTypeIndex(),
                                     externalFilePanel.typeField.getText(),

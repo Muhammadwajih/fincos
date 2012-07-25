@@ -31,6 +31,9 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** The index of the field containing the timestamp of the records in the data file. */
     private int timestampIndex;
 
+    /** A flag indicating if the timestamp field (if present) must be included in the payload of the events. */
+    private boolean includeTS;
+
     /** A flag indicating if the external file contains event types. */
     private boolean containsEventTypes;
 
@@ -73,6 +76,7 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
      * @param useTimestamps         a flag indicating if the timestamps in the file should be used for event submission
      * @param timestampUnit         the time unit of the timestamps in the external data file
      * @param timestampIndex        the index of the field containing the timestamp of the records in the data file
+     * @param includeTimestamp      A flag indicating if the timestamp field (if present) must be included in the payload of the events
      * @param containsEventTypes    a flag indicating if the data file contains event types
      * @param typeIndex             the index of the field containing the type of the records in the data file
      * @param singleEventTypeName   type of the events in the data file, if it is not typed.
@@ -80,7 +84,8 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
      * @param eventSubmissionRate   injection rate, when not using the timestamps in the data file
      */
     public ExternalFileWorkloadPhase(String filePath, String delimiter,
-            boolean containsTimestamps, boolean useTimestamps, int timestampUnit, int timestampIndex,
+            boolean containsTimestamps, boolean useTimestamps, int timestampUnit,
+            int timestampIndex, boolean includeTimestamp,
             boolean containsEventTypes, int typeIndex, String singleEventTypeName,
             int loopCount, double eventSubmissionRate) {
         setFilePath(filePath);
@@ -90,6 +95,7 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         setUseTimestamps(useTimestamps);
         setTimestampUnit(timestampUnit);
         setTimestampIndex(timestampIndex);
+        setIncludeTS(includeTimestamp);
         setEventSubmissionRate(eventSubmissionRate);
         setContainsEventTypes(containsEventTypes);
         setTypeIndex(typeIndex);
@@ -129,6 +135,18 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
      */
     public int getTimestampIndex() {
         return timestampIndex;
+    }
+
+    private void setIncludeTS(boolean includeTS) {
+        this.includeTS = includeTS;
+    }
+
+    /**
+     *
+     * @return  a flag indicating if the timestamp field (if present) must be included in the payload of the events
+     */
+    public boolean isIncludingTS() {
+        return includeTS;
     }
 
     private void setFilePath(String filePath) {
