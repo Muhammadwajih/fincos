@@ -122,12 +122,12 @@ public class MapMessageConverter extends Converter {
 
     @Override
     String toCSV(Message msg, String src) throws JMSException {
-        StringBuilder sb = new StringBuilder("type:");
+        StringBuilder sb = new StringBuilder();
         sb.append(src);
         MapMessage map = (MapMessage) msg;
         Enumeration<String> atts = map.getMapNames();
         while (atts.hasMoreElements()) {
-            sb.append(Globals.CSV_SEPARATOR);
+            sb.append(Globals.CSV_DELIMITER);
             sb.append(msg.getObjectProperty(atts.nextElement()).toString());
         }
         return sb.toString();

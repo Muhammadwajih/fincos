@@ -195,6 +195,8 @@ public class ConfigurationParser {
                     phase.setAttribute("type", "External File");
                     Element path = doc.createElement("path");
                     path.appendChild(doc.createTextNode(externalFilePhase.getFilePath()));
+                    Element delimiter = doc.createElement("delimiter");
+                    delimiter.appendChild(doc.createTextNode(externalFilePhase.getDelimiter()));
                     Element loopCount = doc.createElement("loopCount");
                     loopCount.appendChild(doc.createTextNode("" + externalFilePhase.getLoopCount()));
                     Element timestamps = doc.createElement("timestamps");
@@ -203,6 +205,7 @@ public class ConfigurationParser {
                     int timeUnit = externalFilePhase.getTimestampUnit();
                     double eventRate = externalFilePhase.getEventSubmissionRate();
                     timestamps.setAttribute("contains", "" + containsTS);
+                    timestamps.setAttribute("fieldIndex", "" + externalFilePhase.getTimestampIndex());
                     if (containsTS) {
                         timestamps.setAttribute("use", "" + useTS);
                         if (useTS) {
@@ -217,13 +220,15 @@ public class ConfigurationParser {
                     boolean containsEventTypes = externalFilePhase.containsEventTypes();
                     String singleTypeName = externalFilePhase.getSingleEventTypeName();
                     eventTypes.setAttribute("contains", "" + containsEventTypes);
+                    eventTypes.setAttribute("fieldIndex", "" + externalFilePhase.getTypeIndex());
                     if (!containsEventTypes) {
                         eventTypes.setAttribute("singleTypeName", singleTypeName);
                     }
                     phase.appendChild(path);
-                    phase.appendChild(loopCount);
+                    phase.appendChild(delimiter);
                     phase.appendChild(timestamps);
                     phase.appendChild(eventTypes);
+                    phase.appendChild(loopCount);
                     workload.appendChild(phase);
                 }
             }
@@ -560,6 +565,13 @@ public class ConfigurationParser {
                     deterministicEventMix, dataGenMode, randomSeed);
         } else if (type.equalsIgnoreCase("External File")) {
             String path = phase.getElementsByTagName("path").item(0).getFirstChild().getNodeValue();
+            Node delimiterElem = phase.getElementsByTagName("delimiter").item(0);
+            String delimiter;
+            if (delimiterElem != null) {
+                delimiter = delimiterElem.getFirstChild().getNodeValue();
+            } else {
+                delimiter = Globals.CSV_DELIMITER;
+            }
             int loopCount;
             if (phase.getElementsByTagName("loopCount").item(0) != null) {
                 loopCount = Integer.parseInt(phase.getElementsByTagName("loopCount").item(0).getFirstChild().getNodeValue());
@@ -570,6 +582,8 @@ public class ConfigurationParser {
             Element timestamps = (Element) phase.getElementsByTagName("timestamps").item(0);
             boolean containsTS = Boolean.parseBoolean(timestamps.getAttribute("contains"));
             boolean useTS = Boolean.parseBoolean(timestamps.getAttribute("use"));
+            String tsIndexStr = timestamps.getAttribute("fieldIndex");
+            int tsIndex = (tsIndexStr != null && !tsIndexStr.isEmpty()) ? Integer.parseInt(tsIndexStr) : containsTS ? 0 : -1;
             int timeUnit = 0;
             double eventRate = 1;
             if (containsTS && useTS) {
@@ -580,8 +594,10 @@ public class ConfigurationParser {
             Element eventTypes = (Element) phase.getElementsByTagName("eventTypes").item(0);
             boolean containsTypes = Boolean.parseBoolean(eventTypes.getAttribute("contains"));
             String singleTypeName = eventTypes.getAttribute("singleTypeName");
-            ret = new ExternalFileWorkloadPhase(path, loopCount, containsTS, useTS, timeUnit,
-                    eventRate, containsTypes, singleTypeName);
+            String typeIndexStr = eventTypes.getAttribute("fieldIndex");
+            int typeIndex = (typeIndexStr != null  && !typeIndexStr.isEmpty()) ? Integer.parseInt(typeIndexStr) : !containsTypes ? -1 : containsTS ? 1 : 0;
+            ret = new ExternalFileWorkloadPhase(path, delimiter, containsTS, useTS, timeUnit, tsIndex,
+                    containsTypes, typeIndex, singleTypeName, loopCount, eventRate);
         } else {
             throw new Exception("Invalid phase type.");
         }

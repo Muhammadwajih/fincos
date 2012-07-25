@@ -464,7 +464,7 @@ public class SourceDialog extends javax.swing.JDialog {
                 PerformanceStats stats = null;
 
                 while ((event = logReader.getNextLine()) != null) {
-                    splitEv = CSVReader.split(event, Globals.CSV_SEPARATOR);
+                    splitEv = CSVReader.split(event, Globals.CSV_DELIMITER);
                     if (splitEv.length == 9) { // Legacy log files
                         server = splitEv[1];
                         streamName = splitEv[2].substring(0, splitEv[2].indexOf("("));

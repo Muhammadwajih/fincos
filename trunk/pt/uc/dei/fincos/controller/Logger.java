@@ -116,9 +116,9 @@ public class Logger extends CSVWriter {
         if (entriesCount % logSamplMod == 0) {
             String entry = evt.toCSV();
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
-                this.writeRecord(timestamp + Globals.CSV_SEPARATOR + entry);
+                this.writeRecord(timestamp + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(timestamp + Globals.CSV_SEPARATOR + CSVReader.split(entry, Globals.CSV_SEPARATOR)[0]);
+                this.writeRecord(timestamp + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -137,9 +137,9 @@ public class Logger extends CSVWriter {
         if (entriesCount % logSamplMod == 0) {
             String entry = evt.toCSV();
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + entry);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + CSVReader.split(entry, Globals.CSV_SEPARATOR)[0]);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -158,9 +158,9 @@ public class Logger extends CSVWriter {
         if (entriesCount % logSamplMod == 0) {
             String entry = evt.toCSV();
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + entry);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_SEPARATOR + CSVReader.split(entry, Globals.CSV_SEPARATOR)[0]);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }

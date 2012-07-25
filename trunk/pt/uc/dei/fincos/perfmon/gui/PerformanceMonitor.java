@@ -466,11 +466,11 @@ public class PerformanceMonitor extends JFrame {
 
             TreeMap<Long, Double> queryStats;
             for (Stream stream : e.getValue()) {
-                String keyPrefix = server + Globals.CSV_SEPARATOR + stream.name + Globals.CSV_SEPARATOR;
+                String keyPrefix = server + Globals.CSV_DELIMITER + stream.name + Globals.CSV_DELIMITER;
                 if (stream.type == Stream.INPUT) {
-                    keyPrefix += "Input" + Globals.CSV_SEPARATOR;
+                    keyPrefix += "Input" + Globals.CSV_DELIMITER;
                 } else {
-                    keyPrefix += "Output" + Globals.CSV_SEPARATOR;
+                    keyPrefix += "Output" + Globals.CSV_DELIMITER;
                 }
 
                 queryStats = graphsPanel.getSeriesData(keyPrefix + "Avg Throughput");

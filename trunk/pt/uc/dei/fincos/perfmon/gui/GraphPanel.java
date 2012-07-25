@@ -165,12 +165,12 @@ public class GraphPanel extends JPanel {
                 streamSet.add(stream);
             }
 
-            String keyPrefix = server + Globals.CSV_SEPARATOR
-            + stream.name + Globals.CSV_SEPARATOR;
+            String keyPrefix = server + Globals.CSV_DELIMITER
+            + stream.name + Globals.CSV_DELIMITER;
             if (stream.type == Stream.INPUT) {
-                keyPrefix += "Input" + Globals.CSV_SEPARATOR;
+                keyPrefix += "Input" + Globals.CSV_DELIMITER;
             } else {
-                keyPrefix += "Output" + Globals.CSV_SEPARATOR;
+                keyPrefix += "Output" + Globals.CSV_DELIMITER;
             }
 
             // Average Throughput
@@ -309,9 +309,9 @@ public class GraphPanel extends JPanel {
                         streamName = stream.substring(0, stream.indexOf("(") - 1);
                         streamType = stream.substring(stream.indexOf("(") + 1, stream.indexOf(")"));
                         counter = (String) source.getValueAt(selectedRow, 5);
-                        key = server + Globals.CSV_SEPARATOR
-                        + streamName + Globals.CSV_SEPARATOR
-                        + streamType + Globals.CSV_SEPARATOR
+                        key = server + Globals.CSV_DELIMITER
+                        + streamName + Globals.CSV_DELIMITER
+                        + streamType + Globals.CSV_DELIMITER
                         + counter;
 
                         ((DefaultTableModel) source.getModel()).removeRow(selectedRow);
@@ -337,9 +337,9 @@ public class GraphPanel extends JPanel {
                     streamName = stream.substring(0, stream.indexOf("(") - 1);
                     streamType = stream.substring(stream.indexOf("(") + 1, stream.indexOf(")"));
                     counter = (String) model.getValueAt(row, 5);
-                    key = server + Globals.CSV_SEPARATOR
-                    + streamName + Globals.CSV_SEPARATOR
-                    + streamType + Globals.CSV_SEPARATOR
+                    key = server + Globals.CSV_DELIMITER
+                    + streamName + Globals.CSV_DELIMITER
+                    + streamType + Globals.CSV_DELIMITER
                     + counter;
 
                     chart.changeSeriesScale(key, Double.parseDouble((String) model.getValueAt(row, column)));
@@ -382,7 +382,7 @@ public class GraphPanel extends JPanel {
         synchronized (this.graphSeries) {
             if (this.graphSeries != null) {
                 for (Entry<String, TimeSeries> e : graphSeries.entrySet()) {
-                    key = e.getKey().split(Globals.CSV_SEPARATOR);
+                    key = e.getKey().split(Globals.CSV_DELIMITER);
                     connection = key[0];
                     streamName = key[1];
                     streamType = key[2];

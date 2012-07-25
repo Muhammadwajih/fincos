@@ -264,8 +264,8 @@ public class HistogramPanel extends JPanel {
                         String[] splitEv;
                         long outputArrivalTime = 0, causerEmissionTime = 0, timestamp;
                         while (record != null) {
-                            splitEv = CSVReader.split(record, Globals.CSV_SEPARATOR);
-                            streamName = splitEv[1].substring(5);
+                            splitEv = CSVReader.split(record, Globals.CSV_DELIMITER);
+                            streamName = splitEv[1];
                             timestamp = Long.parseLong(splitEv[0]);
                             if (timestamp < startTimestamp) {
                                 record = logReader.getNextLine();

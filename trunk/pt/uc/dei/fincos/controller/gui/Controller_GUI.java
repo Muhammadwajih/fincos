@@ -1,6 +1,8 @@
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -41,6 +43,7 @@ import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
+import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EtchedBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -1669,6 +1672,7 @@ public class Controller_GUI extends JFrame {
 
 
 	public static void main(String[] args) throws UnknownHostException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
+	    setUI();
 	    SwingUtilities.invokeLater(new Runnable() {
 	        @Override
 	        public void run() {
@@ -1677,4 +1681,28 @@ public class Controller_GUI extends JFrame {
 
 	    });
 	}
+
+	private static void setUI() {
+	    Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
+        Font bold = new Font(Font.SANS_SERIF, Font.BOLD, 11);
+       // UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        UIManager.put("Label.font", font);
+        UIManager.put("Label.foreground", Color.BLACK);
+        UIManager.put("TextField.font", font);
+        UIManager.put("TextField.foreground", Color.BLACK);
+        UIManager.put("List.font", font);
+        UIManager.put("List.foreground", Color.BLACK);
+        UIManager.put("Table.font", font);
+        UIManager.put("Table.foreground", Color.BLACK);
+        UIManager.put("Button.font", bold);
+        UIManager.put("Button.foreground", Color.BLACK);
+        UIManager.put("RadioButton.font", font);
+        UIManager.put("RadioButton.foreground", Color.BLACK);
+        UIManager.put("CheckBox.font", font);
+        UIManager.put("CheckBox.foreground", Color.BLACK);
+        UIManager.put("ComboBox.font", font);
+        UIManager.put("ComboBox.foreground", Color.BLACK);
+        UIManager.put("TitledBorder.font", bold);
+        UIManager.put("TitledBorder.foreground", Color.BLACK);
+    }
 }

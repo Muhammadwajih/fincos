@@ -1,5 +1,7 @@
 package pt.uc.dei.fincos.driver;
 
+import java.security.InvalidParameterException;
+
 /**
  * A phase in the workload of a Driver that is based on an external dataset file.
  *
@@ -14,8 +16,8 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** The path of the external file. */
     private String filePath;
 
-    /** The number of times the external file will be submitted. */
-    private int loopCount;
+    /** Sequence of characters used to separate the fields of the records in the data file. */
+    private String delimiter;
 
     /** A flag indicating if the external file contains timestamps.  */
     private boolean containsTimestamps;
@@ -26,14 +28,23 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** The time unit of the timestamps in the external data file. */
     private int timestampUnit;
 
-    /** Injection rate, when not using the timestamps in the data file. */
-    private double eventSubmissionRate;
+    /** The index of the field containing the timestamp of the records in the data file. */
+    private int timestampIndex;
 
     /** A flag indicating if the external file contains event types. */
     private boolean containsEventTypes;
 
+    /** The index of the field containing the type of the records in the data file. */
+    private int typeIndex;
+
     /** The external file does not contain event types. All events are of the same type*/
     private String singleEventTypeName;
+
+    /** Injection rate, when not using the timestamps in the data file. */
+    private double eventSubmissionRate;
+
+    /** The number of times the external file will be submitted. */
+    private int loopCount;
 
     /** Timestamp of the data file is expressed in milliseconds. */
     public static final int MILLISECONDS = 0;
@@ -44,85 +55,192 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** Timestamp of the data file is expressed as a date and time record. */
     public static final int DATE_TIME = 2;
 
+    public static final int FIRST_FIELD = 0;
+
+    public static final int SECOND_FIELD = 1;
+
+    public static final int LAST_FIELD = 2;
+
+    public static final int SECOND_LAST_FIELD = 3;
 
 
-    public ExternalFileWorkloadPhase(String filePath, int loopCount,
-            boolean containsTimestamps, boolean useTimestamps,
-            int timestampUnit, double eventSubmissionRate, boolean containsEventTypes, String singleEventTypeName) throws Exception
-            {
+
+    /**
+     *
+     * @param filePath              the path of the data file
+     * @param delimiter             sequence of characters used to separate the fields of the records in the data file
+     * @param containsTimestamps    a flag indicating if the data file contains timestamps
+     * @param useTimestamps         a flag indicating if the timestamps in the file should be used for event submission
+     * @param timestampUnit         the time unit of the timestamps in the external data file
+     * @param timestampIndex        the index of the field containing the timestamp of the records in the data file
+     * @param containsEventTypes    a flag indicating if the data file contains event types
+     * @param typeIndex             the index of the field containing the type of the records in the data file
+     * @param singleEventTypeName   type of the events in the data file, if it is not typed.
+     * @param loopCount             the number of times the external file will be submitted
+     * @param eventSubmissionRate   injection rate, when not using the timestamps in the data file
+     */
+    public ExternalFileWorkloadPhase(String filePath, String delimiter,
+            boolean containsTimestamps, boolean useTimestamps, int timestampUnit, int timestampIndex,
+            boolean containsEventTypes, int typeIndex, String singleEventTypeName,
+            int loopCount, double eventSubmissionRate) {
         setFilePath(filePath);
+        setDelimiter(delimiter);
         setLoopCount(loopCount);
         setContainsTimestamps(containsTimestamps);
         setUseTimestamps(useTimestamps);
         setTimestampUnit(timestampUnit);
+        setTimestampIndex(timestampIndex);
         setEventSubmissionRate(eventSubmissionRate);
         setContainsEventTypes(containsEventTypes);
+        setTypeIndex(typeIndex);
         setSingleEventTypeName(singleEventTypeName);
-            }
-
-    public void setTimestampUnit(int timestampUnit) throws Exception {
-        if(timestampUnit == MILLISECONDS || timestampUnit == SECONDS || timestampUnit == DATE_TIME)
-            this.timestampUnit = timestampUnit;
-        else
-            throw new Exception ("Invalid timestamp unit.");
     }
 
+    private void setTimestampUnit(int timestampUnit) throws InvalidParameterException {
+        if (timestampUnit == MILLISECONDS || timestampUnit == SECONDS || timestampUnit == DATE_TIME) {
+            this.timestampUnit = timestampUnit;
+        } else {
+            throw new InvalidParameterException("Invalid timestamp unit.");
+        }
+    }
+
+    /**
+     *
+     * @return  the time unit of the timestamps in the external data file
+     */
     public int getTimestampUnit() {
         return timestampUnit;
     }
 
-    public void setFilePath(String filePath) {
+    private void setTimestampIndex(int timestampIndex) {
+        if (timestampIndex == FIRST_FIELD
+            || timestampIndex == SECOND_FIELD
+            || timestampIndex == LAST_FIELD
+            || timestampIndex == SECOND_LAST_FIELD) {
+            this.timestampIndex = timestampIndex;
+        } else {
+            this.timestampIndex = -1;
+        }
+    }
+
+    /**
+     *
+     * @return  the index of the field containing the timestamp of the records in the data file
+     */
+    public int getTimestampIndex() {
+        return timestampIndex;
+    }
+
+    private void setFilePath(String filePath) {
         this.filePath = filePath;
     }
 
+    /**
+     *
+     * @return  the path of the data file
+     */
     public String getFilePath() {
         return filePath;
     }
 
-    public void setContainsTimestamps(boolean containsTimestamps) {
+    private void setDelimiter(String delimiter) {
+        this.delimiter = delimiter;
+    }
+
+    /**
+     *
+     * @return  sequence of characters used to separate the fields of the records in the data file
+     */
+    public String getDelimiter() {
+        return delimiter;
+    }
+
+    private void setContainsTimestamps(boolean containsTimestamps) {
         this.containsTimestamps = containsTimestamps;
     }
 
+    /**
+     *
+     * @return  <tt>true</tt> if the data file contains timestamps, <tt>false</tt> otherwise
+     */
     public boolean containsTimestamps() {
         return containsTimestamps;
     }
 
-    public void setUseTimestamps(boolean useTimestamps) {
+    private void setUseTimestamps(boolean useTimestamps) {
         this.useTimestamps = useTimestamps;
     }
 
+    /**
+     *
+     * @return  <tt>true</tt> if the timestamps in the data file should be used
+     *          for load submission, <tt>false</tt> otherwise
+     */
     public boolean isUsingTimestamps() {
         return useTimestamps;
     }
 
-    public void setContainsEventTypes(boolean containsEventTypes) {
+    private void setContainsEventTypes(boolean containsEventTypes) {
         this.containsEventTypes = containsEventTypes;
     }
 
+    /**
+     *
+     * @return  <tt>true</tt> if the data file contains event types, <tt>false</tt> otherwise
+     */
     public boolean containsEventTypes() {
         return containsEventTypes;
     }
 
-    public void setSingleEventTypeName(String singleEventTypeName) {
+
+    private void setTypeIndex(int typeIndex) {
+        if (typeIndex == FIRST_FIELD
+                || typeIndex == SECOND_FIELD
+                || typeIndex == LAST_FIELD
+                || typeIndex == SECOND_LAST_FIELD) {
+            this.typeIndex = typeIndex;
+        } else {
+            this.typeIndex = -1;
+        }
+    }
+
+    /**
+     *
+     * @return  the index of the field containing the type of the records in the data file
+     */
+    public int getTypeIndex() {
+        return typeIndex;
+    }
+
+    private void setSingleEventTypeName(String singleEventTypeName) {
         this.singleEventTypeName = singleEventTypeName;
     }
 
+    /**
+     *
+     * @return  type of the events in the data file, if it is not typed.
+     */
     public String getSingleEventTypeName() {
         return singleEventTypeName;
     }
 
-    public void setEventSubmissionRate(double eventSubmissionRate) throws Exception {
-        if(eventSubmissionRate > 0)
+    private void setEventSubmissionRate(double eventSubmissionRate) throws InvalidParameterException {
+        if (eventSubmissionRate > 0) {
             this.eventSubmissionRate = eventSubmissionRate;
-        else
-            throw new Exception ("Invalid event submission rate.");
+        } else {
+            throw new InvalidParameterException("Invalid event submission rate.");
+        }
     }
 
+    /**
+     *
+     * @return  injection rate, when not using the timestamps in the data file
+     */
     public double getEventSubmissionRate() {
         return eventSubmissionRate;
     }
 
-    public void setLoopCount(int loopCount) {
+    private void setLoopCount(int loopCount) {
         if (loopCount > 0) {
             this.loopCount = loopCount;
         } else {
@@ -131,6 +249,10 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         }
     }
 
+    /**
+     *
+     * @return  the number of times the data file will be submitted
+     */
     public int getLoopCount() {
         return loopCount;
     }

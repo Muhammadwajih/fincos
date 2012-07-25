@@ -100,17 +100,17 @@ public class PerformanceStats implements Cloneable, Comparable<PerformanceStats>
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(timestamp); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(server); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(stream); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(avgThroughput)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(minThroughput)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(maxThroughput)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(lastThroughput)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(avgRT)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(minRT)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(maxRT)); sb.append(Globals.CSV_SEPARATOR);
-        sb.append(statsFormat.format(stdevRT)); sb.append(Globals.CSV_SEPARATOR);
+        sb.append(timestamp); sb.append(Globals.CSV_DELIMITER);
+        sb.append(server); sb.append(Globals.CSV_DELIMITER);
+        sb.append(stream); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(avgThroughput)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(minThroughput)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(maxThroughput)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(lastThroughput)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(avgRT)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(minRT)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(maxRT)); sb.append(Globals.CSV_DELIMITER);
+        sb.append(statsFormat.format(stdevRT)); sb.append(Globals.CSV_DELIMITER);
         sb.append(statsFormat.format(lastRT));
         return sb.toString();
     }

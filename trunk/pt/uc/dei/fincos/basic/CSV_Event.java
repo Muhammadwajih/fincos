@@ -60,11 +60,11 @@ public class CSV_Event {
     * @return  the event's data as a CSV record
     */
    public String toCSV() {
-       StringBuilder sb = new StringBuilder("type:");
+       StringBuilder sb = new StringBuilder();
        sb.append(this.getType());
 
        for (String attributeValue : payload) {
-           sb.append(Globals.CSV_SEPARATOR);
+           sb.append(Globals.CSV_DELIMITER);
            sb.append(attributeValue.toString());
        }
 

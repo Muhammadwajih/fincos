@@ -723,9 +723,9 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
         showInfo("Phase " + phaseNumber + " started. Initializing dispatcher thread...");
         senders = new Sender[1];
 
-        reader = new DataFileReader(filePhase.getFilePath(), filePhase.containsTimestamps(),
-                filePhase.getTimestampUnit(), filePhase.containsEventTypes(),
-                filePhase.getSingleEventTypeName());
+        reader = new DataFileReader(filePhase.getFilePath(), filePhase.getDelimiter(),
+                filePhase.containsTimestamps(), filePhase.getTimestampUnit(), filePhase.getTimestampIndex(),
+                filePhase.containsEventTypes(), filePhase.getTypeIndex(), filePhase.getSingleEventTypeName());
         if (adapterType == AdapterType.JMS) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {

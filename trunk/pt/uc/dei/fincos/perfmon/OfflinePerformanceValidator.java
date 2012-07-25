@@ -87,17 +87,17 @@ public class OfflinePerformanceValidator {
                 }
             }
             perfLogWriter.writeRecord("log file(s).\n"
-                                    + "Timestamp" + Globals.CSV_SEPARATOR
-                                    + "Server" + Globals.CSV_SEPARATOR
-                                    + "Stream" + Globals.CSV_SEPARATOR
-                                    + "Avg_Throughput" + Globals.CSV_SEPARATOR
-                                    + "Min_Throughput" + Globals.CSV_SEPARATOR
-                                    + "Max_Throughput" + Globals.CSV_SEPARATOR
-                                    + "Last_Throughput" + Globals.CSV_SEPARATOR
-                                    + "Avg_RT" + Globals.CSV_SEPARATOR
-                                    + "Min_RT" + Globals.CSV_SEPARATOR
-                                    + "Max_RT" + Globals.CSV_SEPARATOR
-                                    + "Stdev_RT" + Globals.CSV_SEPARATOR
+                                    + "Timestamp" + Globals.CSV_DELIMITER
+                                    + "Server" + Globals.CSV_DELIMITER
+                                    + "Stream" + Globals.CSV_DELIMITER
+                                    + "Avg_Throughput" + Globals.CSV_DELIMITER
+                                    + "Min_Throughput" + Globals.CSV_DELIMITER
+                                    + "Max_Throughput" + Globals.CSV_DELIMITER
+                                    + "Last_Throughput" + Globals.CSV_DELIMITER
+                                    + "Avg_RT" + Globals.CSV_DELIMITER
+                                    + "Min_RT" + Globals.CSV_DELIMITER
+                                    + "Max_RT" + Globals.CSV_DELIMITER
+                                    + "Stdev_RT" + Globals.CSV_DELIMITER
                                     + "Last_RT");
         }
     }
@@ -172,7 +172,7 @@ public class OfflinePerformanceValidator {
             if (firstLine == null) {
                 throw new Exception("The log file is empty.");
             }
-            startTime = Long.parseLong(CSVReader.split(firstLine, Globals.CSV_SEPARATOR)[TIMESTAMP_FIELD]);
+            startTime = Long.parseLong(CSVReader.split(firstLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -209,7 +209,7 @@ public class OfflinePerformanceValidator {
             } while (c != '\n');
 
             String lastLine = randomFile.readLine();
-            endTime = Long.parseLong(CSVReader.split(lastLine, Globals.CSV_SEPARATOR)[TIMESTAMP_FIELD]);
+            endTime = Long.parseLong(CSVReader.split(lastLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -377,8 +377,8 @@ public class OfflinePerformanceValidator {
                 while (keepProcessing && (event = logReader.getNextLine()) != null) {
                     try {
                         totalReadBytes += (event.length() / charsPerByte + 2);
-                        splitEv = CSVReader.split(event, Globals.CSV_SEPARATOR);
-                        streamName = splitEv[STREAM_NAME_FIELD].substring(5);
+                        splitEv = CSVReader.split(event, Globals.CSV_DELIMITER);
+                        streamName = splitEv[STREAM_NAME_FIELD];
                         timestamp = Long.parseLong(splitEv[TIMESTAMP_FIELD]);
 
                         if (timestamp < startTime) {

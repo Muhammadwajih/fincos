@@ -335,11 +335,11 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     }
 
     private String toCSV(Object[] event) {
-        StringBuilder sb = new StringBuilder("type:");
+        StringBuilder sb = new StringBuilder();
         sb.append(event[0]);
 
         for (int i = 1; i < event.length; i++) {
-            sb.append(Globals.CSV_SEPARATOR);
+            sb.append(Globals.CSV_DELIMITER);
             sb.append(event[i]);
         }
 
@@ -384,12 +384,11 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                     logger.writeRecord(toCSV(event), logEntryTS);
                 } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("type:");
                     sb.append(event[0]);
                     if (rtMode != Globals.NO_RT) {
-                        sb.append(Globals.CSV_SEPARATOR);
+                        sb.append(Globals.CSV_DELIMITER);
                         sb.append(event[event.length - 2]); // input event timestamp
-                        sb.append(Globals.CSV_SEPARATOR);
+                        sb.append(Globals.CSV_DELIMITER);
                         sb.append(event[event.length - 1]); // answer event timestamp
                     }
                     logger.writeRecord(sb.toString(), logEntryTS);
