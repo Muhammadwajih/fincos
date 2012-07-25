@@ -494,7 +494,7 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
             semicolonRdBtn.setSelected(true);
         } else if (phase.getDelimiter().equals(" ")) {
             spaceRdBtn.setSelected(true);
-        } else if (phase.getDelimiter().equals("    ")) {
+        } else if (phase.getDelimiter().equals("\t")) {
             tabRdBtn.setSelected(true);
         } else {
             otherCharField.setText(phase.getDelimiter());
@@ -504,8 +504,7 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
         tsCheckBox.setSelected(phase.containsTimestamps());
         if (phase.containsTimestamps()) {
             tsUnitCombo.setSelectedIndex(phase.getTimestampUnit());
-            // TODO: Send timestamps to engine?
-            sendTSCheck.setSelected(false);
+            sendTSCheck.setSelected(phase.isIncludingTS());
         }
 
         if (phase.containsEventTypes()) {
@@ -627,26 +626,29 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
             String col = (String) tcm.getColumn(i).getHeaderValue();
             if (col.equals("timestamp")) {
                 sb.append(recordExample.get("timestamp"));
-                sb.append(getDelimiter());
+                sb.append(getDelimiter(true));
             } else if (col.equals("type")) {
                 sb.append(recordExample.get("type"));
-                sb.append(getDelimiter());
+                sb.append(getDelimiter(true));
             } else if (col.equals("payload")) {
                 sb.append(recordExample.get("payload1"));
-                sb.append(getDelimiter());
+                sb.append(getDelimiter(true));
                 sb.append(recordExample.get("payload2"));
-                sb.append(getDelimiter());
+                sb.append(getDelimiter(true));
             }
         }
         String s = sb.toString();
-        exampleLbl2.setText(s.substring(0, s.length() - getDelimiter().length()) + "]");
+        if (tcm.getColumnCount() > 0) {
+            exampleLbl2.setText(s.substring(0, s.length() - getDelimiter(true).length()) + "]");
+        }
     }
 
     /**
      *
-     * @return  the character used to delimit the fields of records in the datafile
+     * @param UI    the delimiter is to be shown on UI?
+     * @return      the character used to delimit the fields of records in the datafile
      */
-    public String getDelimiter() {
+    public String getDelimiter(boolean UI) {
         if (commaRdBtn.isSelected()) {
             return ",";
         } else if (semicolonRdBtn.isSelected()) {
@@ -654,7 +656,11 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
         } else if (spaceRdBtn.isSelected()) {
             return " ";
         } else if (tabRdBtn.isSelected()) {
-            return "    ";
+            if (UI) {
+                return "   ";
+            }  else {
+                return "\t";
+            }
         } else if (otherRdBtn.isSelected()) {
             return otherCharField.getText();
         }
@@ -755,7 +761,7 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
     private javax.swing.JPanel schemaPanel;
     private javax.swing.JTable schemaTable;
     private javax.swing.JRadioButton semicolonRdBtn;
-    private javax.swing.JCheckBox sendTSCheck;
+    protected javax.swing.JCheckBox sendTSCheck;
     private javax.swing.JRadioButton spaceRdBtn;
     private javax.swing.JRadioButton tabRdBtn;
     protected javax.swing.JCheckBox tsCheckBox;

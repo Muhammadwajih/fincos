@@ -704,6 +704,8 @@ public class DriverDetail extends ComponentDetail {
 		this.logTSRadio.setEnabled(false);
 		this.logSamplingLabel.setEnabled(false);
 		this.logSamplingComboBox.setEnabled(false);
+		this.logFlushLbl.setEnabled(false);
+        this.logFlushField.setEnabled(false);
 		this.okBtn.setEnabled(false);
 	}
 

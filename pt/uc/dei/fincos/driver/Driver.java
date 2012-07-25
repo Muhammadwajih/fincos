@@ -724,8 +724,10 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
         senders = new Sender[1];
 
         reader = new DataFileReader(filePhase.getFilePath(), filePhase.getDelimiter(),
-                filePhase.containsTimestamps(), filePhase.getTimestampUnit(), filePhase.getTimestampIndex(),
-                filePhase.containsEventTypes(), filePhase.getTypeIndex(), filePhase.getSingleEventTypeName());
+                filePhase.containsTimestamps(), filePhase.getTimestampUnit(),
+                filePhase.getTimestampIndex(), filePhase.isIncludingTS(),
+                filePhase.containsEventTypes(), filePhase.getTypeIndex(),
+                filePhase.getSingleEventTypeName());
         if (adapterType == AdapterType.JMS) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
@@ -755,6 +757,7 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
                                             perfTracingEnabled);
             }
         }
+        senders[0].setLogger(logger);
         senders[0].setUseScheduledTime(useScheduledTime);
         senders[0].start();
 
