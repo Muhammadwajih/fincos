@@ -1671,19 +1671,8 @@ public class Controller_GUI extends JFrame {
 	// ========================== End of RMI Worker Threads ==============================
 
 
-	public static void main(String[] args) throws UnknownHostException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-	    setUI();
-	    SwingUtilities.invokeLater(new Runnable() {
-	        @Override
-	        public void run() {
-	            Controller_GUI.getInstance();
-	        }
-
-	    });
-	}
-
 	private static void setUI() {
-	    Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
+        Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
         Font bold = new Font(Font.SANS_SERIF, Font.BOLD, 11);
        // UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         UIManager.put("Label.font", font);
@@ -1705,4 +1694,16 @@ public class Controller_GUI extends JFrame {
         UIManager.put("TitledBorder.font", bold);
         UIManager.put("TitledBorder.foreground", Color.BLACK);
     }
+
+
+	public static void main(String[] args) throws UnknownHostException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
+	    setUI();
+	    SwingUtilities.invokeLater(new Runnable() {
+	        @Override
+	        public void run() {
+	            Controller_GUI.getInstance();
+	        }
+
+	    });
+	}
 }

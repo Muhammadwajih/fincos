@@ -140,7 +140,11 @@ public class DataFileReader {
                     payload = new String[record.length - 2];
                 }
             } else {
-                payload = new String[record.length - 1];
+                if (includeTS) {
+                    payload = new String[record.length];
+                } else  {
+                    payload = new String[record.length - 1];
+                }
             }
             if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
                 timestamp = Globals.DATE_TIME_FORMAT.parse(record[tsIndex]).getTime();

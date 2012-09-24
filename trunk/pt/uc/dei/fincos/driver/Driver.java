@@ -676,26 +676,25 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
                 if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.DATASET) {
                     senders[j] = new Sender(jmsInterface, sch, reader, false,
                                             senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
-                                            perfTracingEnabled);
+                                            useScheduledTime, perfTracingEnabled);
                 } else if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
                     senders[j] = new Sender(jmsInterface, sch, dg,
                                             senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
-                                            perfTracingEnabled);
+                                            useScheduledTime, perfTracingEnabled);
                 }
             } else if (adapterType == AdapterType.CEP) {
                 if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.DATASET) {
                     senders[j] = new Sender(cepEngineInterface, sch, reader, false,
                                             senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
-                                            perfTracingEnabled);
+                                            useScheduledTime, perfTracingEnabled);
                 } else if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
                     senders[j] = new Sender(cepEngineInterface, sch, dg,
                                             senderGroup, this.alias + "/sender-" + (j + 1), 1, rtMode, rtResolution,
-                                            perfTracingEnabled);
+                                            useScheduledTime, perfTracingEnabled);
                 }
             }
 
             senders[j].setLogger(logger);
-            senders[j].setUseScheduledTime(useScheduledTime);
             senders[j].start();
         }
         updateStatus(Step.RUNNING, 0);
@@ -733,32 +732,31 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
                 senders[0] = new Sender(jmsInterface, reader, filePhase.getTimestampUnit(),
                                         filePhase.getLoopCount(), rtMode, rtResolution,
-                                        perfTracingEnabled);
+                                        useScheduledTime, perfTracingEnabled);
             } else { // Event submission is scheduled based on a fixed rate
                 sch = new Scheduler(filePhase.getEventSubmissionRate(),
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
                 senders[0] = new Sender(jmsInterface, sch, reader, filePhase.containsTimestamps(),
                                         null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
-                                        perfTracingEnabled);
+                                        useScheduledTime, perfTracingEnabled);
             }
         } else if (adapterType == AdapterType.CEP) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
                 senders[0] = new Sender(cepEngineInterface, reader, filePhase.getTimestampUnit(),
                                         filePhase.getLoopCount(), rtMode, rtResolution,
-                                        perfTracingEnabled);
+                                        useScheduledTime, perfTracingEnabled);
             } else { // Event submission is scheduled based on a fixed rate
                 sch = new Scheduler(filePhase.getEventSubmissionRate(),
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
                     senders[0] = new Sender(cepEngineInterface, sch, reader, filePhase.containsTimestamps(),
                                             null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
-                                            perfTracingEnabled);
+                                            useScheduledTime, perfTracingEnabled);
             }
         }
         senders[0].setLogger(logger);
-        senders[0].setUseScheduledTime(useScheduledTime);
         senders[0].start();
 
         updateStatus(Step.RUNNING, 0);

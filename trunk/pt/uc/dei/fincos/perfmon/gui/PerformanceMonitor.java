@@ -10,8 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.net.UnknownHostException;
 import java.rmi.RemoteException;
+import java.rmi.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,6 +96,10 @@ public class PerformanceMonitor extends JFrame {
 
     /** Background thread that periodically refreshes GUI when the Pefmon is in reatime mode. */
     Timer guiRefresher;
+
+    /** The last time the GUI has been refreshed*/
+    long guiLastRefresh;
+
     //---------------------------------------------------------------------------------------------
 
 
@@ -565,13 +569,17 @@ public class PerformanceMonitor extends JFrame {
     }
 
     private void refreshGUI() {
+        long now = System.currentTimeMillis();
+        if (guiLastRefresh == 0) {
+            guiLastRefresh = now - Globals.DEFAULT_GUI_REFRESH_RATE * 1000;
+        }
+        long interval = now - guiLastRefresh; // in milliseconds
         // For each Driver
         for (DriverConfig dr: drivers) {
             DriverRemoteFunctions remoteDr = remoteDrivers.get(dr);
             if (remoteDr != null) {
                 try {
                     DriverPerfStats stats = remoteDr.getPerfStats();
-                    long interval = stats.getEnd() - stats.getStart(); // in milliseconds
                     // Computes throughput per stream
                     for (Entry<String, Integer> e : stats.getStreamStats().entrySet()) {
                         // The throughput of this stream on this Driver
@@ -599,7 +607,6 @@ public class PerformanceMonitor extends JFrame {
             if (remoteSink != null) {
                 try {
                     SinkPerfStats stats = remoteSink.getPerfStats();
-                    long interval = stats.getEnd() - stats.getStart();
                     // Computes throughput per stream
                     for (Entry<String, OutStreamCounters> e : stats.getStreamStats().entrySet()) {
                         String streamName = e.getKey();
@@ -620,6 +627,8 @@ public class PerformanceMonitor extends JFrame {
 
         // Resets stats
         inputStreamsStats.clear();
+
+        guiLastRefresh = now;
     }
 
     private void refreshStatsTable() {
