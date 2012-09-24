@@ -24,17 +24,14 @@ public class Sender extends Thread {
     /** Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider). */
     private InputAdapter adapter;
 
-    /** How latency is computed: end-to-end (from Drivers to Sink) or inside adapters */
+    /** How latency is computed: end-to-end (from Drivers to Sink) or inside adapters. */
     private final int rtMode;
 
     /** Resolution of the timestamps: milliseconds or nanoseconds. */
     private final int rtResolution;
 
     /** Use events' *scheduled time* instead of *sending time* for response time measurement. */
-    private boolean useScheduledTime;
-
-    /** Indicates if tuples in the external data file (if used) contain already a timestamp. */
-    private final boolean containsTimestamps;
+    private final boolean useScheduledTime;
 
     /** The time unit of the timestamps in the external data file (if used). */
     private int timestampUnit;
@@ -87,20 +84,27 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataGen dataGen,
             ThreadGroup group, String id, int loopCount, int rtMode, int rtResolution,
-            boolean perfTracingEnabled) {
+            boolean useScheduleTime, boolean perfTracingEnabled) {
         super(group, id);
         this.adapter = adapter;
         this.scheduler = scheduler;
         this.datagen = dataGen;
-        this.containsTimestamps = false; // No data file -> No timestamps
         this.status = new Status(Step.STOPPED, 0);
         this.fileRepeatCount = loopCount;
-        this.rtMode = rtMode;
-        this.rtResolution = rtResolution;
+        this.useScheduledTime = useScheduleTime;
+        if (useScheduleTime) {
+            this.rtMode = Globals.END_TO_END_RT;
+            this.rtResolution = Globals.MILLIS_RT;
+        } else {
+            this.rtMode = rtMode;
+            this.rtResolution = rtResolution;
+        }
+
         this.perfTracingEnabled = perfTracingEnabled;
         this.perfStats = new DriverPerfStats();
     }
@@ -118,20 +122,27 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataFileReader dataReader,
             boolean containsTimestamps, ThreadGroup group, String id,
-            int loopCount, int rtMode, int rtResolution, boolean perfTracingEnabled) {
+            int loopCount, int rtMode, int rtResolution, boolean useScheduleTime,
+            boolean perfTracingEnabled) {
         super(group, id);
         this.adapter = adapter;
         this.scheduler = scheduler;
         this.dataFileReader = dataReader;
-        this.containsTimestamps = containsTimestamps;
         this.status = new Status(Step.STOPPED, 0);
         this.fileRepeatCount = loopCount;
-        this.rtMode = rtMode;
-        this.rtResolution = rtResolution;
+        this.useScheduledTime = useScheduleTime;
+        if (useScheduleTime) {
+            this.rtMode = Globals.END_TO_END_RT;
+            this.rtResolution = Globals.MILLIS_RT;
+        } else {
+            this.rtMode = rtMode;
+            this.rtResolution = rtResolution;
+        }
         this.perfTracingEnabled = perfTracingEnabled;
         this.perfStats = new DriverPerfStats();
     }
@@ -145,20 +156,26 @@ public class Sender extends Thread {
      * @param loopCount             Number of repetitions of the workload
      * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
      * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, DataFileReader dataReader,
             int timestampUnit, int loopCount, int rtMode, int rtResolution,
-            boolean perfTracingEnabled) {
+            boolean useScheduleTime, boolean perfTracingEnabled) {
         this.adapter = adapter;
         this.scheduler = null;
         this.dataFileReader = dataReader;
-        this.containsTimestamps = true; // Event submission controlled by timestamps
         this.timestampUnit = timestampUnit;
         this.status = new Status(Step.STOPPED, 0);
         this.fileRepeatCount = loopCount;
-        this.rtMode = rtMode;
-        this.rtResolution = rtResolution;
+        this.useScheduledTime = useScheduleTime;
+        if (useScheduleTime) {
+            this.rtMode = Globals.END_TO_END_RT;
+            this.rtResolution = Globals.MILLIS_RT;
+        } else {
+            this.rtMode = rtMode;
+            this.rtResolution = rtResolution;
+        }
         this.perfTracingEnabled = perfTracingEnabled;
         this.perfStats = new DriverPerfStats();
     }
@@ -233,16 +250,14 @@ public class Sender extends Thread {
      * Workload with a predetermined event submission rate.
      */
     private void scheduledRun() {
-        long elapsedTime, interTime;
-        long sleepTime;
-        long pauseT0;
-
+        long interTime;                 // inter-arrival time, in nanoseconds
+        long sleepTime;                 // in milliseconds
+        long pauseT0;                   // in nanoseconds
         Event event = null;
         CSV_Event csvEvent = null;
 
         try {
             this.status.setStep(Step.RUNNING);
-            // String csvEvent = null;
 
             if (dataFileReader != null) {
                 csvEvent = dataFileReader.getNextCSVEvent();
@@ -254,42 +269,14 @@ public class Sender extends Thread {
 
             for (int i = 0; i < fileRepeatCount; i++) {
                 long expectedElapsedTime = 0; // in nanoseconds
-                long cumulateInterTime = 0;  // in nanoseconds
+                long now;
                 long t0 = System.currentTimeMillis();
-
-                // Used when timestamping mode is based on scheduled time -----------------
                 long firstTimestamp = t0;
-                long firstTimestampNano = System.nanoTime();
-                double scheduledTime = 0;
-                long t00, t11;
-                double diffSleep;
-                //------------------------------------------------------------------------
+                long scheduledTime = 0;
 
                 while (event != null || csvEvent != null) {
                     try {
-                        /* Sleeps for a interval defined by scheduler according to event rate.
-                         * The effective sleep time is adjusted to compensate for possible delays:
-                         *  Actual Sleep time = interarrival time minus the difference between the
-                         *  actual elapsed time and the expected elapsed time, including the time
-                         *  during which the thread was in pause.
-                         */
-                        interTime = this.scheduler.getInterArrivalTime();
-                        cumulateInterTime += interTime;
-                        diffSleep = 0;
-                        if (cumulateInterTime >= SLEEP_TIME_RESOLUTION) {
-                            elapsedTime = (System.currentTimeMillis() - t0) * SLEEP_TIME_RESOLUTION;
-                            sleepTime = (cumulateInterTime - (elapsedTime - expectedElapsedTime - timeInPause))
-                            / SLEEP_TIME_RESOLUTION;
-                            cumulateInterTime = cumulateInterTime % SLEEP_TIME_RESOLUTION;
-                            if (sleepTime > 0) {
-                                t00 = System.nanoTime();
-                                Thread.sleep(sleepTime);
-                                t11 = System.nanoTime();
-                                diffSleep = sleepTime - 1.0 * (t11 - t00) / SLEEP_TIME_RESOLUTION;
-                            }
-                        }
-                        expectedElapsedTime += interTime;
-                        //Checks if driver has been paused and waits if so
+                        // Checks if driver has been paused and waits if so
                         synchronized (this) {
                             pauseT0 = 0;
                             while (this.status.getStep() == Step.PAUSED) {
@@ -302,23 +289,25 @@ public class Sender extends Thread {
                                 timeInPause += (System.nanoTime() - pauseT0);
                             }
                         }
-
-                        //Checks if driver was stopped
+                        // Checks if driver was stopped
                         if (this.status.getStep() == Step.STOPPED) {
                             return;
                         }
 
+                        interTime = this.scheduler.getInterArrivalTime();
+                        expectedElapsedTime += interTime;
+                        scheduledTime = firstTimestamp + (expectedElapsedTime + timeInPause) / SLEEP_TIME_RESOLUTION;
+                        now = System.currentTimeMillis();
+                        sleepTime = scheduledTime - now;
+                        if (sleepTime > 0) {
+                            Thread.sleep(sleepTime);
+                        }
 
-                        if (useScheduledTime && rtMode == Globals.END_TO_END_RT) {
-                            if (rtResolution == Globals.NANO_RT) {
-                                scheduledTime = firstTimestampNano + (expectedElapsedTime - timeInPause + diffSleep);
-                            } else if (rtResolution == Globals.MILLIS_RT) {
-                                scheduledTime = firstTimestamp + (1.0 * (expectedElapsedTime - timeInPause) / SLEEP_TIME_RESOLUTION + diffSleep);
-                            }
+                        if (useScheduledTime) {
                             if (event != null) {
-                                event.setTimestamp((long) scheduledTime);
+                                event.setTimestamp(scheduledTime);
                             } else {
-                                csvEvent.setTimestamp((long) scheduledTime);
+                                csvEvent.setTimestamp(scheduledTime);
                             }
                         }
                         // Sends the event
@@ -368,10 +357,10 @@ public class Sender extends Thread {
      * events in the data file.
      */
     private void timestampedRun() {
-        long elapsedTime, interTime;
-        long sleepTime;
-        long pauseT0;
-        long currentTS, lastTS;
+        long interTime;                 // interarrival time in nanoseconds
+        long sleepTime;                 // in milliseconds
+        long pauseT0;                   // in milliseconds
+        long currentTS, lastTS;         // in milliseconds
         long timeResolution;
 
         if (this.timestampUnit == ExternalFileWorkloadPhase.MILLISECONDS) {
@@ -393,65 +382,48 @@ public class Sender extends Thread {
                     return;
                 }
 
-                long expectedElapsedTime = 0;
-                long t0 = System.currentTimeMillis();
 
                 // Used when timestamping mode is based on scheduled time -----------------
                 long scheduledTime;
+                long expectedElapsedTime = 0;
+                long now;
+                long t0 = System.currentTimeMillis();
                 long firstTimestamp = t0;
                 //------------------------------------------------------------------------
 
                 while (event != null) {
-                    /*timestamp = event.substring(0, event.indexOf(Globals.CSV_SEPARATOR));
-                    // Removes event's timestamp
-                    event = event.substring(event.indexOf(Globals.CSV_SEPARATOR) + 1);
-
-                    if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                        currentTS = Globals.DATE_TIME_FORMAT.parse(timestamp).getTime();
-                    } else {
-                        currentTS = Long.parseLong(timestamp);
-                    }*/
-                    currentTS = event.getTimestamp();
-
                     try {
-                        /* Sleeps for a interval between consecutive events in the data file.
-                         * The effective sleep time is adjusted to compensate for possible delays;
-                         * Actual Sleep time = interarrival time minus the difference between
-                         * the actual elapsed time and the expected elapsed time.
-                         */
-                        interTime = Math.round(timeResolution * (currentTS - lastTS) / factor);
-
-                        elapsedTime = System.currentTimeMillis() - t0;
-                        sleepTime = interTime - (elapsedTime - timeInPause - expectedElapsedTime);
-                        if (sleepTime > 0) {
-                            Thread.sleep(sleepTime);
-                        }
-
-                        expectedElapsedTime += interTime;
-                        lastTS = currentTS;
-
-                        //Checks if driver was paused and waits if so
+                        // Checks if driver was paused and waits if so
                         synchronized (this) {
                             pauseT0 = 0;
                             while (this.status.getStep() == Step.PAUSED) {
                                 if (pauseT0 == 0) {
-                                    pauseT0 = System.currentTimeMillis();
+                                    pauseT0 = System.nanoTime();
                                 }
                                 this.wait();
                             }
                             if (pauseT0 != 0) {
-                                timeInPause += (System.currentTimeMillis() - pauseT0);
+                                timeInPause += (System.nanoTime() - pauseT0);
                             }
 
                         }
-
-                        //Checks if driver was stopped
+                        // Checks if driver was stopped
                         if (this.status.getStep() == Step.STOPPED) {
                             return;
                         }
 
+                        currentTS = event.getTimestamp();
+                        interTime = Math.round(1E6 * timeResolution * (currentTS - lastTS) / factor);
+                        expectedElapsedTime += interTime;
+                        scheduledTime = firstTimestamp + (expectedElapsedTime + timeInPause) / SLEEP_TIME_RESOLUTION;
+                        now = System.currentTimeMillis();
+                        sleepTime = scheduledTime - now;
+                        if (sleepTime > 0) {
+                            Thread.sleep(sleepTime);
+                        }
+                        lastTS = currentTS;
+
                         // Sends the event
-                        scheduledTime = firstTimestamp + (expectedElapsedTime - timeInPause);
                         event.setTimestamp(scheduledTime);
                         this.sendEvent(event);
 
@@ -549,17 +521,6 @@ public class Sender extends Thread {
      */
     public void setLogger(Logger logger) {
         this.logger = logger;
-    }
-
-    /**
-     * Makes this sender thread to fill events' timestamp with their scheduled time instead of
-     * their sending time.
-     *
-     * @param useScheduledTime   <tt>true</tt> to use scheduled time,
-     *                           <tt>false</tt> to use sending time
-     */
-    public void setUseScheduledTime(boolean useScheduledTime) {
-        this.useScheduledTime = useScheduledTime;
     }
 
     /**

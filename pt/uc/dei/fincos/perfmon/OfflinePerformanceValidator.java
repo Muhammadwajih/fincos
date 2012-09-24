@@ -343,7 +343,7 @@ public class OfflinePerformanceValidator {
                 totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Log Start time
 
                 // Determines Response time measurement mode of the test
-                String rtModeStr = logReader.getNextLine().substring(connection.indexOf(":") + 2);
+                String rtModeStr = logReader.getNextLine();
                 totalReadBytes += (rtModeStr.length() / charsPerByte + 2);
                 if (rtModeStr.contains("ADAPTER")) {
                     this.rtMeasurementMode = Globals.ADAPTER_RT;
@@ -354,7 +354,7 @@ public class OfflinePerformanceValidator {
                 }
 
                 // Determines Response time resolution of the test
-                String rtResolutionStr = logReader.getNextLine().substring(connection.indexOf(":") + 2);
+                String rtResolutionStr = logReader.getNextLine();
                 totalReadBytes += (rtModeStr.length() / charsPerByte + 2);
                 double rtFactor = 1.0;
                 if (rtResolutionStr.contains("milliseconds")) {

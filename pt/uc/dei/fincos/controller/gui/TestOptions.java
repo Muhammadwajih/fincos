@@ -216,6 +216,16 @@ public class TestOptions extends javax.swing.JFrame {
             }
         });
 
+        rtCreationTimeCheckBox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (rtCreationTimeCheckBox.isSelected()) {
+                    rtMillisRdBtn.setSelected(true);
+                }
+                rtNanosRdBtn.setEnabled(!rtCreationTimeCheckBox.isSelected());
+            }
+        });
+
         rtEndToEndRadio.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
