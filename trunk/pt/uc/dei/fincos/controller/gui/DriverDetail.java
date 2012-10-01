@@ -381,7 +381,8 @@ public class DriverDetail extends ComponentDetail {
     }
 
     private void openNewConnectionForm() {
-        new ConnectionDetail(this, null);
+        ConnectionDetail cDetail = new ConnectionDetail(this, null);
+        cDetail.setVisible(true);
     }
 
     public void updateConnectionsList() {

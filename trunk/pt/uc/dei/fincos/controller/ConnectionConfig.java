@@ -77,4 +77,9 @@ public class ConnectionConfig implements Serializable {
         return true;
     }
 
+    @Override
+    public ConnectionConfig clone() {
+        return new ConnectionConfig(this.alias, this.type, (LinkedHashMap<String, String>) this.properties.clone());
+    }
+
 }

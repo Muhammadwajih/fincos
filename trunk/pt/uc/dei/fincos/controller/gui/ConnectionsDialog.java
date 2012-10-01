@@ -8,7 +8,9 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
@@ -25,13 +27,44 @@ public class ConnectionsDialog extends ComponentDetail {
     /** Flag indicating if one or more configurations have been added, updated or removed. */
     private boolean dirty = false;
 
+    private JPopupMenu popupMenu = new JPopupMenu();
+
     /** Creates new form ConnectionsDialog */
-    public ConnectionsDialog(ArrayList<ConnectionConfig> connections) {
+    public ConnectionsDialog(ArrayList<ConnectionConfig> connections_) {
         super(null);
         this.connections = new ArrayList<ConnectionConfig>();
-        this.connections.addAll(connections);
+        this.connections.addAll(connections_);
         initComponents();
-        fillGUI(connections);
+
+        JMenuItem copyMenuItem = new JMenuItem("Copy...");
+        JMenuItem delMenuItem = new JMenuItem("Delete");
+        popupMenu.add(copyMenuItem);
+        popupMenu.add(delMenuItem);
+
+        copyMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selected = connectionsTable.convertRowIndexToModel(connectionsTable.getSelectedRow());
+                if (selected > -1) {
+                    ConnectionConfig copy = connections.get(selected).clone();
+                    ConnectionDetail cDetail = openConnectionDetail(null);
+                    cDetail.fillProperties(copy);
+                    cDetail.setVisible(true);
+
+                } else {
+                    JOptionPane.showMessageDialog(null, "Select a Connection to copy");
+                }
+            }
+        });
+        delMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteConnection();
+            }
+        });
+        connectionsTable.addMouseListener(new PopupListener(popupMenu));
+
+        fillGUI(connections_);
         this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
         addListeners();
         this.setLocationRelativeTo(null);
@@ -190,6 +223,7 @@ public class ConnectionsDialog extends ComponentDetail {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ConnectionDetail connDetail = openConnectionDetail(null);
+                connDetail.setVisible(true);
             }
 
         });
@@ -197,17 +231,7 @@ public class ConnectionsDialog extends ComponentDetail {
         deleteBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                DefaultTableModel model = (DefaultTableModel) connectionsTable.getModel();
-                int selected = connectionsTable.convertRowIndexToModel(connectionsTable.getSelectedRow());
-                if (selected != -1) {
-                    int confirmDelete  = JOptionPane.showConfirmDialog(null, "Do you want to permanently remove this connection from the repository? "
-                            + "(WARN: The connection will be unavailable for this and other test setups)", "Confirm deletion", JOptionPane.YES_NO_OPTION);
-                    if (confirmDelete == JOptionPane.YES_OPTION) {
-                        connections.remove(selected);
-                        model.removeRow(selected);
-                        dirty = true;
-                    }
-                }
+                deleteConnection();
             }
         });
 
@@ -219,12 +243,27 @@ public class ConnectionsDialog extends ComponentDetail {
                     if (source.isEnabled()) {
                         int selected = connectionsTable.convertRowIndexToModel(connectionsTable.getSelectedRow());
                         if (selected > -1) {
-                            openConnectionDetail(connections.get(selected));
+                            ConnectionDetail cDetail = openConnectionDetail(connections.get(selected));
+                            cDetail.setVisible(true);
                         }
                     }
                 }
             }
         });
+    }
+
+    private void deleteConnection() {
+        int index = connectionsTable.convertRowIndexToModel(connectionsTable.getSelectedRow());
+        if (index != -1) {
+            DefaultTableModel model = (DefaultTableModel) connectionsTable.getModel();
+            int confirmDelete  = JOptionPane.showConfirmDialog(null, "Do you want to permanently remove this connection from the repository? "
+                    + "(WARN: The connection will be unavailable for this and other test setups)", "Confirm deletion", JOptionPane.YES_NO_OPTION);
+            if (confirmDelete == JOptionPane.YES_OPTION) {
+                connections.remove(index);
+                model.removeRow(index);
+                dirty = true;
+            }
+        }
     }
 
     /**
