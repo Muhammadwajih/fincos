@@ -49,10 +49,9 @@ public class ConnectionDetail extends ComponentDetail {
 
         this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
         this.setLocationRelativeTo(null);
-        this.setVisible(true);
     }
 
-    private void fillProperties(ConnectionConfig connCfg) {
+    public void fillProperties(ConnectionConfig connCfg) {
         aliasField.setText(connCfg.alias);
         aliasField.setCaretPosition(0);
         if (connCfg.type == ConnectionConfig.CEP_ADAPTER) {
@@ -66,6 +65,10 @@ public class ConnectionDetail extends ComponentDetail {
         }
         customPropertyField.setCaretPosition(0);
         DefaultTableModel model = (DefaultTableModel) propertiesTable.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            model.removeRow(0);
+        }
+
         for (Entry e : connCfg.properties.entrySet()) {
             if (e.getKey().equals("engine") || e.getKey().equals("cfName")) {
                 continue;
@@ -223,7 +226,7 @@ public class ConnectionDetail extends ComponentDetail {
         okBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if ((op == INSERT && !isUnique(aliasField.getName()))
+                if ((op == INSERT && !isUnique(aliasField.getText()))
                         ||
                     (op == UPDATE && !oldCfg.alias.equals(aliasField.getText()) && !isUnique(aliasField.getName()))) {
                     JOptionPane.showMessageDialog(null, "There is already a connection named \""
