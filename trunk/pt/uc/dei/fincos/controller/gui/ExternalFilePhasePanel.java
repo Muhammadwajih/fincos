@@ -14,6 +14,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.File;
 import java.util.HashMap;
 
 import javax.swing.JComponent;
@@ -361,6 +362,10 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
     private void addListeners() {
         browseBtn.addActionListener(new ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent e) {
+                File f = new File(filePathField.getText());
+                if (f.exists()) {
+                    fileChooser.setCurrentDirectory(f);
+                }
                 fileChooser.showOpenDialog(null);
                 if (fileChooser.getSelectedFile() != null) {
                     filePathField.setText(fileChooser.getSelectedFile().getPath());
