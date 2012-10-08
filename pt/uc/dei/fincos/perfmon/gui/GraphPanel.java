@@ -38,6 +38,7 @@ import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.controller.DriverConfig;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.driver.ExternalFileWorkloadPhase;
 import pt.uc.dei.fincos.driver.SyntheticWorkloadPhase;
 import pt.uc.dei.fincos.driver.WorkloadPhase;
 import pt.uc.dei.fincos.perfmon.PerformanceStats;
@@ -101,6 +102,12 @@ public class GraphPanel extends JPanel {
                     for (EventType type: synthPhase.getSchema().keySet()) {
                         serversStreams.get(dr.getConnection().alias).add(new Stream(Stream.INPUT, type.getName()));
                     }
+                } else if (phase instanceof ExternalFileWorkloadPhase) {
+                        ExternalFileWorkloadPhase filePhase = (ExternalFileWorkloadPhase) phase;
+                        if (!filePhase.containsEventTypes()) {
+                            serversStreams.get(dr.getConnection().alias).add(new Stream(Stream.INPUT, filePhase.getSingleEventTypeName()));
+                        }
+
                 }
             }
         }
