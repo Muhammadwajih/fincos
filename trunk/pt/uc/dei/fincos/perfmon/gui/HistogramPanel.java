@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.ItemListener;
+import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -195,7 +196,7 @@ public class HistogramPanel extends JPanel {
                     try {
                         int numBuckets = Integer.parseInt(bucketsField.getText());
                         hist = new Histogram(numBuckets, min, max, cumulative);
-                        binWidth = (max - min) / numBuckets;
+                        binWidth = (max - min + 1) / numBuckets;
                     } catch (Exception e2) {
                         JOptionPane.showMessageDialog(null, "Invalid bucket size.");
                         return;
@@ -281,22 +282,37 @@ public class HistogramPanel extends JPanel {
                             }
                             record = logReader.getNextLine();
                         }
+                        logReader.closeFile();
                     }
 
                     jTextArea1.setText("Bin\tFrequency\n-------------------------------\n");
 
                     TreeMap<Double, Double> histResult =  hist.getHistogram();
-                    for (Entry<Double, Double> ent :histResult.entrySet()) {
-                        jTextArea1.append(Globals.FLOAT_FORMAT_3.format(ent.getKey())
-                                + "\t" + Globals.FLOAT_FORMAT_3.format(100 * ent.getValue()) + "%\n");
+                    int count = 0;
+                    for (Entry<Double, Double> ent: histResult.entrySet()) {
+                        count++;
+                        String key;
+                        if (Math.abs(Math.floor(binWidth) -  binWidth) < 0.001) { // Bin width is integer
+                            key = Globals.INT_FORMAT_1.format(ent.getKey());
+                        } else {
+                            key = Globals.FLOAT_FORMAT_3.format(ent.getKey());
+                        }
+
+                        if (count == histResult.size()) { // last Entry
+                            key = "\u2265" + key;
+                        }
+
+                        jTextArea1.append(key + "\t" + Globals.FLOAT_FORMAT_3.format(100 * ent.getValue()) + "%\n");
                     }
                     jTextArea1.setCaretPosition(0);
                     PerfChartPanel chart = new PerfChartPanel("", "", yAxisPercentFormat);
-                    chart.addSeries("Series 1", histResult);
+                    chart.addSeries("RT", histResult);
                     chartPanel.removeAll();
                     chartPanel.add(chart);
                     chartPanel.repaint();
                     chartPanel.revalidate();
+                } catch (FileNotFoundException e1) {
+                    JOptionPane.showMessageDialog(null, "Could not open source file (not found). ", "Error", JOptionPane.ERROR_MESSAGE);
                 } catch (Exception e1) {
                     JOptionPane.showMessageDialog(null, "Could not open source file. ", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -313,7 +329,7 @@ public class HistogramPanel extends JPanel {
         bucketsRadio.addItemListener(itemListener);
         binsRadio.addItemListener(itemListener);
 
-        bucketsRadio.setSelected(true);
+        binsRadio.setSelected(true);
 
         bucketsField.addFocusListener(new FocusListener() {
             @Override
@@ -327,7 +343,7 @@ public class HistogramPanel extends JPanel {
                         int numOfBuckets = Integer.parseInt(bucketsField.getText());
                         double max = Double.parseDouble(maxField.getText());
                         double min = Double.parseDouble(minField.getText());
-                        double binWidth = (max - min) / numOfBuckets;
+                        double binWidth = (max - min + 1) / numOfBuckets;
                         binField.setText(Globals.FLOAT_FORMAT_3.format(binWidth));
                     } catch (Exception e2) {
 
@@ -375,14 +391,14 @@ public class HistogramPanel extends JPanel {
                         }
                     }
                 }
-                if(bucketsField.isEnabled()) {
+                if (bucketsField.isEnabled()) {
                     if (bucketsField.getText() != null && !bucketsField.getText().isEmpty())
                     {
                         try {
                             int numOfBuckets = Integer.parseInt(bucketsField.getText());
                             double max = Double.parseDouble(maxField.getText());
                             double min = Double.parseDouble(minField.getText());
-                            double binWidth = (max - min) / numOfBuckets;
+                            double binWidth = (max - min + 1) / numOfBuckets;
                             binField.setText(Globals.FLOAT_FORMAT_3.format(binWidth));
                         } catch (Exception e2) {
 
@@ -394,7 +410,8 @@ public class HistogramPanel extends JPanel {
         maxField.addFocusListener(lsnr);
         minField.addFocusListener(lsnr);
 
-        bucketsField.setText("100");
+        bucketsField.setText("101");
+        binField.setText("1");
         minField.setText("0");
         maxField.setText("100.0");
     }// </editor-fold>
@@ -458,24 +475,20 @@ public class HistogramPanel extends JPanel {
             int counter = 0;
             double maxFreq = 0;
             double maxValue = 0;
-            Entry<Double, Double> prev = null;
             for (Entry<Double, Double> e : histogram.entrySet()) {
                 if (counter < histogram.size() - 1) {
                     dataset.add(e.getKey(), e.getValue(), seriesName);
-                    prev = e;
                 } else {
                     maxValue = e.getKey();
                     maxFreq = e.getValue();
-                    dataset.add(prev.getKey() + binWidth, maxFreq, seriesName);
+                    dataset.add(e.getKey(), maxFreq, seriesName);
 
-                    if (maxValue > prev.getKey() + binWidth) {
-                        XYPointerAnnotation maxAnnotation = new XYPointerAnnotation(
-                                "\u2265" + Globals.FLOAT_FORMAT_2.format(prev.getKey()) + "\n",
-                                prev.getKey() + binWidth,
-                                Math.min(0.85 * plot.getRangeAxis().getUpperBound(), 1.01 * maxFreq),
-                                -1.571);
-                        plot.addAnnotation(maxAnnotation);
-                    }
+                    XYPointerAnnotation maxAnnotation = new XYPointerAnnotation(
+                            "\u2265" + Globals.FLOAT_FORMAT_2.format(e.getKey()) + "\n",
+                            e.getKey(),
+                            Math.min(0.85 * plot.getRangeAxis().getUpperBound(), 1.01 * maxFreq),
+                            -1.571);
+                    plot.addAnnotation(maxAnnotation);
                 }
                 counter++;
                 //dataset.addValue(e.getValue(), seriesName, e.getKey());
