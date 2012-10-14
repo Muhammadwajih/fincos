@@ -710,8 +710,8 @@ public class ConfigurationParser {
                 att = (Element) atts.item(j);
                 String attName = att.getAttribute("name");
                 Datatype attDataType = this.parseDataType(att.getAttribute("type"));
-                Domain attDomain =
-                    this.parseDomain((Element) att.getElementsByTagName("Domain").item(0), randomSeed+j);
+                Domain attDomain = this.parseDomain((Element) att.getElementsByTagName("Domain").item(0),
+                                   randomSeed != null ? randomSeed + j : j);
                 attributes[j] = new Attribute(attDataType, attName, attDomain);
             }
             ret.put(new EventType(typeName, attributes), typeMix);

@@ -39,6 +39,7 @@ import com.espertech.esper.client.EPRuntime;
 import com.espertech.esper.client.EPServiceProvider;
 import com.espertech.esper.client.EPServiceProviderManager;
 import com.espertech.esper.client.EPStatement;
+import com.espertech.esper.client.time.CurrentTimeEvent;
 
 
 /**
@@ -79,6 +80,18 @@ public class EsperInterface extends CEPEngineInterface {
     protected static final int MAP_FORMAT = 0;
     protected static final int POJO_FORMAT = 1;
 
+    /** Indicates if an external clock should be used. */
+    private boolean useExternalTimer;
+
+    /** The name of the stream that carries time information. */
+    private String extTSEventType;
+
+    /** Index of the external timestamp field. */
+    private int extTSIndex;
+
+    /** External timestamp of the last received event. */
+    private long lastExtTS;
+
     /**
      *
      * @param connectionProperties      Parameters required for connecting with Esper
@@ -89,6 +102,33 @@ public class EsperInterface extends CEPEngineInterface {
         super(rtMode, rtResolution);
         this.status = new Status(Step.DISCONNECTED, 0);
         this.setConnProperties(connectionProperties);
+        try {
+            String useExtClockStr = retrieveConnectionProperty("Use_external_timer");
+            boolean useExtTimer = Boolean.parseBoolean(useExtClockStr);
+            if (useExtTimer) {
+                    this.extTSEventType = retrieveConnectionProperty("External_timer_stream");
+                    String extTSFieldIndex = retrieveConnectionProperty("External_timer_index");
+                    if (extTSEventType != null && extTSFieldIndex != null) {
+                        this.extTSIndex = Integer.parseInt(extTSFieldIndex);
+                        this.useExternalTimer = true;
+                    } else {
+                        this.extTSIndex = -1;
+                        this.useExternalTimer = false;
+                    }
+            } else {
+                this.useExternalTimer = false;
+                this.extTSEventType = null;
+                this.extTSIndex = -1;
+            }
+        } catch (Exception e) {
+            System.err.println("Warning \"Use_External_Timer\" property is missing. "
+                    + "Setting to default (false).");
+            this.useExternalTimer = false;
+            this.extTSEventType = null;
+            this.extTSIndex = -1;
+        }
+
+        lastExtTS = -1;
     }
 
     @Override
@@ -111,6 +151,9 @@ public class EsperInterface extends CEPEngineInterface {
 
         this.esperConfig = new Configuration();
         this.esperConfig.configure(new File(esperConfigurationFile));
+        if (useExternalTimer) {
+            esperConfig.getEngineDefaults().getThreading().setInternalTimerEnabled(false);
+        }
 
         parseStreamsList(queriesFile, esperConfigurationFile);
 
@@ -307,6 +350,10 @@ public class EsperInterface extends CEPEngineInterface {
     @Override
     public void send(Event e) throws Exception {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
+            if (this.useExternalTimer && e.getType().equals(extTSEventType)) {
+                advanceClock((Long) e.getAttributeValue(extTSIndex));
+            }
+
             if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(e);
             } else {
@@ -318,6 +365,10 @@ public class EsperInterface extends CEPEngineInterface {
     @Override
     public void send(CSV_Event event) {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
+            if (this.useExternalTimer && event.getType().equals(extTSEventType)) {
+                advanceClock(Long.parseLong(event.getPayload()[extTSIndex]));
+            }
+
             if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(event);
             } else {
@@ -667,6 +718,16 @@ public class EsperInterface extends CEPEngineInterface {
             }
         }
         return false;
+    }
+
+    private void advanceClock(Long extTimestamp) {
+        if (lastExtTS == -1) {
+            lastExtTS = extTimestamp;
+        }
+
+        if (extTimestamp != lastExtTS) { // Time advanced
+            this.runtime.sendEvent(new CurrentTimeEvent(extTimestamp));
+        }
 
     }
 }
