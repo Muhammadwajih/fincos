@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.adapters.cep;
 
 import java.io.File;
@@ -44,13 +62,12 @@ import com.espertech.esper.client.time.CurrentTimeEvent;
 
 /**
  * Implementation of an adapter for Esper.
- * Notice that Esper runs in the same process as
- * the Adapter itself.
+ * NOTE: Esper runs embedded into the FINCos Daemon service.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
-public class EsperInterface extends CEPEngineInterface {
+public final class EsperInterface extends CEP_EngineInterface {
     /** Configuration of the Esper engine. */
     private Configuration esperConfig;
 
@@ -77,7 +94,11 @@ public class EsperInterface extends CEPEngineInterface {
 
     /** Format used to submit event to the Esper engine. */
     private int eventFormat;
+
+    /** Events submitted as Maps. */
     protected static final int MAP_FORMAT = 0;
+
+    /** Events submitted as Plain java Objects. */
     protected static final int POJO_FORMAT = 1;
 
     /** Indicates if an external clock should be used. */
@@ -92,16 +113,43 @@ public class EsperInterface extends CEPEngineInterface {
     /** External timestamp of the last received event. */
     private long lastExtTS;
 
+    /** Single instance of Esper adapter. */
+    private static EsperInterface instance;
+
     /**
      *
-     * @param connectionProperties      Parameters required for connecting with Esper
-     * @param rtMode                    response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
-     * @param rtResolution              response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param connProps     parameters required for connecting with Esper
+     * @param rtMode        response time measurement mode
+     *                      (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution
+     *                      (either Milliseconds or Nanoseconds)
+     *
+     * @return  the single instance of Esper adapter
      */
-    public EsperInterface(Properties connectionProperties, int rtMode, int rtResolution) {
+    public static synchronized EsperInterface getInstance(Properties connProps,
+            int rtMode, int rtResolution) {
+        if (instance == null) {
+            instance = new EsperInterface(connProps, rtMode, rtResolution);
+        }
+        return instance;
+    }
+
+    private static synchronized void destroyInstance() {
+        instance = null;
+    }
+
+    /**
+     *
+     * @param connProps     parameters required for connecting with Esper
+     * @param rtMode        response time measurement mode
+     *                      (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution
+     *                      (either Milliseconds or Nanoseconds)
+     */
+    private EsperInterface(Properties connProps, int rtMode, int rtResolution) {
         super(rtMode, rtResolution);
         this.status = new Status(Step.DISCONNECTED, 0);
-        this.setConnProperties(connectionProperties);
+        this.setConnProperties(connProps);
         try {
             String useExtClockStr = retrieveConnectionProperty("Use_external_timer");
             boolean useExtTimer = Boolean.parseBoolean(useExtClockStr);
@@ -132,7 +180,7 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     @Override
-    public boolean connect() throws Exception {
+    public synchronized boolean connect() throws Exception {
         try {
             String eventFormat = retrieveConnectionProperty("Event_format");
             if (eventFormat.equalsIgnoreCase("POJO")) {
@@ -167,13 +215,14 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     /**
-     * Retrieves the list of input and output stream defined in Esper's configuration file
-     * For streams whose events are represented as a Map, it's created a
-     * Hash structure that stores name and type of its attributes.
-     * For streams whose events are represented as POJO, a new Java class is created using
-     * schema information from test setup file.
+     * Retrieves the list of input and output streams defined in Esper's
+     * configuration file. For streams whose events are represented as a Map,
+     * it's created a Hash structure that stores name and type of its
+     * attributes. For streams whose events are represented as POJO, a new Java
+     * class is created using schema information from test setup file.
      *
-     * @param queriesFile   Path to a file containing queries expressed in Esper's EPL query language
+     * @param queriesFile   Path to a file containing queries expressed in
+     *                      Esper's EPL query language
      * @param configFile    Path to Esper's configuration file
      * @throws Exception
      */
@@ -244,9 +293,13 @@ public class EsperInterface extends CEPEngineInterface {
                             atts[j] = new Attribute(Datatype.DOUBLE, attName);
                         } else if (attType.equals("float")) {
                             atts[j] = new Attribute(Datatype.FLOAT, attName);
+                        } else if (attType.equals("boolean")) {
+                            atts[j] = new Attribute(Datatype.BOOLEAN, attName);
                         } else {
-                            throw new Exception("Unsupported data type for attribute \""
-                                    + attName + "\", in event type \"" + typeName + "\".");
+                            throw new Exception("Unsupported data type for"
+                                    + " attribute \"" + attName
+                                    + "\", in event type \"" + typeName
+                                    + "\".");
                         }
                     }
                     eType = new EventType(typeName, atts);
@@ -268,7 +321,7 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     @Override
-    public void disconnect() {
+    public synchronized void disconnect() {
         this.status.setStep(Step.DISCONNECTED);
 
         // Stops all queries with a listener attached
@@ -284,22 +337,23 @@ public class EsperInterface extends CEPEngineInterface {
             }
         }
         this.epService.destroy();
+        destroyInstance();
     }
 
     @Override
-    public String[] getInputStreamList() throws Exception {
+    public synchronized String[] getInputStreamList() throws Exception {
         return inputStreamList != null ? inputStreamList : new String[0];
     }
 
     @Override
-    public String[] getOutputStreamList() throws Exception {
+    public synchronized String[] getOutputStreamList() throws Exception {
         return outputStreamList != null
         ? outputStreamList
                 : new String[0];
     }
 
     @Override
-    public boolean load(String[] outputStreams, Sink sinkInstance)
+    public synchronized boolean load(String[] outputStreams, Sink sinkInstance)
     throws Exception {
         // This interface instance has already been loaded
         if (this.status.getStep() == Step.READY) {
@@ -348,7 +402,7 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     @Override
-    public void send(Event e) throws Exception {
+    public synchronized void send(Event e) throws Exception {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
             if (this.useExternalTimer && e.getType().equals(extTSEventType)) {
                 advanceClock((Long) e.getAttributeValue(extTSIndex));
@@ -363,7 +417,7 @@ public class EsperInterface extends CEPEngineInterface {
     }
 
     @Override
-    public void send(CSV_Event event) {
+    public synchronized void send(CSV_Event event) {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
             if (this.useExternalTimer && event.getType().equals(extTSEventType)) {
                 advanceClock(Long.parseLong(event.getPayload()[extTSIndex]));

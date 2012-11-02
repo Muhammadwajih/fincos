@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.perfmon.gui;
 
 import java.awt.Color;
@@ -26,12 +44,13 @@ import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.data.xy.CategoryTableXYDataset;
 
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.data.CSVReader;
+import pt.uc.dei.fincos.data.CSV_Reader;
 import pt.uc.dei.fincos.perfmon.Histogram;
 
 /**
+ * A panel used to display histogram of response times.
  *
- * @author  Marcelo R. N. Mendes
+ * @author  Marcelo R.N. Mendes
  */
 public class HistogramPanel extends JPanel {
     /** serial id. */
@@ -213,7 +232,7 @@ public class HistogramPanel extends JPanel {
 
                 try {
                     for (int i = 0; i < logFilePath.length; i++) {
-                        CSVReader logReader = new CSVReader(logFilePath[i]);
+                        CSV_Reader logReader = new CSV_Reader(logFilePath[i]);
                         // parses log header
                         String server;
 
@@ -265,7 +284,7 @@ public class HistogramPanel extends JPanel {
                         String[] splitEv;
                         long outputArrivalTime = 0, causerEmissionTime = 0, timestamp;
                         while (record != null) {
-                            splitEv = CSVReader.split(record, Globals.CSV_DELIMITER);
+                            splitEv = CSV_Reader.split(record, Globals.CSV_DELIMITER);
                             streamName = splitEv[1];
                             timestamp = Long.parseLong(splitEv[0]);
                             if (timestamp < startTimestamp) {

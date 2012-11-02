@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.perfmon.gui;
 
 import java.awt.Font;
@@ -23,11 +41,18 @@ import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.data.CSVReader;
+import pt.uc.dei.fincos.data.CSV_Reader;
 import pt.uc.dei.fincos.perfmon.OfflinePerformanceValidator;
 import pt.uc.dei.fincos.perfmon.PerformanceStats;
 import pt.uc.dei.fincos.perfmon.Stream;
 
+/**
+ * A dialog that allows users to select the data to be processed by the
+ * FINCoS Perfmon application.
+ *
+ * @author  Marcelo R.N. Mendes
+ *
+ */
 public class SourceDialog extends javax.swing.JDialog {
 
     private final Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
@@ -260,13 +285,13 @@ public class SourceDialog extends javax.swing.JDialog {
         sinkLogEndSpinner.setEditor(editor2);
 
         sinkLogChooser = new JFileChooser(Globals.APP_PATH + "log");
-        sinkLogChooser.addChoosableFileFilter(new FileNameExtensionFilter("Sink Log file", "log"));
+        sinkLogChooser.setFileFilter(new FileNameExtensionFilter("Sink Log file", "log"));
         sinkLogChooser.setAcceptAllFileFilterUsed(false);
         sinkLogChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         sinkLogChooser.setMultiSelectionEnabled(true);
 
         perfLogChooser = new JFileChooser(Globals.APP_PATH + "log");
-        perfLogChooser.addChoosableFileFilter(new FileNameExtensionFilter("PerfMon Log file", "csv"));
+        perfLogChooser.setFileFilter(new FileNameExtensionFilter("PerfMon Log file", "csv"));
         perfLogChooser.setAcceptAllFileFilterUsed(false);
         perfLogChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
     }
@@ -442,11 +467,11 @@ public class SourceDialog extends javax.swing.JDialog {
 
     private void processPerfmonLogFile() {
         parent.showInfo("Loading FINCoS Performance Monitor log file...");
-        CSVReader logReader;
+        CSV_Reader logReader;
         TreeSet<PerformanceStats> statsSeries = new TreeSet<PerformanceStats>();
 
         try {
-            logReader = new CSVReader(perfLogField.getText());
+            logReader = new CSV_Reader(perfLogField.getText());
             String header = logReader.getNextLine();
 
             if (header != null && header.equals("FINCoS Performance Log File.")) {
@@ -464,7 +489,7 @@ public class SourceDialog extends javax.swing.JDialog {
                 PerformanceStats stats = null;
 
                 while ((event = logReader.getNextLine()) != null) {
-                    splitEv = CSVReader.split(event, Globals.CSV_DELIMITER);
+                    splitEv = CSV_Reader.split(event, Globals.CSV_DELIMITER);
                     if (splitEv.length == 9) { // Legacy log files
                         server = splitEv[1];
                         streamName = splitEv[2].substring(0, splitEv[2].indexOf("("));

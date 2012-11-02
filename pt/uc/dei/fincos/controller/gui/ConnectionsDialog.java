@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.Dialog;
@@ -18,7 +36,7 @@ import pt.uc.dei.fincos.controller.ConnectionConfig;
 
 /**
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  */
 public class ConnectionsDialog extends ComponentDetail {
 
@@ -68,7 +86,6 @@ public class ConnectionsDialog extends ComponentDetail {
         this.setModalityType(Dialog.DEFAULT_MODALITY_TYPE);
         addListeners();
         this.setLocationRelativeTo(null);
-        this.setVisible(true);
     }
 
     private void fillGUI(List<ConnectionConfig> connections) {
@@ -253,8 +270,9 @@ public class ConnectionsDialog extends ComponentDetail {
     }
 
     private void deleteConnection() {
-        int index = connectionsTable.convertRowIndexToModel(connectionsTable.getSelectedRow());
-        if (index != -1) {
+        int tableIndex = connectionsTable.getSelectedRow();
+        if (tableIndex != -1) {
+            int index = connectionsTable.convertRowIndexToModel(tableIndex);
             DefaultTableModel model = (DefaultTableModel) connectionsTable.getModel();
             int confirmDelete  = JOptionPane.showConfirmDialog(null, "Do you want to permanently remove this connection from the repository? "
                     + "(WARN: The connection will be unavailable for this and other test setups)", "Confirm deletion", JOptionPane.YES_NO_OPTION);
@@ -303,6 +321,13 @@ public class ConnectionsDialog extends ComponentDetail {
         ((DefaultTableModel) connectionsTable.getModel()).insertRow(index,
                 new Object[] {newCfg.alias, newCfg.type == ConnectionConfig.CEP_ADAPTER ? "CEP Adapter" : "JMS"});
         dirty = true;
+    }
+
+    public void disableGUI() {
+        this.connectionsTable.setEnabled(false);
+        this.addBtn.setEnabled(false);
+        this.deleteBtn.setEnabled(false);
+        this.okBtn.setEnabled(false);
     }
 
     // Variables declaration - do not modify

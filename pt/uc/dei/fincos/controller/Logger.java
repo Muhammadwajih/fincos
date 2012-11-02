@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller;
 
 import java.io.IOException;
@@ -5,15 +23,15 @@ import java.io.IOException;
 import pt.uc.dei.fincos.basic.CSV_Event;
 import pt.uc.dei.fincos.basic.Event;
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.data.CSVReader;
-import pt.uc.dei.fincos.data.CSVWriter;
+import pt.uc.dei.fincos.data.CSV_Reader;
+import pt.uc.dei.fincos.data.CSV_Writer;
 
 /**
  * Logs to disk the events sent and received by Drivers and Sinks.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  */
-public class Logger extends CSVWriter {
+public class Logger extends CSV_Writer {
     /** Log sampling fraction. */
     private int logSamplMod;
 
@@ -118,7 +136,7 @@ public class Logger extends CSVWriter {
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
                 this.writeRecord(timestamp + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(timestamp + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(timestamp + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -139,7 +157,7 @@ public class Logger extends CSVWriter {
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
                 this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -160,7 +178,7 @@ public class Logger extends CSVWriter {
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
                 this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSVReader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }

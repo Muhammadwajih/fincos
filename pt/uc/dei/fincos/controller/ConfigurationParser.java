@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller;
 
 import java.io.BufferedWriter;
@@ -54,10 +72,10 @@ import pt.uc.dei.fincos.random.Variate;
 /**
  * Class used to load and save configuration files containing tests setup.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
-public class ConfigurationParser {
+public final class ConfigurationParser {
     /** Root of the xml setup file. */
     private Element xmlFileRoot;
 
@@ -67,12 +85,16 @@ public class ConfigurationParser {
     /**
      * Opens a XML file containing test setup.
      *
-     * @param path			Path to configuration file
-     * @throws ParserConfigurationException
-     * @throws SAXException
-     * @throws IOException
+     * @param path      Path to configuration file
+     *
+     * @throws ParserConfigurationException     if an error occurs while parsing
+     *                                          the XML setup file
+     * @throws SAXException                     if an error occurs while parsing
+     *                                          the XML setup file
+     * @throws IOException                      for disk I/O errors
      */
-    public void open(String path) throws ParserConfigurationException, SAXException, IOException {
+    public void open(String path)
+    throws ParserConfigurationException, SAXException, IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         builder = factory.newDocumentBuilder();
@@ -1035,9 +1057,13 @@ public class ConfigurationParser {
 
     /**
      *
-     * @return  the path of the test setup file.
+     * @return  the path of the test setup file, or
+     *          <tt>null</tt> if none has  been loaded.
      */
     public String getFilePath() {
-        return this.configFile.getPath();
+        if (configFile != null) {
+            return this.configFile.getPath();
+        }
+        return null;
     }
 }

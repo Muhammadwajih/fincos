@@ -1,5 +1,24 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.event.ActionEvent;
@@ -39,7 +58,7 @@ import pt.uc.dei.fincos.driver.WorkloadPhase;
 /**
  * GUI for configuration of Drivers.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
 @SuppressWarnings("serial")
@@ -343,7 +362,7 @@ public class DriverDetail extends ComponentDetail {
 
         pack();
 
-        okBtn.setIcon(new ImageIcon("imgs/OK.png"));
+        okBtn.setIcon(new ImageIcon("imgs/ok.png"));
         cancelBtn.setIcon(new ImageIcon("imgs/cancel.png"));
         initConnCombo();
         setLoggingEnabled(logCheckBox.isSelected());
@@ -608,15 +627,39 @@ public class DriverDetail extends ComponentDetail {
     }
 
     private boolean validateFields() {
+        boolean ret = true;
+        if (this.aliasField == null || this.aliasField.getText().isEmpty()) {
+            this.aliasField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.aliasField.setBackground(Color.WHITE);
+        }
 
-    	return (this.aliasField.getText() != null
-    	        && !this.aliasField.getText().isEmpty()
-    	        && this.addressField.getText() != null
-    	        && !this.addressField.getText().isEmpty()
-    	        && this.connCombo.getSelectedIndex() != -1
-    	        && this.connCombo.getSelectedIndex() < Controller_GUI.getInstance().getConnections().length
-    			&& phasesTable.getRowCount() > 1
-    			);
+        if (this.addressField == null
+         || this.addressField.getText().isEmpty()) {
+            this.addressField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.addressField.setBackground(Color.WHITE);
+        }
+
+        if (this.connCombo.getSelectedIndex() == -1
+         || this.connCombo.getSelectedIndex() >
+            Controller_GUI.getInstance().getConnections().length) {
+            this.connCombo.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.connCombo.setBackground(Color.WHITE);
+        }
+
+        if (phasesTable.getRowCount() <= 1) {
+            this.phasesTable.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.phasesTable.setBackground(Color.WHITE);
+        }
+
+        return ret;
     }
 
     /**

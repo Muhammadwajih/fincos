@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.perfmon;
 
 import java.io.IOException;
@@ -8,14 +26,14 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.data.CSVReader;
-import pt.uc.dei.fincos.data.CSVWriter;
+import pt.uc.dei.fincos.data.CSV_Reader;
+import pt.uc.dei.fincos.data.CSV_Writer;
 
 
 /**
  * Computes performance stats from Sink log files.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
 public class OfflinePerformanceValidator {
@@ -23,7 +41,7 @@ public class OfflinePerformanceValidator {
     private boolean saveToFile;
 
     /** Used to write the computed stats to a FINCoS Perfmon log file. */
-    private CSVWriter perfLogWriter;
+    private CSV_Writer perfLogWriter;
 
     /** A flag to allow the user to interrupt the computation of performance stats. */
     private boolean keepProcessing = true;
@@ -73,7 +91,7 @@ public class OfflinePerformanceValidator {
 
         // Writes the header of output log file
         if (saveToFile) {
-            perfLogWriter = new CSVWriter(outputLogFilePath, 10);
+            perfLogWriter = new CSV_Writer(outputLogFilePath, 10);
             perfLogWriter.writeRecord("FINCoS Performance Log File.\nGenerated from:");
 
             for (String logFilePath : inputLogFilesPaths) {
@@ -172,7 +190,7 @@ public class OfflinePerformanceValidator {
             if (firstLine == null) {
                 throw new Exception("The log file is empty.");
             }
-            startTime = Long.parseLong(CSVReader.split(firstLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
+            startTime = Long.parseLong(CSV_Reader.split(firstLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -209,7 +227,7 @@ public class OfflinePerformanceValidator {
             } while (c != '\n');
 
             String lastLine = randomFile.readLine();
-            endTime = Long.parseLong(CSVReader.split(lastLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
+            endTime = Long.parseLong(CSV_Reader.split(lastLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -270,7 +288,7 @@ public class OfflinePerformanceValidator {
      */
     class LogProcessor extends Thread {
         /** Reads a Sink log file. */
-        CSVReader logReader;
+        CSV_Reader logReader;
 
         /** Keeps a snapshot of the performance stats. */
         HashMap<String, PerformanceStats> streamsStats;
@@ -295,7 +313,7 @@ public class OfflinePerformanceValidator {
         public LogProcessor(String inputLogFilePath, long startTime, long endTime) throws IOException {
             this.startTime = startTime;
             this.endTime = endTime;
-            logReader = new CSVReader(inputLogFilePath);
+            logReader = new CSV_Reader(inputLogFilePath);
             logFileSizeInBytes = new java.io.File(inputLogFilePath).length();
             streamsStats = new HashMap<String, PerformanceStats>();
         }
@@ -377,7 +395,7 @@ public class OfflinePerformanceValidator {
                 while (keepProcessing && (event = logReader.getNextLine()) != null) {
                     try {
                         totalReadBytes += (event.length() / charsPerByte + 2);
-                        splitEv = CSVReader.split(event, Globals.CSV_DELIMITER);
+                        splitEv = CSV_Reader.split(event, Globals.CSV_DELIMITER);
                         streamName = splitEv[STREAM_NAME_FIELD];
                         timestamp = Long.parseLong(splitEv[TIMESTAMP_FIELD]);
 

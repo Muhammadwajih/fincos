@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.BorderLayout;
@@ -61,12 +79,12 @@ import pt.uc.dei.fincos.perfmon.gui.PerformanceMonitor;
 import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 /**
- * Controller Application (GUI version)
+ * Controller Application (GUI version).
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
-public class Controller_GUI extends JFrame {
+public final class Controller_GUI extends JFrame {
     /** Serial ID. */
     private static final long serialVersionUID = -1013940232010985491L;
 
@@ -164,7 +182,7 @@ public class Controller_GUI extends JFrame {
         initializeComponentsPanel();
 
         fileChooser = new JFileChooser(Globals.APP_PATH + "config");
-        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("XML Configuration file", "xml"));
+        fileChooser.setFileFilter(new FileNameExtensionFilter("XML Configuration file", "xml"));
     	fileChooser.setAcceptAllFileFilterUsed(false);
     	fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
@@ -185,8 +203,10 @@ public class Controller_GUI extends JFrame {
 					int userChoice = JOptionPane.showConfirmDialog(null, "Test setup has been modified. Save changes?", "FINCoS Controller", JOptionPane.YES_NO_CANCEL_OPTION);
 					switch (userChoice) {
 					case JOptionPane.YES_OPTION:
-						saveProfile();
-						System.exit(0);
+						boolean saved = saveProfile();
+						if (saved) {
+						    System.exit(0);
+						}
 						break;
 					case JOptionPane.NO_OPTION:
 						System.exit(0);
@@ -218,8 +238,17 @@ public class Controller_GUI extends JFrame {
         this.connections.addAll(Arrays.asList(ConnectionsFileParser.getConnections(CONNECTIONS_FILE)));
     }
 
+	/**
+	 * Updates the list of available connections.
+	 *
+	 * @param connections
+	 */
 	public void setConnections(ArrayList<ConnectionConfig> connections) {
 	    this.connections = connections;
+	    // Reopens the profile to reflect changes in connections
+	    if (facade.isTestSetupLoaded()) {
+	        this.loadProfile(new File(facade.getCurrentSetup()));
+	    }
 	}
 
 	/**
@@ -530,7 +559,26 @@ public class Controller_GUI extends JFrame {
 	}
 
     private void showConnectionsDialog() {
-        new ConnectionsDialog(connections);
+        ConnectionsDialog cd = new ConnectionsDialog(connections);
+        DefaultTableModel m = (DefaultTableModel) driversTable.getModel();
+        for (int i = 0; i < m.getRowCount(); i++) {
+            if (m.getValueAt(i, 0).equals("RUNNING")
+                ||
+                m.getValueAt(i, 0).equals("READY")) {
+                cd.disableGUI();
+                break;
+            }
+        }
+        m = (DefaultTableModel) sinksTable.getModel();
+        for (int i = 0; i < m.getRowCount(); i++) {
+            if (m.getValueAt(i, 0).equals("RUNNING")
+                ||
+                m.getValueAt(i, 0).equals("READY")) {
+                cd.disableGUI();
+                break;
+            }
+        }
+        cd.setVisible(true);
     }
 
 	private void initializeToolBar() {
@@ -547,7 +595,7 @@ public class Controller_GUI extends JFrame {
 		openBtn.setToolTipText("Open configuration file.");
 		saveBtn.setToolTipText("Save configuration file.");
 		saveAsBtn.setToolTipText("Save configuration as...");
-		loadBtn.setToolTipText("Initialize all components");
+		loadBtn.setToolTipText("Load (initialize all components)");
 		startBtn.setToolTipText("Start/resume load submission.");
 		pauseBtn.setToolTipText("Pause load submission.");
 		stopBtn.setToolTipText("Stop load submission/data generation.");
@@ -872,11 +920,15 @@ public class Controller_GUI extends JFrame {
 		System.exit(0);
 	}
 
-	private void showInfo(String msg) {
-		Date now = new Date();
+	private void showInfo(final String msg) {
+	    SwingUtilities.invokeLater(new Runnable() {
+	        public void run() {
+	            Date now = new Date();
+	            infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
+	            infoArea.setCaretPosition(infoArea.getDocument().getLength());
+	        }
+	     });
 
-		infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
-		infoArea.setCaretPosition(infoArea.getDocument().getLength());
 	}
 
 	private void loadProfile(File f) {
@@ -886,10 +938,6 @@ public class Controller_GUI extends JFrame {
 			}
 			try {
 				facade.openTestSetup(f);
-			} catch (FileNotFoundException fnfe) { // Could not find file with connection properties
-												  //  for direct communication with the CEP engine.
-				JOptionPane.showMessageDialog(null, fnfe.getMessage(),
-						"Warning", JOptionPane.WARNING_MESSAGE);
 			} catch (IllegalArgumentException ie) { // Inconsistent test options
 				JOptionPane.showMessageDialog(null, ie.getMessage(),
 						"Warning", JOptionPane.WARNING_MESSAGE);
@@ -907,14 +955,14 @@ public class Controller_GUI extends JFrame {
 		}
 	}
 
-	private void saveProfile() {
+	private boolean saveProfile() {
 		if (this.facade.getDriverList() == null
 		    || this.facade.getDriverList().isEmpty()
 		    || this.facade.getSinkList() == null
 		    || this.facade.getSinkList().isEmpty()){
 			JOptionPane.showMessageDialog(null, "Cannot save configuration file. "
 			        + "It is necessary to configure at least one Driver and one Sink.");
-			return;
+			return false;
 		}
 
 		if (facade.isTestSetupLoaded()) {
@@ -925,29 +973,30 @@ public class Controller_GUI extends JFrame {
 				if (title.endsWith("*")) {
 					this.setTitle(title.substring(0, title.length() - 1));
 				}
+				return true;
 			} catch (FileNotFoundException e) {
 				JOptionPane.showMessageDialog(null, "Configuration file was deleted.",
 						"Warning", JOptionPane.WARNING_MESSAGE);
-				this.saveProfileAs();
+				return this.saveProfileAs();
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(null,
 						"Could not save configuration file.\n(" + e.getClass() + " - "
 						+ e.getMessage() + ")", "Error", JOptionPane.ERROR_MESSAGE);
+				return false;
 			}
 		} else {
-			this.saveProfileAs();
+		    return this.saveProfileAs();
 		}
-
 	}
 
-	private void saveProfileAs() {
+	private boolean saveProfileAs() {
 		if (this.facade.getDriverList() == null
 		    || this.facade.getDriverList().isEmpty()
 		    || this.facade.getSinkList() == null
 		    || this.facade.getSinkList().isEmpty()) {
 			JOptionPane.showMessageDialog(null, "Cannot save configuration file. " +
 					"It is necessary to configure at least one Driver and one Sink.");
-			return;
+			return false;
 		}
 
 		fileChooser.showSaveDialog(null);
@@ -962,12 +1011,17 @@ public class Controller_GUI extends JFrame {
 				facade.saveTestSetupFileAs(f);
 				this.setTitle("FINCoS Controller (" + f.getPath() + ")");
 				configModified = false;
+				return true;
 			} catch (FileNotFoundException e) {
 				JOptionPane.showMessageDialog(null, "File not found.", "Error", JOptionPane.ERROR_MESSAGE);
+				return false;
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(null, "Could not save configuration file.\n("
 				        + e.getClass() + " - " + e.getMessage() + ")", "Error", JOptionPane.ERROR_MESSAGE);
+				return false;
 			}
+		} else {
+		    return false;
 		}
 	}
 
@@ -1067,14 +1121,14 @@ public class Controller_GUI extends JFrame {
 				String status = (String) driversTable.getValueAt(index, 0);
 				((DefaultTableModel) driversTable.getModel()).removeRow(index);
 				((DefaultTableModel) driversTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});
+
+				if (!configModified) {
+		            this.setTitle(this.getTitle() + "*");
+		        }
+
+		        configModified = true;
 			}
 		}
-
-		if (!configModified) {
-			this.setTitle(this.getTitle() + "*");
-		}
-
-		configModified = true;
 	}
 
 
@@ -1098,15 +1152,15 @@ public class Controller_GUI extends JFrame {
 				for (DriverConfig dr : toRemove) {
 					facade.deleteDriver(dr);
 				}
+
+				if (!configModified) {
+		            this.setTitle(this.getTitle() + "*");
+		        }
+		        configModified = true;
 			} else {
 				JOptionPane.showMessageDialog(null, "Select a driver to delete");
 			}
 		}
-
-		if (!configModified) {
-			this.setTitle(this.getTitle() + "*");
-		}
-		configModified = true;
 	}
 
 
@@ -1166,19 +1220,20 @@ public class Controller_GUI extends JFrame {
 	public void updateSink(SinkConfig oldCfg, SinkConfig newCfg) {
 		synchronized (sinksTable) {
 			int index = facade.getSinkList().indexOf(oldCfg);
-
 			if (index > -1) {
-				facade.updateSink(index, newCfg);
-				String status = (String) sinksTable.getValueAt(index, 0);
-				((DefaultTableModel) sinksTable.getModel()).removeRow(index);
-				((DefaultTableModel) sinksTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});
+			    facade.updateSink(index, newCfg);
+			    String status = (String) sinksTable.getValueAt(index, 0);
+			    ((DefaultTableModel) sinksTable.getModel()).removeRow(index);
+			    ((DefaultTableModel) sinksTable.getModel()).insertRow(index, new Object[] {status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});
+
+			    if (!configModified) {
+			        this.setTitle(this.getTitle() + "*");
+			    }
+			    configModified = true;
 			}
 		}
-		if (!configModified) {
-		    this.setTitle(this.getTitle() + "*");
-		}
-		configModified = true;
 	}
+
 
 
 	/**
@@ -1201,14 +1256,15 @@ public class Controller_GUI extends JFrame {
 				for (SinkConfig sink : toRemove) {
 					facade.deleteSink(sink);
 				}
+
+				if (!configModified) {
+		            this.setTitle(this.getTitle() + "*");
+		        }
+		        configModified = true;
 			} else {
 				JOptionPane.showMessageDialog(null, "Select a Sink to delete.");
 			}
 		}
-		if (!configModified) {
-		    this.setTitle(this.getTitle() + "*");
-		}
-		configModified = true;
 	}
 
 	/**
@@ -1697,7 +1753,8 @@ public class Controller_GUI extends JFrame {
 
 
 	public static void main(String[] args) throws UnknownHostException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-	    setUI();
+        System.setSecurityManager(new SecurityManager());
+        setUI();
 	    SwingUtilities.invokeLater(new Runnable() {
 	        @Override
 	        public void run() {

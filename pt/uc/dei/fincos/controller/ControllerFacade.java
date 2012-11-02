@@ -1,9 +1,26 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.rmi.AccessException;
 import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
@@ -12,8 +29,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -33,15 +48,15 @@ import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
  * 1) Loading of test setup from configuration file
  * 2) Keeping the list of configured Drivers and Sinks
  * 3) RMI communication with drivers and sinks:
- * 		3.1) Keeping the list of active Drivers and Sinks
+ *      3.1) Keeping the list of active Drivers and Sinks
  * 		3.2) Initialize Drivers and Sinks
  * 		3.3) Start, pause, stop load submission
  * 		3.4) Alter event submission rates
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
-public class ControllerFacade {
+public final class ControllerFacade {
 
     /** Singleton instance of the facade. */
     private static ControllerFacade instance;
@@ -62,15 +77,17 @@ public class ControllerFacade {
     private ArrayList<SinkConfig> sinks = new ArrayList<SinkConfig>(1);
 
     /** RMI interfaces with Drivers. */
-    private HashMap<DriverConfig, DriverRemoteFunctions> remoteDrivers = new HashMap<DriverConfig, DriverRemoteFunctions>(1);
+    private HashMap<DriverConfig, DriverRemoteFunctions> remoteDrivers;
 
     /** RMI interfaces with Sinks. */
-    private HashMap<SinkConfig, SinkRemoteFunctions> remoteSinks = new HashMap<SinkConfig, SinkRemoteFunctions>(1);
+    private HashMap<SinkConfig, SinkRemoteFunctions> remoteSinks;
 
     /** Parser of xml configuration file which contains test setup. */
     private ConfigurationParser config = new ConfigurationParser();
 
     private static final Status DISCONNECTED = new Status(Step.DISCONNECTED, 0.0);
+
+
 
     /**
      *
@@ -82,6 +99,11 @@ public class ControllerFacade {
         }
 
         return instance;
+    }
+
+    private ControllerFacade() {
+        remoteDrivers = new HashMap<DriverConfig, DriverRemoteFunctions>(1);
+        remoteSinks = new HashMap<SinkConfig, SinkRemoteFunctions>(1);
     }
 
     /**
@@ -119,12 +141,14 @@ public class ControllerFacade {
         } catch (Exception e) {
             cleanup();
             e.printStackTrace();
-            throw new Exception("Could not open configuration file. File may be corrupted.");
+            throw new Exception("Could not open configuration file. "
+                              + "File may be corrupted.");
         }
 
         try {
-            this.updateTestOptions(config.getResponseTimeMode(), config.getResponseTimeResolution(),
-                    config.isUsingCreationTime());
+            this.updateTestOptions(config.getResponseTimeMode(),
+                                   config.getResponseTimeResolution(),
+                                   config.isUsingCreationTime());
         } catch (FileNotFoundException fnfe) {
             throw fnfe;
         } catch (Exception e) {
@@ -145,10 +169,24 @@ public class ControllerFacade {
     /**
      * Indicates if the Facade has a setup file loaded.
      *
-     * @return  <tt>true</tt> if there is currently a setup loaded, <tt>false</tt> otherwise.
+     * @return  <tt>true</tt> if there is currently a setup loaded,
+     *          <tt>false</tt> otherwise.
      */
     public boolean isTestSetupLoaded() {
         return config.isFileOpen();
+    }
+
+
+    /**
+     *
+     * @return  the path of the setup file currently loaded, or
+     *          <tt>null</tt> if none has  been loaded.
+     */
+    public String getCurrentSetup() {
+        if (config != null) {
+            return config.getFilePath();
+        }
+        return null;
     }
 
     /**
@@ -166,7 +204,7 @@ public class ControllerFacade {
         SinkConfig[] sinkList = new SinkConfig[sinks.size()];
         if (config.isFileOpen()) {
             config.save(drivers.toArray(driverList), sinks.toArray(sinkList),
-                        rtMode, rtResolution, useEventsCreationTime);
+                    rtMode, rtResolution, useEventsCreationTime);
         } else {
             throw new Exception("Could not save test setup. File path has not been informed.");
         }
@@ -209,20 +247,20 @@ public class ControllerFacade {
     }
 
     /**
-    *
-    * @return  the list of Drivers in a test setup file (if already loaded)
-    */
-   public synchronized HashMap<DriverConfig, DriverRemoteFunctions> getRemoteDrivers() {
-       return this.remoteDrivers;
-   }
+     *
+     * @return  the list of Drivers in a test setup file (if already loaded)
+     */
+    public synchronized HashMap<DriverConfig, DriverRemoteFunctions> getRemoteDrivers() {
+        return this.remoteDrivers;
+    }
 
-   /**
-    *
-    * @return  the list of Sinks in a test setup file (if already loaded)
-    */
-   public synchronized HashMap<SinkConfig, SinkRemoteFunctions> getRemoteSinks() {
-       return this.remoteSinks;
-   }
+    /**
+     *
+     * @return  the list of Sinks in a test setup file (if already loaded)
+     */
+    public synchronized HashMap<SinkConfig, SinkRemoteFunctions> getRemoteSinks() {
+        return this.remoteSinks;
+    }
 
 
     /**
@@ -387,13 +425,13 @@ public class ControllerFacade {
     }
 
     /**
-    *
-    * @return  the response time resolution used in the test setup
-    *          (either milliseconds or nanoseconds)
-    */
-   public int getRtResolution() {
-       return rtResolution;
-   }
+     *
+     * @return  the response time resolution used in the test setup
+     *          (either milliseconds or nanoseconds)
+     */
+    public int getRtResolution() {
+        return rtResolution;
+    }
 
     /**
      *
@@ -417,8 +455,8 @@ public class ControllerFacade {
      * @throws Exception            for unexpected errors
      */
     public Boolean loadRemoteDriver(DriverConfig dr)
-    throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
-    {
+            throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
+            {
         Boolean ret = null;
 
         DriverRemoteFunctions remoteDr;
@@ -437,7 +475,7 @@ public class ControllerFacade {
         }
 
         return ret;
-    }
+            }
 
     /**
      * Loads a remote Sink through RMI.
@@ -452,8 +490,8 @@ public class ControllerFacade {
      * @throws Exception            for unexpected errors
      */
     public Boolean loadRemotSink(SinkConfig sink)
-    throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
-    {
+            throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
+            {
         Boolean ret = null;
 
         SinkRemoteFunctions remoteSink;
@@ -472,7 +510,7 @@ public class ControllerFacade {
         }
 
         return ret;
-    }
+            }
 
     public synchronized boolean isDriverConnected(DriverConfig dr) {
         if(this.remoteDrivers == null || this.remoteDrivers.isEmpty()) {
@@ -490,10 +528,10 @@ public class ControllerFacade {
     }
 
     private DriverRemoteFunctions lookupRemoteDriver(DriverConfig dr)
-    throws Exception {
+            throws Exception {
         if(remoteDrivers == null || remoteDrivers.isEmpty()) {
             throw new Exception("Remote connection with Drivers has not been established or" +
-            " no Driver has been configured.");
+                    " no Driver has been configured.");
         }
         DriverRemoteFunctions ret = remoteDrivers.get(dr);
 
@@ -504,10 +542,10 @@ public class ControllerFacade {
     }
 
     private SinkRemoteFunctions lookupRemoteSink(SinkConfig sink)
-    throws Exception {
+            throws Exception {
         if(remoteSinks == null || remoteSinks.isEmpty()) {
             throw new Exception("Remote connection with Sinks has not been established or" +
-            " no Sink has been configured.");
+                    " no Sink has been configured.");
         }
         SinkRemoteFunctions ret = remoteSinks.get(sink);
 
@@ -518,50 +556,50 @@ public class ControllerFacade {
     }
 
     public synchronized void startRemoteDriver(DriverConfig dr)
-    throws RemoteException, InvalidStateException, Exception
-    {
+            throws RemoteException, InvalidStateException, Exception
+            {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.start();
-    }
+            }
 
     public synchronized void pauseRemoteDriver(DriverConfig dr)
-    throws RemoteException, InvalidStateException, Exception
-    {
+            throws RemoteException, InvalidStateException, Exception
+            {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.pause();
-    }
+            }
 
     public synchronized void stopRemoteDriver(DriverConfig dr)
-    throws RemoteException, InvalidStateException, Exception
-    {
+            throws RemoteException, InvalidStateException, Exception
+            {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.stop();
-    }
+            }
 
     public synchronized void stopRemoteSink(SinkConfig sink)
-    throws RemoteException, Exception
-    {
+            throws RemoteException, Exception
+            {
         SinkRemoteFunctions remoteSink = this.lookupRemoteSink(sink);
         remoteSink.unload();
-    }
+            }
 
     public synchronized void switchRemoteDriverToNextPhase(DriverConfig dr)
-    throws RemoteException, InvalidStateException, Exception
-    {
+            throws RemoteException, InvalidStateException, Exception
+            {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.switchToNextPhase();
-    }
+            }
 
     public synchronized void alterRemoteDriverSubmissionRate(DriverConfig dr, double eventRateFactor)
-    throws RemoteException, InvalidStateException, Exception
-    {
+            throws RemoteException, InvalidStateException, Exception
+            {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.alterRate(eventRateFactor);
-    }
+            }
 
     public synchronized Status getDriverStatus(DriverConfig dr)
-    throws RemoteException
-    {
+            throws RemoteException
+            {
         try {
             DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
             return remoteDr.getStatus();
@@ -574,11 +612,11 @@ public class ControllerFacade {
             return DISCONNECTED;
         }
 
-    }
+            }
 
     public synchronized Status getSinkStatus(SinkConfig sink)
-    throws RemoteException
-    {
+            throws RemoteException
+            {
         try {
             SinkRemoteFunctions remoteSink = this.lookupRemoteSink(sink);
             return remoteSink.getStatus();
@@ -590,43 +628,5 @@ public class ControllerFacade {
         catch (Exception e) { // Sink disconnection has been detected before.
             return DISCONNECTED;
         }
-    }
-
-    /**
-     * Stops the FINCoS Daemon service in a given host
-     *
-     * @param ipAddress			The host where the Daemon service must be stopped
-     * @throws RemoteException
-     * @throws NotBoundException
-     */
-    public void terminateFINCoSDaemonService(String ipAddress)
-    throws RemoteException, NotBoundException
-    {
-        Registry daemonRegistry = LocateRegistry.getRegistry(ipAddress, Globals.RMI_PORT);
-        RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
-        remoteDaemon.finalizeService();
-    }
-
-    /**
-     * Stops the FINCoS Daemon service in all hosts where a
-     * FINCoS Component (Driver or Sink) was configured to run.
-     */
-    public void terminateAllFINCOSDaemonServiceInstances() {
-        Set<InetAddress> hosts = new HashSet<InetAddress>();
-
-        for (DriverConfig dr : getDriverList()) {
-            hosts.add(dr.getAddress());
-        }
-        for (SinkConfig sink : getSinkList()) {
-            hosts.add(sink.getAddress());
-        }
-
-        for (InetAddress inetAddress : hosts) {
-            try {
-                terminateFINCoSDaemonService(inetAddress.getHostAddress());
-            } catch (Exception e) {
-                // Do nothing. An expected exception will be thrown when application closes.
             }
-        }
-    }
 }
