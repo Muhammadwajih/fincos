@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.sink;
 
 import java.awt.BorderLayout;
@@ -23,12 +41,13 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EtchedBorder;
 
 import pt.uc.dei.fincos.adapters.AdapterType;
-import pt.uc.dei.fincos.adapters.cep.CEPEngineFactory;
-import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
+import pt.uc.dei.fincos.adapters.cep.CEP_EngineFactory;
+import pt.uc.dei.fincos.adapters.cep.CEP_EngineInterface;
 import pt.uc.dei.fincos.adapters.jms.JMS_Reader;
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.basic.InvalidStateException;
@@ -42,7 +61,7 @@ import pt.uc.dei.fincos.perfmon.SinkPerfStats;
 /**
  * Sink application. Receives and processes results from a CEP engine.
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  */
 public class Sink extends JFrame implements SinkRemoteFunctions {
     /** Serial id. */
@@ -52,7 +71,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     private String alias;
 
     /** Used to receive events directly from CEP engine. */
-    private CEPEngineInterface cepEngineInterface;
+    private CEP_EngineInterface cepEngineInterface;
 
     /** Used to receive events from a JMS provider. */
     private JMS_Reader jmsInterface;
@@ -232,18 +251,31 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                 showInfo("Connecting to JMS Provider...");
                 HashMap<String, String[]> lsnrs = new HashMap<String, String[]>();
                 lsnrs.put("Lsnr-1", sinkCfg.getOutputStreamList());
-                this.jmsInterface = new JMS_Reader(connProps, cfName, lsnrs, rtMode, rtResolution, this);
-                showInfo("Done!");
+                try {
+                    this.jmsInterface = new JMS_Reader(connProps, cfName, lsnrs, rtMode, rtResolution, this);
+                    showInfo("Done!");
+                } catch (Exception e) {
+                    this.showInfo("ERROR: Could not connect to JMS provider. (" + e.getMessage() + ").");
+                    this.status.setStep(Step.ERROR);
+                    return false;
+                }
             } else if (sinkCfg.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
                 this.adapterType = AdapterType.CEP;
-                cepEngineInterface = CEPEngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
+                cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
                 if (cepEngineInterface == null) {
                     throw new Exception("Unsupported CEP engine");
                 }
                 showInfo("Connecting to CEP engine...");
-                cepEngineInterface.connect();
-                cepEngineInterface.load(sinkCfg.getOutputStreamList(), this);
-                showInfo("Done!");
+                try {
+                    cepEngineInterface.connect();
+                    cepEngineInterface.load(sinkCfg.getOutputStreamList(), this);
+                    showInfo("Done!");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    this.showInfo("ERROR: Could not connect to CEP engine. (" + e.getMessage() + ").");
+                    this.status.setStep(Step.ERROR);
+                    return false;
+                }
             }
 
             this.rtMode = rtMode;
@@ -328,10 +360,14 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     }
 
 
-    private void showInfo(String msg) {
-        Date now = new Date();
-        infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
-        infoArea.setCaretPosition(infoArea.getDocument().getLength());
+    private void showInfo(final String msg) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                Date now = new Date();
+                infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
+                infoArea.setCaretPosition(infoArea.getDocument().getLength());
+            }
+         });
     }
 
     private String toCSV(Object[] event) {

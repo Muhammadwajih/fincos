@@ -1,5 +1,24 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,7 +44,7 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 /**
  * GUI for configuration of Sinks
  *
- * @author Marcelo R.N. Mendes
+ * @author  Marcelo R.N. Mendes
  *
  */
 @SuppressWarnings("serial")
@@ -300,7 +319,8 @@ public class SinkDetail extends ComponentDetail {
 
         pack();
 
-        okBtn.setIcon(new ImageIcon("imgs/OK.png"));
+        logAllRadio.setSelected(true);
+        okBtn.setIcon(new ImageIcon("imgs/ok.png"));
         cancelBtn.setIcon(new ImageIcon("imgs/cancel.png"));
         initConnCombo();
     }
@@ -403,10 +423,20 @@ public class SinkDetail extends ComponentDetail {
             @Override
             public void mouseClicked(MouseEvent evt) {
                 JList list = (JList) evt.getSource();
-                if (evt.getClickCount() == 2) {
-                    int index = list.locationToIndex(evt.getPoint());
-                    String streamName = JOptionPane.showInputDialog("New stream name:");
-                    ((DefaultListModel) streamsList.getModel()).setElementAt(streamName, index);
+                int index = list.locationToIndex(evt.getPoint());
+                if (evt.getClickCount() == 2 && index != -1) {
+                    String currentName = (String) ((DefaultListModel)streamsList.getModel()).get(index);
+                    String newName = JOptionPane.showInputDialog("New stream name:", currentName);
+                    if (newName == null) {
+                        return;
+                    } else if (newName.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Invalid stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                    } else if (!newName.equals(currentName) && !checkUniqueStreamName(newName)) {
+                        JOptionPane.showMessageDialog(null, "Duplicate stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        ((DefaultListModel) streamsList.getModel()).setElementAt(newName, index);
+                    }
+
                 }
             }
         });
@@ -436,7 +466,9 @@ public class SinkDetail extends ComponentDetail {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String streamName = JOptionPane.showInputDialog("Stream name:");
-                if (streamName.isEmpty()) {
+                if (streamName == null) {
+                    return;
+                } else if (streamName.isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Invalid stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
                 } else if (!checkUniqueStreamName(streamName)) {
                     JOptionPane.showMessageDialog(null, "Duplicate stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
@@ -468,12 +500,32 @@ public class SinkDetail extends ComponentDetail {
     }
 
     private boolean validateFields() {
-        return (this.aliasField.getText() != null
-                && !this.aliasField.getText().isEmpty()
-                && this.addressField.getText() != null
-                && !this.addressField.getText().isEmpty()
-                && this.connCombo.getSelectedIndex() != -1
-                && this.connCombo.getSelectedIndex() < Controller_GUI.getInstance().getConnections().length);
+        boolean ret = true;
+        if (this.aliasField == null || this.aliasField.getText().isEmpty()) {
+            this.aliasField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.aliasField.setBackground(Color.WHITE);
+        }
+
+        if (this.addressField == null
+         || this.addressField.getText().isEmpty()) {
+            this.addressField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.addressField.setBackground(Color.WHITE);
+        }
+
+        if (this.connCombo.getSelectedIndex() == -1
+         || this.connCombo.getSelectedIndex() >
+            Controller_GUI.getInstance().getConnections().length) {
+            this.connCombo.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            this.connCombo.setBackground(Color.WHITE);
+        }
+
+        return ret;
     }
 
     class PopupListener extends MouseAdapter {

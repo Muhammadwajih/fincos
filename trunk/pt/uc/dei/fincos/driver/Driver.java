@@ -1,3 +1,21 @@
+/* FINCoS Framework
+ * Copyright (C) 2012 CISUC, University of Coimbra
+ *
+ * Licensed under the terms of The GNU General Public License, Version 2.
+ * A copy of the License has been included with this distribution in the
+ * fincos-license.txt file.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version. This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License for more details.
+ */
+
+
 package pt.uc.dei.fincos.driver;
 
 import java.awt.BorderLayout;
@@ -27,12 +45,13 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EtchedBorder;
 
 import pt.uc.dei.fincos.adapters.AdapterType;
-import pt.uc.dei.fincos.adapters.cep.CEPEngineFactory;
-import pt.uc.dei.fincos.adapters.cep.CEPEngineInterface;
+import pt.uc.dei.fincos.adapters.cep.CEP_EngineFactory;
+import pt.uc.dei.fincos.adapters.cep.CEP_EngineInterface;
 import pt.uc.dei.fincos.adapters.jms.JMS_Writer;
 import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
@@ -52,7 +71,7 @@ import pt.uc.dei.fincos.perfmon.DriverPerfStats;
 /**
  *  Class responsible for load generation.
  *
- *  @author Marcelo R.N. Mendes
+ *  @author  Marcelo R.N. Mendes
  */
 public class Driver extends JFrame implements DriverRemoteFunctions {
 
@@ -106,7 +125,7 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
     private JMS_Writer jmsInterface;
 
     /** Direct interface with CEP engine. */
-    private CEPEngineInterface cepEngineInterface;
+    private CEP_EngineInterface cepEngineInterface;
     // ========================================================================
 
 
@@ -222,10 +241,14 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
 
     }
 
-    private void showInfo(String msg) {
-        Date now = new Date();
-        infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
-        infoArea.setCaretPosition(infoArea.getDocument().getLength());
+    private void showInfo(final String msg) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                Date now = new Date();
+                infoArea.append(Globals.TIME_FORMAT.format(now) + " - " + msg + "\n");
+                infoArea.setCaretPosition(infoArea.getDocument().getLength());
+            }
+         });
     }
 
     private void initializeRMI() throws RemoteException {
@@ -401,15 +424,22 @@ public class Driver extends JFrame implements DriverRemoteFunctions {
             // Tries to connect directly to the CEP engine
             else if (drConfig.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
                 this.adapterType = AdapterType.CEP;
-                cepEngineInterface = CEPEngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
+                cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
                 if (cepEngineInterface == null) {
                     throw new Exception("Unsupported CEP engine");
                 }
-                this.showInfo("Trying to establish connection with CEP engine...");
-                cepEngineInterface.connect();
-                //Initializes CEP interface with no subscriptions
-                cepEngineInterface.load(null, null);
-                showInfo("Done!");
+                try {
+                    this.showInfo("Trying to establish connection with CEP engine...");
+                    cepEngineInterface.connect();
+                    //Initializes CEP interface with no subscriptions
+                    cepEngineInterface.load(null, null);
+                    showInfo("Done!");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    this.showInfo("ERROR: Could not connect to CEP engine. (" + e.getMessage() + ").");
+                    this.updateStatus(Step.ERROR, this.status.getProgress());
+                    return false;
+                }
             }
 
             this.updateStatus(Step.CONNECTED, 0);
