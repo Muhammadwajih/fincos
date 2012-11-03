@@ -70,8 +70,7 @@ public abstract class Variate implements Serializable {
             if (seed != null) {
                 this.rnd.setSeed(seed);
             } else {
-                System.err.println("WARN: Could not set random generation seed "
-                                 + "(null value passed).");
+                this.rnd.setSeed(System.nanoTime());
             }
         }
     }
