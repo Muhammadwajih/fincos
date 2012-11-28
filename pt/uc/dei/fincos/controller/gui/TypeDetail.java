@@ -42,6 +42,7 @@ import pt.uc.dei.fincos.basic.EventType;
  *
  * @author  Marcelo R.N. Mendes
  */
+@SuppressWarnings({"serial", "rawtypes"})
 public final class TypeDetail extends ComponentDetail {
 
     /** serial id. */
@@ -252,7 +253,7 @@ public final class TypeDetail extends ComponentDetail {
                    && columnsTable.isEditing()) {
                    String newAttName = (String) columnsTable.getValueAt(row, col);
                    Attribute oldAtt = columns.get(row);
-                   Attribute newAtt = (Attribute) oldAtt.clone();
+                   Attribute newAtt = oldAtt.clone();
                    newAtt.setName(newAttName);
                    updateColumn(oldAtt, newAtt);
                }
@@ -287,7 +288,7 @@ public final class TypeDetail extends ComponentDetail {
                     ArrayList<Attribute> toAdd = new ArrayList<Attribute>(indexes.length);
                     for (int i : indexes) {
                         original = columns.get(i);
-                        copy = (Attribute) original.clone();
+                        copy = original.clone();
                         copy.setName(copy.getName() + "_copy");
                         toAdd.add(copy);
                     }
@@ -326,7 +327,7 @@ public final class TypeDetail extends ComponentDetail {
                         for (int index : indexes) {
                             if (index < columns.size()) {
                                 original = columns.get(index);
-                                copy = (Attribute) original.clone();
+                                copy = original.clone();
                                 copy.setName(copy.getName() + "_copy_" + i);
                                 toAdd.add(copy);
                             }

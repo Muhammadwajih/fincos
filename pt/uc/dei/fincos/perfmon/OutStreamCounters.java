@@ -27,7 +27,7 @@ import pt.uc.dei.fincos.basic.Globals;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class OutStreamCounters implements Serializable{
+public final class OutStreamCounters implements Serializable, Cloneable {
 
     /** serial id. */
     private static final long serialVersionUID = 7977546503970271299L;
@@ -57,6 +57,9 @@ public class OutStreamCounters implements Serializable{
     private double throughput;
 
 
+    /**
+     * Initializes an empty set of performance stats.
+     */
     public OutStreamCounters() {
         this.totalCount = 0;
         this.lastCount = 0;
@@ -67,8 +70,20 @@ public class OutStreamCounters implements Serializable{
         this.sumSqrRT = 0;
     }
 
-    private OutStreamCounters(long totalCount, long lastCount, double sumRT, double lastRT, double maxRT, double minRT,
-            double sumSqrRT) {
+    /**
+     * Initializes a new set of performance stats.
+     *
+     * @param totalCount    total number of events
+     * @param lastCount     last number of events
+     * @param sumRT         total sum of response times
+     * @param lastRT        last response time
+     * @param maxRT         maximum response time
+     * @param minRT         minimum response time
+     * @param sumSqrRT      Sum of the squares of the response times
+     */
+    private OutStreamCounters(long totalCount, long lastCount, double sumRT,
+                              double lastRT, double maxRT, double minRT,
+                              double sumSqrRT) {
         this.totalCount = totalCount;
         this.lastCount = lastCount;
         this.sumRT = sumRT;
@@ -80,10 +95,11 @@ public class OutStreamCounters implements Serializable{
 
 
     /**
+     * Adds a new data point to this performance stats.
      *
      * @param inputTS       the timestamp of the input event that caused the result event
      * @param outputTS      the timestamp of the result event
-     * @param resolution  resolution of the timestamps (milliseconds or nanoseconds)
+     * @param resolution    resolution of the timestamps (milliseconds or nanoseconds)
      */
     public void offer(long inputTS, long outputTS, int resolution) {
         double rtFactor = 1.0;
@@ -155,23 +171,35 @@ public class OutStreamCounters implements Serializable{
         return totalCount;
     }
 
-
+    /**
+     * Resets the number of events received since last period.
+     */
     public void startNewPeriod() {
         lastCount = 0;
     }
 
 
+    /**
+     * Sets the value of the throughput.
+     *
+     * @param throughput    the throughput value, in events per second
+     */
     public void setThroughput(double throughput) {
         this.throughput = throughput;
     }
 
 
+    /**
+     *
+     * @return  the throughput, in events per second
+     */
     public double getThroughput() {
         return throughput;
     }
 
     @Override
     protected OutStreamCounters clone() {
-        return new OutStreamCounters(totalCount, lastCount, sumRT, lastRT, maxRT, minRT, sumSqrRT);
+        return new OutStreamCounters(totalCount, lastCount, sumRT,
+                                    lastRT, maxRT, minRT, sumSqrRT);
     }
 }

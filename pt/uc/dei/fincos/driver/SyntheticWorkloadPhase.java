@@ -30,126 +30,164 @@ import pt.uc.dei.fincos.driver.Scheduler.ArrivalProcess;
  *
  * @see     ExternalFileWorkloadPhase
  */
-public class SyntheticWorkloadPhase extends WorkloadPhase {
-	private static final long serialVersionUID = -2381610231886845725L;
+public final class SyntheticWorkloadPhase extends WorkloadPhase {
 
-	private int duration;
-	private double initialRate;
-	private double finalRate;
+    /** serial id. */
+    private static final long serialVersionUID = -2381610231886845725L;
+
+    /** The phase duration, in seconds. */
+	private final int duration;
+
+	/** The initial event submission rate of this phase, in events per second. */
+	private final double initialRate;
+
+	/** The final event submission rate of this phase, in events per second. */
+	private final double finalRate;
+
+	/** The arrival process of this phase (either POISSION or DETERMINISTIC). */
 	private ArrivalProcess arrivalProcess;
 
+	/** The event types defined for this phase and their corresponding mixes. */
 	private LinkedHashMap<EventType, Double> schema;
+
+	/** Indicates if event types are generated in a predictable order. */
 	private boolean deterministicEventMix;
 
+	/** Indicates when data is generated.*/
 	private int dataGenMode;
+
+	/** Data is generated in runtime, during load submission. */
 	public static final int RUNTIME = 0;
+
+	/** Data is generated before load submission starts. */
 	public static final int DATASET = 1;
+
+	/** Random-number generation seed (used for repeatability).*/
 	private Long randomSeed;
 
 
 	/**
 	 *
-	 * @param duration				The duration of the phase, in seconds
-	 * @param initialRate			The initial event submission rate, in events/second
-	 * @param finalRate				The final event submission rate, in events/second
-	 * @param arrivalProcess 		Either DETERMINISTIC or POISSON
-	 * @param schema				The mix of event types to be generated during this phase
-	 * @param deterministicEventMix	Indicates if event types must be generated in a predictable/repeatable way
-	 * @param dataGenMode			Determines if events' data must be generated during test
-	 * 								(RUNTIME) or before test starts (DATASET)
-	 * @param randomSeed			Seed for random number generation
+	 * @param duration                 The duration of the phase, in seconds
+	 * @param initialRate			   The initial event submission rate, in events/second
+	 * @param finalRate				   The final event submission rate, in events/second
+	 * @param arrivalProcess 		   Either DETERMINISTIC or POISSON
+	 * @param schema				   The event types defined for this phase and
+	 *                                 their corresponding mixes
+	 * @param deterministicEventMix    Indicates if event types are generated
+	 *                                 in a predictable order
+	 * @param dataGenMode			   Determines if events' data must be generated during
+	 *                                 test (RUNTIME) or before test starts (DATASET)
+	 * @param randomSeed			   Seed for random number generation
 	 */
 	public SyntheticWorkloadPhase(int duration, double initialRate, double finalRate,
 								  ArrivalProcess arrivalProcess,
 								  LinkedHashMap<EventType, Double> schema,
 								  boolean deterministicEventMix,
 								  int dataGenMode, Long randomSeed) {
-		setDuration(duration);
-		setInitialRate(initialRate);
-		setFinalRate(finalRate);
-		setArrivalProcess(arrivalProcess);
+		this.duration = duration;
+		if (initialRate > 0) {
+            this.initialRate = initialRate;
+        } else {
+            if (initialRate == 0) {
+                this.initialRate = 1E-4; // 0.1 events/second
+            } else {
+                throw new IllegalArgumentException("Invalid event rate ("
+                                                 + initialRate + ").");
+            }
+        }
+
+		if (finalRate > 0) {
+            this.finalRate = finalRate;
+        } else {
+            if (finalRate == 0) {
+                this.finalRate = 1E-4; //0.1 events/second
+            } else {
+                throw new IllegalArgumentException("Invalid event rate ("
+                                                  + finalRate + ").");
+            }
+        }
+
+		this.arrivalProcess = arrivalProcess;
 		this.schema = schema;
-		setDeterministicEventMix(deterministicEventMix);
-		setDataGenMode(dataGenMode);
-		setRandomSeed(randomSeed);
+		this.deterministicEventMix = deterministicEventMix;
+		this.dataGenMode = dataGenMode;
+		this.randomSeed = randomSeed;
 	}
 
+	/**
+	 *
+	 * @return the phase duration, in seconds
+	 */
 	public int getDuration() {
 		return duration;
 	}
 
+	/**
+	 *
+	 * @return the initial event submission rate of this phase, in events per second
+	 */
 	public double getInitialRate() {
 		return initialRate;
 	}
 
+	/**
+	 *
+	 * @return the final event submission rate of this phase, in events per second
+	 */
 	public double getFinalRate() {
 		return finalRate;
 	}
 
+	/**
+	 *
+	 * @return the event types defined for this phase and their corresponding mixes
+	 */
 	public LinkedHashMap<EventType, Double> getSchema() {
 		return schema;
 	}
 
-	private void setInitialRate(double rate) {
-		if(rate > 0)
-			this.initialRate = rate;
-		else {
-			if (rate == 0)
-				this.initialRate = 1E-4; // 0.1 events/second
-			else
-				System.err.println("Invalid event rate.");
-		}
-	}
-
-	private void setFinalRate(double finalRate) {
-		if(finalRate > 0)
-			this.finalRate = finalRate;
-		else {
-			if (finalRate == 0)
-				this.finalRate = 1E-4; //0.1 events/second
-			else
-				System.err.println("Invalid event rate.");
-		}
-
-	}
-
-	public void setArrivalProcess(ArrivalProcess arrivalProcess) {
-		this.arrivalProcess = arrivalProcess;
-	}
-
+	/**
+	 *
+	 * @return the arrival process of this phase (either POISSION or DETERMINISTIC)
+	 */
 	public ArrivalProcess getArrivalProcess() {
 		return arrivalProcess;
 	}
 
-	private void setDuration(int duration) {
-		this.duration = duration;
-	}
-
-	public void setDataGenMode(int dataGenMode) {
-		this.dataGenMode = dataGenMode;
-	}
-
+	/**
+	 * Indicates when data is generated.
+	 *
+	 * @return Either 0 (During load submission)
+	 *         or 1 (Before test starts)
+	 */
 	public int getDataGenMode() {
 		return dataGenMode;
 	}
 
-	public void setRandomSeed(Long randomSeed) {
-		this.randomSeed = randomSeed;
-	}
-
+	/**
+	 *
+	 * @return the random-number generation seed
+	 */
 	public Long getRandomSeed() {
 		return randomSeed;
 	}
 
+	/**
+	 *
+	 * @return the total number of events of this phase
+	 */
 	public long getTotalEventCount() {
-		double avgRate = (initialRate+finalRate)/2;
+		double avgRate = (initialRate + finalRate) / 2;
 		return Math.round(duration * avgRate);
 	}
 
-	public void setDeterministicEventMix(boolean deterministicEventMix) {
-		this.deterministicEventMix = deterministicEventMix;
-	}
-
+	/**
+	 * Indicates if the event types are generated in a predictable order.
+	 *
+	 * @return <tt>true</tt> if the event mix is deterministic,
+	 *         <tt>false</tt> otherwise
+	 */
 	public boolean isDeterministicEventMix() {
 		return deterministicEventMix;
 	}

@@ -19,14 +19,9 @@
 package pt.uc.dei.fincos.basic;
 
 import java.io.File;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.Enumeration;
-import java.util.Set;
 
 import javax.swing.ImageIcon;
 
@@ -43,7 +38,7 @@ public class Globals {
     /** Default character used to separate fields of records in a data file. */
     public static final String CSV_DELIMITER = ",";
 
-    /** Port used by the components of the framework to communicate through Remote Method Invocation. */
+    /** Port used by the components of the framework to communicate via RMI. */
     public static final int RMI_PORT = 1212;
 
     /** Response time is measured from Drivers to Sinks. */
@@ -87,30 +82,4 @@ public class Globals {
     public static final ImageIcon GREEN_SIGN = new ImageIcon("imgs/green.png");
     public static final ImageIcon RED_SIGN = new ImageIcon("imgs/red.png");
     public static final ImageIcon YELLOW_SIGN = new ImageIcon("imgs/yellow.png");
-
-
-    /**
-     * Retrieves all IP addresses assigned to all network cards of the current machine.
-     *
-     * @param addressList       A pointer to a list to be filled with the IP addresses
-     * @throws SocketException  if an I/O error occurs
-     */
-    public static void retrieveMyIPAddresses(Set<InetAddress> addressList) throws SocketException {
-        Enumeration<NetworkInterface> nics = java.net.NetworkInterface.getNetworkInterfaces();
-        NetworkInterface nic;
-        Enumeration<InetAddress> nicAddresses;
-
-        // Iterates over NICs list
-        while (nics.hasMoreElements()) {
-            nic = nics.nextElement();
-            if (nic.isLoopback()) {
-                continue;
-            }
-            nicAddresses = nic.getInetAddresses();
-            // Iterates over addresses of a NIC
-            while (nicAddresses.hasMoreElements()) {
-                addressList.add(nicAddresses.nextElement());
-            }
-        }
-    }
 }

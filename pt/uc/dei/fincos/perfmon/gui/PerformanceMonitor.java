@@ -69,13 +69,14 @@ import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 /**
  *
- * FINCoS Performance Monitor main class. Computes performance metrics
- * in real time or from log files produced by Sinks.
+ * FINCoS Performance Monitor main class.
+ * Computes performance metrics in real
+ * time or from log files produced by Sinks.
  *
  * @author  Marcelo R.N. Mendes
  *
  */
-public class PerformanceMonitor extends JFrame {
+public final class PerformanceMonitor extends JFrame {
 
     /** serial id. */
     private static final long serialVersionUID = 7919137484290346256L;
@@ -113,23 +114,23 @@ public class PerformanceMonitor extends JFrame {
     private HashMap<String, OutStreamCounters> outputStreamStats;
 
     /** Background thread that periodically refreshes GUI when the Pefmon is in reatime mode. */
-    Timer guiRefresher;
+    private Timer guiRefresher;
 
-    /** The last time the GUI has been refreshed*/
-    long guiLastRefresh;
+    /** The last time the GUI has been refreshed. */
+    private long guiLastRefresh;
 
     //---------------------------------------------------------------------------------------------
 
 
     //------------------------------------- Sink log file(s) --------------------------------------
     /** Path(s) of the log file(s). */
-    String[] sinklogFilesPaths;
+    private String[] sinklogFilesPaths;
 
     /** Start of measurement interval. */
-    long miStart;
+    private long miStart;
 
     /** End of measurement interval. */
-    long miEnd;
+    private long miEnd;
     //---------------------------------------------------------------------------------------------
 
 
@@ -328,11 +329,12 @@ public class PerformanceMonitor extends JFrame {
      * (from Sink log files).
      *
      * @param statsSeries   performance stats
-     * @param logFiles
-     * @param miStart
-     * @param miEnd
+     * @param logFiles      log files to be preocessed
+     * @param miStart       start of measurement interval
+     * @param miEnd         end of measurement interval
      */
-    public void loadForSinkLogFile(Set<PerformanceStats> statsSeries, String[] logFiles, long miStart, long miEnd) {
+    public void loadForSinkLogFile(Set<PerformanceStats> statsSeries,
+            String[] logFiles, long miStart, long miEnd) {
         if (guiRefresher != null) {
             guiRefresher.stop();
             guiRefresher = null;
@@ -467,9 +469,11 @@ public class PerformanceMonitor extends JFrame {
     }
 
     /**
-     * Initializes the stats panel for Log files
-     * Adds one table for each server
+     * Initializes the stats panel for Log files.
+     * Adds one table for each server.
      * Each table contains one line for every output stream.
+     *
+     * @param serversStreams    a mapping server -> list of streams
      */
     private void loadStatsPanelOffline(TreeMap<String, HashSet<Stream>> serversStreams) {
         statsPanel.removeAll();

@@ -30,7 +30,7 @@ import java.util.Map.Entry;
  *
  * @see DriverPerfStats
  */
-public class SinkPerfStats implements Serializable, Cloneable {
+public final class SinkPerfStats implements Serializable, Cloneable {
     /** serial id. */
     private static final long serialVersionUID = 8191336871710437713L;
 
@@ -43,13 +43,26 @@ public class SinkPerfStats implements Serializable, Cloneable {
     /** A map stream -> perf counters. */
     private HashMap<String, OutStreamCounters> streamStats;
 
+    /**
+     * Initializes an empty set of performance stats.
+     */
     public SinkPerfStats() {
         this.start = -1;
         this.end = -1;
         this.streamStats = new HashMap<String, OutStreamCounters>();
     }
 
-    public SinkPerfStats(long start, long end, HashMap<String, OutStreamCounters> streamStats) {
+    /**
+     * Initializes an new set of performance stats.
+     *
+     * @param start         the start time of the interval which this
+     *                      set of performance stats refers to
+     * @param end           the end time of the interval which this
+     *                      set of performance stats refers to
+     * @param streamStats   the performance stats (a map Stream -> Counters)
+     */
+    public SinkPerfStats(long start, long end,
+            HashMap<String, OutStreamCounters> streamStats) {
         super();
         this.start = start;
         this.end = end;
@@ -128,7 +141,8 @@ public class SinkPerfStats implements Serializable, Cloneable {
 
     @Override
     public SinkPerfStats clone() {
-        HashMap<String, OutStreamCounters> streamStats = new HashMap<String, OutStreamCounters>();
+        HashMap<String, OutStreamCounters> streamStats =
+                new HashMap<String, OutStreamCounters>();
         for (Entry<String, OutStreamCounters> e: this.streamStats.entrySet()) {
             streamStats.put(e.getKey(), e.getValue().clone());
         }

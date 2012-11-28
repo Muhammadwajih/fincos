@@ -18,13 +18,27 @@
 
 package pt.uc.dei.fincos.basic;
 
+import pt.uc.dei.fincos.driver.Driver;
+import pt.uc.dei.fincos.sink.Sink;
+
 /**
- * The possible states that a component of the framework can be in
- * a given moment in time.
+ * The possible states of a FINCoS component.
  *
  * @author  Marcelo R.N. Mendes
  *
  * @see		Status
+ * @see     Driver
+ * @see     Sink
  *
  */
-public enum Step {DISCONNECTED, CONNECTED, LOADING, READY, RUNNING, PAUSED, STOPPED, FINISHED, ERROR}
+public enum Step {
+    DISCONNECTED,
+    CONNECTED,
+    LOADING,
+    READY,
+    RUNNING,
+    PAUSED,
+    STOPPED,
+    FINISHED,
+    ERROR
+}

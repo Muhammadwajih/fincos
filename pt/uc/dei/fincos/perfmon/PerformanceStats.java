@@ -28,7 +28,7 @@ import pt.uc.dei.fincos.basic.Globals;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class PerformanceStats implements Cloneable, Comparable<PerformanceStats> {
+public final class PerformanceStats implements Cloneable, Comparable<PerformanceStats> {
 
     /** Controls the frequency at which stats are stored over time. Default: 1-second. */
     public static final int DEFAULT_TIME_BUCKET_IN_MILLIS = 1000;
@@ -113,7 +113,8 @@ public class PerformanceStats implements Cloneable, Comparable<PerformanceStats>
         minThroughput = Math.min(minThroughput, lastThroughput);
         maxThroughput = Math.max(maxThroughput, lastThroughput);
         avgRT = totalRT / totalEventCount;
-        stdevRT = Math.sqrt((sumSqrRT - totalRT * totalRT / totalEventCount) / (totalEventCount - 1));
+        stdevRT = Math.sqrt((sumSqrRT - totalRT * totalRT / totalEventCount)
+                            / (totalEventCount - 1));
     }
 
 

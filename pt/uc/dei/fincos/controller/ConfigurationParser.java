@@ -20,7 +20,6 @@ package pt.uc.dei.fincos.controller;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -42,7 +41,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -106,21 +104,23 @@ public final class ConfigurationParser {
     /**
      * Saves a test setup into a new configuration file.
      *
-     * @param drivers			List of configured Drivers
-     * @param sinks				List of configured Sinks
-     * @param rtMode			Test option
-     * @param rtResolution      Test option
-     * @param useCreationTime   Test option
-     * @param path				Path of the new configuration file to be saved
+     * @param drivers			                List of configured Drivers
+     * @param sinks				                List of configured Sinks
+     * @param rtMode			                Test option
+     * @param rtResolution                      Test option
+     * @param useCreationTime                   Test option
+     * @param path                              Path of the new configuration file to be saved
      *
-     * @throws ParserConfigurationException
-     * @throws FileNotFoundException
-     * @throws IOException
-     * @throws TransformerException
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open/write the setup file
      */
     public void saveAs(DriverConfig[] drivers, SinkConfig[] sinks, int rtMode,
-            int rtResolution, boolean useCreationTime, String path) throws ParserConfigurationException,
-            FileNotFoundException, IOException, TransformerException {
+            int rtResolution, boolean useCreationTime, String path)
+    throws ParserConfigurationException, TransformerException, IOException {
         this.configFile = new File(path);
         this.save(drivers, sinks, rtMode, rtResolution, useCreationTime);
     }
@@ -128,20 +128,22 @@ public final class ConfigurationParser {
     /**
      * Saves a test setup into the current configuration file.
      *
-     * @param drivers                 List of configured Drivers
-     * @param sinks                   List of configured Sinks
-     * @param rtMode                  Test option
-     * @param rtResolution            Test option
-     * @param useCreationTime         Test option
+     * @param drivers                           List of configured Drivers
+     * @param sinks                             List of configured Sinks
+     * @param rtMode                            Test option
+     * @param rtResolution                      Test option
+     * @param useCreationTime                   Test option
      *
-     * @throws ParserConfigurationException
-     * @throws FileNotFoundException
-     * @throws IOException
-     * @throws TransformerException
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open/write the setup file
      */
     public void save(DriverConfig[] drivers, SinkConfig[] sinks, int rtMode,
-            int rtResolution,boolean useCreationTime) throws ParserConfigurationException,
-            FileNotFoundException, IOException, TransformerException {
+            int rtResolution, boolean useCreationTime)
+    throws ParserConfigurationException, TransformerException, IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         builder = factory.newDocumentBuilder();
@@ -177,62 +179,62 @@ public final class ConfigurationParser {
 
             Element workload, phase, schema;
             workload = doc.createElement("Workload");
-            SyntheticWorkloadPhase syntheticPhase;
-            ExternalFileWorkloadPhase externalFilePhase;
+            SyntheticWorkloadPhase sPhase;
+            ExternalFileWorkloadPhase efPhase;
             for (WorkloadPhase w : dr.getWorkload()) {
                 if (w instanceof SyntheticWorkloadPhase) {
-                    syntheticPhase = (SyntheticWorkloadPhase) w;
+                    sPhase = (SyntheticWorkloadPhase) w;
                     phase = doc.createElement("Phase");
                     phase.setAttribute("type", "Synthetic");
                     Element duration = doc.createElement("duration");
-                    duration.appendChild(doc.createTextNode("" + syntheticPhase.getDuration()));
+                    duration.appendChild(doc.createTextNode("" + sPhase.getDuration()));
                     Element initialRate = doc.createElement("initialRate");
-                    initialRate.appendChild(doc.createTextNode("" + syntheticPhase.getInitialRate()));
+                    initialRate.appendChild(doc.createTextNode("" + sPhase.getInitialRate()));
                     Element finalRate = doc.createElement("finalRate");
-                    finalRate.appendChild(doc.createTextNode("" + syntheticPhase.getFinalRate()));
+                    finalRate.appendChild(doc.createTextNode("" + sPhase.getFinalRate()));
                     Element arrivalProcess = doc.createElement("arrivalProcess");
-                    arrivalProcess.appendChild(doc.createTextNode("" + syntheticPhase.getArrivalProcess()));
+                    arrivalProcess.appendChild(doc.createTextNode("" + sPhase.getArrivalProcess()));
                     phase.appendChild(duration);
                     phase.appendChild(initialRate);
                     phase.appendChild(finalRate);
                     phase.appendChild(arrivalProcess);
-                    schema = this.saveSchema(doc, syntheticPhase.getSchema());
-                    schema.setAttribute("deterministicMix", "" + syntheticPhase.isDeterministicEventMix());
+                    schema = this.saveSchema(doc, sPhase.getSchema());
+                    schema.setAttribute("deterministicMix", "" + sPhase.isDeterministicEventMix());
                     phase.appendChild(schema);
                     Element dataGen = doc.createElement("DataGeneration");
-                    if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
+                    if (sPhase.getDataGenMode() == SyntheticWorkloadPhase.RUNTIME) {
                         dataGen.setAttribute("mode", "Runtime");
                     } else {
                         dataGen.setAttribute("mode", "Dataset");
                     }
-                    Long randomSeed = syntheticPhase.getRandomSeed();
+                    Long randomSeed = sPhase.getRandomSeed();
                     if (randomSeed != null) {
                         dataGen.setAttribute("randomSeed", "" + randomSeed);
                     }
                     phase.appendChild(dataGen);
                     workload.appendChild(phase);
                 } else if (w instanceof ExternalFileWorkloadPhase) {
-                    externalFilePhase = (ExternalFileWorkloadPhase) w;
+                    efPhase = (ExternalFileWorkloadPhase) w;
                     phase = doc.createElement("Phase");
                     phase.setAttribute("type", "External File");
                     Element path = doc.createElement("path");
-                    path.appendChild(doc.createTextNode(externalFilePhase.getFilePath()));
+                    path.appendChild(doc.createTextNode(efPhase.getFilePath()));
                     Element delimiter = doc.createElement("delimiter");
-                    String delimiterStr = externalFilePhase.getDelimiter();
+                    String delimiterStr = efPhase.getDelimiter();
                     if (delimiterStr.equals("\t")) {
                         delimiterStr = "tab";
                     }
                     delimiter.appendChild(doc.createTextNode(delimiterStr));
                     Element loopCount = doc.createElement("loopCount");
-                    loopCount.appendChild(doc.createTextNode("" + externalFilePhase.getLoopCount()));
+                    loopCount.appendChild(doc.createTextNode("" + efPhase.getLoopCount()));
                     Element timestamps = doc.createElement("timestamps");
-                    boolean containsTS = externalFilePhase.containsTimestamps();
-                    boolean useTS = externalFilePhase.isUsingTimestamps();
-                    boolean includeTS = externalFilePhase.isIncludingTS();
-                    int timeUnit = externalFilePhase.getTimestampUnit();
-                    double eventRate = externalFilePhase.getEventSubmissionRate();
+                    boolean containsTS = efPhase.containsTimestamps();
+                    boolean useTS = efPhase.isUsingTimestamps();
+                    boolean includeTS = efPhase.isIncludingTS();
+                    int timeUnit = efPhase.getTimestampUnit();
+                    double eventRate = efPhase.getEventSubmissionRate();
                     timestamps.setAttribute("contains", "" + containsTS);
-                    timestamps.setAttribute("fieldIndex", "" + externalFilePhase.getTimestampIndex());
+                    timestamps.setAttribute("fieldIndex", "" + efPhase.getTimestampIndex());
                     if (containsTS) {
                         timestamps.setAttribute("use", "" + useTS);
                         timestamps.setAttribute("include", "" + includeTS);
@@ -245,10 +247,10 @@ public final class ConfigurationParser {
                         timestamps.setAttribute("eventRate", "" + eventRate);
                     }
                     Element eventTypes = doc.createElement("eventTypes");
-                    boolean containsEventTypes = externalFilePhase.containsEventTypes();
-                    String singleTypeName = externalFilePhase.getSingleEventTypeName();
+                    boolean containsEventTypes = efPhase.containsEventTypes();
+                    String singleTypeName = efPhase.getSingleEventTypeName();
                     eventTypes.setAttribute("contains", "" + containsEventTypes);
-                    eventTypes.setAttribute("fieldIndex", "" + externalFilePhase.getTypeIndex());
+                    eventTypes.setAttribute("fieldIndex", "" + efPhase.getTypeIndex());
                     if (!containsEventTypes) {
                         eventTypes.setAttribute("singleTypeName", singleTypeName);
                     }
@@ -292,7 +294,8 @@ public final class ConfigurationParser {
             Element logging = doc.createElement("Logging");
             logging.setAttribute("log", "" + sinkCfg.isLoggingEnabled());
             if (sinkCfg.isLoggingEnabled()) {
-                logging.setAttribute("fieldsToLog", sinkCfg.getFieldsToLog() == Globals.LOG_ALL_FIELDS
+                logging.setAttribute("fieldsToLog",
+                                     sinkCfg.getFieldsToLog() == Globals.LOG_ALL_FIELDS
                                      ? "all" : "timestamps");
                 logging.setAttribute("samplingRate", "" + sinkCfg.getLoggingSamplingRate());
                 logging.setAttribute("flushInterval", "" + sinkCfg.getLogFlushInterval());
@@ -329,13 +332,14 @@ public final class ConfigurationParser {
      * Retrieves the list of Drivers in this parser's configuration file.
      *
      * @return              A list of configurations of Drivers
-     * @throws Exception    if the setup file is corrupted
+     * @throws Exception    if an error occurs while parsing the XML configuration file.
      */
     public DriverConfig[] retrieveDriverList() throws Exception {
         DriverConfig[] ret = null;
 
         if (isFileOpen()) {
-            Element driversList = (Element) this.xmlFileRoot.getElementsByTagName("Drivers").item(0);
+            Element driversList =
+                    (Element) this.xmlFileRoot.getElementsByTagName("Drivers").item(0);
 
             NodeList drivers = driversList.getElementsByTagName("Driver");
             ret = new DriverConfig[drivers.getLength()];
@@ -358,8 +362,11 @@ public final class ConfigurationParser {
                 connAlias = driver.getAttribute("connection");
                 connCfg = Controller_GUI.getInstance().getConnection(connAlias);
                 if (connCfg == null) {
-                    JOptionPane.showMessageDialog(null, "The connection of \"" + driverName + "\" is no longer available. "
-                            + "Please review its configuration.", "Connection missing", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "The connection of \"" + driverName
+                                                      + "\" is no longer available. "
+                                                      + "Please review its configuration.",
+                                                  "Connection missing",
+                                                  JOptionPane.WARNING_MESSAGE);
                 }
                 threadCount = Integer.parseInt(driver.getAttribute("threadCount"));
                 Element workload = (Element) driver.getElementsByTagName("Workload").item(0);
@@ -395,8 +402,10 @@ public final class ConfigurationParser {
      * Retrieves the list of all input streams configured for all Drivers.
      *
      * @return	The schemas of the input streams
+     *
+     * @throws Exception    if an error occurs while parsing the XML configuration file.
      */
-    public EventType[] getInputStreamList() throws NumberFormatException, DOMException, Exception {
+    public EventType[] getInputStreamList() throws Exception {
         Set<EventType> inputStreamList = new HashSet<EventType>();
         for (DriverConfig dr : retrieveDriverList()) {
             for (EventType streamSchema : dr.getStreamList()) {
@@ -411,8 +420,10 @@ public final class ConfigurationParser {
      * Retrieves the names of all input streams configured for all Drivers.
      *
      * @return	The names of the input streams
+     *
+     * @throws Exception   if an error occurs while parsing the XML configuration file.
      */
-    public String[] getInputStreamNames() throws NumberFormatException, DOMException, Exception {
+    public String[] getInputStreamNames() throws Exception {
         EventType[] types = this.getInputStreamList();
         String [] ret = new String [types.length];
 
@@ -447,18 +458,21 @@ public final class ConfigurationParser {
      */
     public int getResponseTimeMode() {
         if (isFileOpen()) {
-            Element testOptions = (Element) this.xmlFileRoot.getElementsByTagName("TestOptions").item(0);
+            Element testOptions = (Element) this.xmlFileRoot.
+                                   getElementsByTagName("TestOptions").item(0);
             if (testOptions != null) {
                 int rtMode = Integer.parseInt(testOptions.getAttribute("RT_MODE"));
                 if (rtMode != Globals.ADAPTER_RT
                     && rtMode != Globals.END_TO_END_RT
                     && rtMode != Globals.NO_RT) {
-                    System.err.println("Invalid RT measurement mode. Setting to default.");
+                    System.err.println("Invalid RT measurement mode. "
+                                     + "Setting to default (end-to-end).");
                     rtMode = Globals.END_TO_END_RT; // Default mode
                 }
                 return rtMode;
             } else {
-                System.err.println("WARNING: Could not retrieve RT measurement mode. Setting to default.");
+                System.err.println("WARNING: Could not retrieve RT measurement mode. "
+                                 + "Setting to default (end-to-end).");
                 return Globals.END_TO_END_RT; // Default mode
             }
         } else {
@@ -473,17 +487,20 @@ public final class ConfigurationParser {
      */
     public int getResponseTimeResolution() {
         if (isFileOpen()) {
-            Element testOptions = (Element) this.xmlFileRoot.getElementsByTagName("TestOptions").item(0);
+            Element testOptions = (Element) this.xmlFileRoot.
+                                  getElementsByTagName("TestOptions").item(0);
             if (testOptions != null) {
                 int rtResolution = Integer.parseInt(testOptions.getAttribute("RT_RESOLUTION"));
                 if (rtResolution != Globals.MILLIS_RT
                     && rtResolution != Globals.NANO_RT) {
-                    System.err.println("Invalid RT measurement resolution. Setting to default.");
+                    System.err.println("Invalid RT measurement resolution. "
+                                     + "Setting to default (milliseconds).");
                     rtResolution = Globals.MILLIS_RT; // Default resolution
                 }
                 return rtResolution;
             } else {
-                System.err.println("WARNING: Could not retrieve RT measurement mode. Setting to default.");
+                System.err.println("WARNING: Could not retrieve RT measurement mode. "
+                                 + "Setting to default (milliseconds).");
                 return Globals.MILLIS_RT; // Default resolution
             }
         } else {
@@ -497,7 +514,8 @@ public final class ConfigurationParser {
      */
     public boolean isUsingCreationTime() {
         if (isFileOpen()) {
-            Element testOptions = (Element) this.xmlFileRoot.getElementsByTagName("TestOptions").item(0);
+            Element testOptions = (Element) this.xmlFileRoot.
+                                  getElementsByTagName("TestOptions").item(0);
             if (testOptions != null) {
                 String timestampingMode = (testOptions.getAttribute("TIMESTAMPING_MODE"));
                 if (timestampingMode != null && !timestampingMode.isEmpty()) {
@@ -506,14 +524,16 @@ public final class ConfigurationParser {
                     } else if (timestampingMode.equalsIgnoreCase("SEND_TIME")) {
                         return false;
                     } else {
-                        System.err.println("WARNING: Invalid timestamping mode. Setting to default (SEND_TIME).");
+                        System.err.println("WARNING: Invalid timestamping mode. "
+                                         + "Setting to default (SEND_TIME).");
                         return false;
                     }
                 } else {
                     return false; // Default mode
                 }
             } else {
-                System.err.println("WARNING: Could not retrieve timestamping mode. Setting to default (SEND_TIME).");
+                System.err.println("WARNING: Could not retrieve timestamping mode. "
+                                 + "Setting to default (SEND_TIME).");
                 return false; // Default mode
             }
         } else {
@@ -526,12 +546,11 @@ public final class ConfigurationParser {
      * Parses the configuration of a Driver's phase.
      *
      * @param phase			A XML element containing the configuration of a phase
-     * @return				Either an instance of <tt>SyntheticWorkloadPhase</tt> or of <tt>ExternalFileWorkloadPhase</tt>
-     * @throws NumberFormatException
-     * @throws DOMException
-     * @throws Exception
+     * @return				Either an instance of <tt>SyntheticWorkloadPhase</tt>
+     *                      or of <tt>ExternalFileWorkloadPhase</tt>
+     * @throws Exception    if an error occurs while parsing the phase
      */
-    private WorkloadPhase processPhase(Element phase) throws NumberFormatException, DOMException, Exception {
+    private WorkloadPhase processPhase(Element phase) throws Exception {
         String type = phase.getAttribute("type");
         WorkloadPhase ret = null;
 
@@ -539,23 +558,32 @@ public final class ConfigurationParser {
             int phaseDuration;
             double phaseInitialRate, phaseFinalRate;
 
-            phaseDuration = Integer.parseInt(
-                    phase.getElementsByTagName("duration").item(0).getFirstChild().getNodeValue());
-            phaseInitialRate = Double.parseDouble(
-                    phase.getElementsByTagName("initialRate").item(0).getFirstChild().getNodeValue());
-            phaseFinalRate = Double.parseDouble(
-                    phase.getElementsByTagName("finalRate").item(0).getFirstChild().getNodeValue());
+            String durationStr =
+                    phase.getElementsByTagName("duration").item(0).
+                    getFirstChild().getNodeValue();
+            String initialRateStr =
+                    phase.getElementsByTagName("initialRate").item(0).
+                    getFirstChild().getNodeValue();
+            String finalRateStr =
+                    phase.getElementsByTagName("finalRate").item(0).
+                    getFirstChild().getNodeValue();
+            phaseDuration = Integer.parseInt(durationStr);
+            phaseInitialRate = Double.parseDouble(initialRateStr);
+            phaseFinalRate = Double.parseDouble(finalRateStr);
             ArrivalProcess arrivalProcess;
 
             if (phase.getElementsByTagName("arrivalProcess").item(0) != null) {
-                String  arrivaProcessStr = phase.getElementsByTagName("arrivalProcess").item(0).getFirstChild().getNodeValue();
+                String  arrivaProcessStr =
+                        phase.getElementsByTagName("arrivalProcess").item(0).
+                        getFirstChild().getNodeValue();
                 if (arrivaProcessStr != null && !arrivaProcessStr.isEmpty()) {
                     if (arrivaProcessStr.equalsIgnoreCase("DETERMINISTIC")) {
                         arrivalProcess = ArrivalProcess.DETERMINISTIC;
                     } else if (arrivaProcessStr.equalsIgnoreCase("POISSON")) {
                         arrivalProcess = ArrivalProcess.POISSON;
                     } else {
-                        System.err.println("WARNING: Invalid arrival process. Setting to default: DETERMINISTIC");
+                        System.err.println("WARNING: Invalid arrival process. "
+                                + "Setting to default: DETERMINISTIC");
                         arrivalProcess = ArrivalProcess.DETERMINISTIC;
                     }
                 } else {
@@ -565,8 +593,10 @@ public final class ConfigurationParser {
                 arrivalProcess = ArrivalProcess.DETERMINISTIC;
             }
 
-            Element schema = (Element) phase.getElementsByTagName("Schema").item(0);
-            Element dataGen = (Element) phase.getElementsByTagName("DataGeneration").item(0);
+            Element schema =
+                    (Element) phase.getElementsByTagName("Schema").item(0);
+            Element dataGen =
+                    (Element) phase.getElementsByTagName("DataGeneration").item(0);
             String dataGenModeStr  = dataGen.getAttribute("mode");
             int dataGenMode;
             if (dataGenModeStr.equalsIgnoreCase("Runtime")) {
@@ -588,11 +618,13 @@ public final class ConfigurationParser {
                 deterministicEventMix = false;
             }
 
-            ret = new SyntheticWorkloadPhase(phaseDuration, phaseInitialRate,  phaseFinalRate,
-                    arrivalProcess, this.getSchema(schema, randomSeed),
+            ret = new SyntheticWorkloadPhase(phaseDuration, phaseInitialRate,
+                    phaseFinalRate, arrivalProcess,
+                    this.getSchema(schema, randomSeed),
                     deterministicEventMix, dataGenMode, randomSeed);
         } else if (type.equalsIgnoreCase("External File")) {
-            String path = phase.getElementsByTagName("path").item(0).getFirstChild().getNodeValue();
+            String path =
+                    phase.getElementsByTagName("path").item(0).getFirstChild().getNodeValue();
             Node delimiterElem = phase.getElementsByTagName("delimiter").item(0);
             String delimiter;
             if (delimiterElem != null) {
@@ -605,7 +637,9 @@ public final class ConfigurationParser {
             }
             int loopCount;
             if (phase.getElementsByTagName("loopCount").item(0) != null) {
-                loopCount = Integer.parseInt(phase.getElementsByTagName("loopCount").item(0).getFirstChild().getNodeValue());
+                loopCount =
+                        Integer.parseInt(phase.getElementsByTagName("loopCount").
+                                item(0).getFirstChild().getNodeValue());
             } else { // older versions of configuration file
                 loopCount = 1;
             }
@@ -615,7 +649,9 @@ public final class ConfigurationParser {
             boolean useTS = Boolean.parseBoolean(timestamps.getAttribute("use"));
             boolean includeTS = Boolean.parseBoolean(timestamps.getAttribute("include"));
             String tsIndexStr = timestamps.getAttribute("fieldIndex");
-            int tsIndex = (tsIndexStr != null && !tsIndexStr.isEmpty()) ? Integer.parseInt(tsIndexStr) : containsTS ? 0 : -1;
+            int tsIndex = (tsIndexStr != null && !tsIndexStr.isEmpty())
+                           ? Integer.parseInt(tsIndexStr)
+                           : containsTS ? 0 : -1;
             int timeUnit = 0;
             double eventRate = 1;
             if (containsTS && useTS) {
@@ -627,9 +663,15 @@ public final class ConfigurationParser {
             boolean containsTypes = Boolean.parseBoolean(eventTypes.getAttribute("contains"));
             String singleTypeName = eventTypes.getAttribute("singleTypeName");
             String typeIndexStr = eventTypes.getAttribute("fieldIndex");
-            int typeIndex = (typeIndexStr != null  && !typeIndexStr.isEmpty()) ? Integer.parseInt(typeIndexStr) : !containsTypes ? -1 : containsTS ? 1 : 0;
-            ret = new ExternalFileWorkloadPhase(path, delimiter, containsTS, useTS, timeUnit, tsIndex, includeTS,
-                    containsTypes, typeIndex, singleTypeName, loopCount, eventRate);
+            int typeIndex = (typeIndexStr != null  && !typeIndexStr.isEmpty())
+                            ? Integer.parseInt(typeIndexStr)
+                            : !containsTypes
+                              ? -1
+                              : containsTS ? 1 : 0;
+            ret = new ExternalFileWorkloadPhase(path, delimiter, containsTS, useTS,
+                                                timeUnit, tsIndex, includeTS,
+                                                containsTypes, typeIndex, singleTypeName,
+                                                loopCount, eventRate);
         } else {
             throw new Exception("Invalid phase type.");
         }
@@ -669,8 +711,10 @@ public final class ConfigurationParser {
                 connAlias = sink.getAttribute("connection");
                 connCfg = Controller_GUI.getInstance().getConnection(connAlias);
                 if (connCfg == null) {
-                    JOptionPane.showMessageDialog(null, "The connection of \"" + sinkName + "\" is no longer available. "
-                            + "Please review its configuration.", "Connection missing", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "The connection of \""
+                            + sinkName + "\" is no longer available. "
+                            + "Please review its configuration.",
+                            "Connection missing", JOptionPane.WARNING_MESSAGE);
                 }
                 NodeList streams = sink.getElementsByTagName("Stream");
                 String[] streamNames = new String[streams.getLength()];
@@ -690,8 +734,9 @@ public final class ConfigurationParser {
                     logFlushInterval = Integer.parseInt(logging.getAttribute("flushInterval"));
                 }
 
-                ret[i] = new SinkConfig(sinkName, sinkAddress, connCfg, streamNames,
-                                        log, fieldsToLog, logSamplingRate, logFlushInterval);
+                ret[i] = new SinkConfig(sinkName, sinkAddress, connCfg,
+                                        streamNames, log, fieldsToLog,
+                                        logSamplingRate, logFlushInterval);
             }
         }
         return ret;
@@ -700,17 +745,17 @@ public final class ConfigurationParser {
 
     /**
      *
-     * Used to retrieve event types and their mixes of an execution phase of a given Driver.
+     * Retrieves event types and their mixes of an execution phase of a given Driver.
      *
-     * @param phaseSchema		An XML element containing the schema of a phase
-     * @param randomSeed		The Driver's seed used in random number generation
+     * @param phaseSchema	an XML element containing the schema of a phase
+     * @param randomSeed	the Driver's seed used in random number generation
      *
-     * @return					A map <<tt>EventType</tt>, Double>, containing event mix
-     * @throws Exception
-     * @throws DOMException
-     * @throws NumberFormatException
+     * @return				a map <<tt>EventType</tt>, Double>,
+     *                      containing event mix
+     * @throws Exception    if an error occurs while parsing the Schema
      */
-    private LinkedHashMap<EventType, Double> getSchema(Element phaseSchema, Long randomSeed) throws NumberFormatException, DOMException, Exception{
+    private LinkedHashMap<EventType, Double> getSchema(Element phaseSchema,
+            Long randomSeed) throws Exception {
         LinkedHashMap<EventType, Double> ret = null;
 
         String typeName;
@@ -732,8 +777,9 @@ public final class ConfigurationParser {
                 att = (Element) atts.item(j);
                 String attName = att.getAttribute("name");
                 Datatype attDataType = this.parseDataType(att.getAttribute("type"));
-                Domain attDomain = this.parseDomain((Element) att.getElementsByTagName("Domain").item(0),
-                                   randomSeed != null ? randomSeed + j : j);
+                Element domain = (Element) att.getElementsByTagName("Domain").item(0);
+                Domain attDomain =
+                        this.parseDomain(domain, randomSeed != null ? randomSeed + j : j);
                 attributes[j] = new Attribute(attDataType, attName, attDomain);
             }
             ret.put(new EventType(typeName, attributes), typeMix);
@@ -742,6 +788,12 @@ public final class ConfigurationParser {
         return ret;
     }
 
+    /**
+     * Retrieves the appropriate {@link Datatype} from a string.
+     *
+     * @param datatype  the name of the datatype
+     * @return          an instance of {@link Datatype}
+     */
     private Datatype parseDataType(String datatype) {
         if (datatype.equalsIgnoreCase("INTEGER")) {
             return Datatype.INTEGER;
@@ -766,12 +818,12 @@ public final class ConfigurationParser {
      * @param domain		A XML element containing domain's parameters
      * @param randomSeed	The seed used in random number generation
      * @return				An instance of <tt>Domain</tt>
-     * @throws Exception
-     * @throws DOMException
-     * @throws NumberFormatException
-     * @see 				<tt>Domain</tt> class
+     *
+     * @throws Exception    if an error occurs while parsing the domain
+     *
      */
-    private Domain parseDomain(Element domain, Long randomSeed) throws NumberFormatException, DOMException, Exception {
+    private Domain parseDomain(Element domain, Long randomSeed)
+    throws Exception {
         String type = domain.getAttribute("type");
         if (type.equalsIgnoreCase("RANDOM")) {
             Element variate = (Element) domain.getElementsByTagName("RandomVariable").item(0);
@@ -788,22 +840,22 @@ public final class ConfigurationParser {
     /**
      * Parses a sequential Domain.
      *
-     * @param domain		A XML element containing domain's parameters
-     * @param randomSeed	The seed used in random number generation
+     * @param domain		a XML element containing domain's parameters
+     * @param randomSeed	the seed used in random number generation
      *
-     * @return				An instance of <tt>SequentialDomain</tt>
-     * @throws Exception
-     * @throws DOMException
-     * @throws NumberFormatException
+     * @return				an instance of <tt>SequentialDomain</tt>
+     * @throws Exception    if an error occurs while parsing the domain
      * @see 				<tt>SequentialDomain</tt> class
      */
-    private Domain parseSequentialDomain(Element domain, Long randomSeed) throws NumberFormatException, DOMException, Exception{
+    private Domain parseSequentialDomain(Element domain, Long randomSeed)
+    throws Exception {
         Variate initialValueVariate = null;
         Variate incrementVariate = null;
         // Parses Initial Value
         Element initialValue = (Element) domain.getElementsByTagName("InitialValue").item(0);
         if (initialValue.getAttribute("type").equalsIgnoreCase("Constant")) {
-            initialValueVariate = new ConstantVariate(Double.parseDouble(initialValue.getFirstChild().getNodeValue()));
+            String initVal = initialValue.getFirstChild().getNodeValue();
+            initialValueVariate = new ConstantVariate(Double.parseDouble(initVal));
         } else if (initialValue.getAttribute("type").equalsIgnoreCase("Random")) {
             Element variate = (Element) initialValue.getElementsByTagName("RandomVariable").item(0);
             initialValueVariate = this.parseRandomVariate(variate, randomSeed);
@@ -811,7 +863,8 @@ public final class ConfigurationParser {
         // Parses Increment
         Element increment = (Element) domain.getElementsByTagName("Increment").item(0);
         if (increment.getAttribute("type").equalsIgnoreCase("Constant")) {
-            incrementVariate = new ConstantVariate(Double.parseDouble(increment.getFirstChild().getNodeValue()));
+            String inc = increment.getFirstChild().getNodeValue();
+            incrementVariate = new ConstantVariate(Double.parseDouble(inc));
         } else if (increment.getAttribute("type").equalsIgnoreCase("Random")) {
             Element variate = (Element) increment.getElementsByTagName("RandomVariable").item(0);
             incrementVariate = this.parseRandomVariate(variate, randomSeed);
@@ -877,28 +930,32 @@ public final class ConfigurationParser {
      * @param randomVariate			a Variate object represented as XML element
      * @param seed					seeed for random number generation
      * @return						an instance of <tt>Variate</tt> class
-     * @throws Exception
-     * @throws DOMException
-     * @throws NumberFormatException
+     * @throws Exception            if an error occurs while parsing the variate
      * @see							<tt>Variate</tt> class
      */
-    private Variate parseRandomVariate(Element randomVariate, Long seed) throws NumberFormatException, DOMException, Exception {
+    private Variate parseRandomVariate(Element randomVariate, Long seed)
+    throws Exception {
         Variate rv = null;
 
-        if (randomVariate.getAttribute("type").equalsIgnoreCase("UNIFORM")){
-            Element lowerBound = (Element) randomVariate.getElementsByTagName("lower").item(0);
-            Element upperBound = (Element) randomVariate.getElementsByTagName("upper").item(0);
+        if (randomVariate.getAttribute("type").equalsIgnoreCase("UNIFORM")) {
+            Element lowerBound =
+                    (Element) randomVariate.getElementsByTagName("lower").item(0);
+            Element upperBound =
+                    (Element) randomVariate.getElementsByTagName("upper").item(0);
             rv = new RandomUniformVariate(seed,
                     Double.parseDouble(lowerBound.getFirstChild().getNodeValue()),
                     Double.parseDouble(upperBound.getFirstChild().getNodeValue()));
-        } else if (randomVariate.getAttribute("type").equalsIgnoreCase("NORMAL")){
-            Element mean = (Element) randomVariate.getElementsByTagName("mean").item(0);
-            Element stdev = (Element) randomVariate.getElementsByTagName("stdev").item(0);
+        } else if (randomVariate.getAttribute("type").equalsIgnoreCase("NORMAL")) {
+            Element mean =
+                    (Element) randomVariate.getElementsByTagName("mean").item(0);
+            Element stdev =
+                    (Element) randomVariate.getElementsByTagName("stdev").item(0);
             rv = new RandomNormalVariate(seed,
                     Double.parseDouble(mean.getFirstChild().getNodeValue()),
                     Double.parseDouble(stdev.getFirstChild().getNodeValue()));
-        } else if (randomVariate.getAttribute("type").equalsIgnoreCase("EXPONENTIAL")){
-            Element lambda = (Element) randomVariate.getElementsByTagName("lambda").item(0);
+        } else if (randomVariate.getAttribute("type").equalsIgnoreCase("EXPONENTIAL")) {
+            Element lambda =
+                    (Element) randomVariate.getElementsByTagName("lambda").item(0);
             rv = new RandomExponentialVariate(seed,
                     Double.parseDouble(lambda.getFirstChild().getNodeValue()));
         }
@@ -938,11 +995,13 @@ public final class ConfigurationParser {
     }
 
     /**
-     * Converts an instance of the <tt>Domain</tt> class into XML textual representation
-     * and writes it into a XML document.
+     * Converts an instance of the <tt>Domain</tt> class into XML textual
+     * representation and writes it into a XML document.
      *
-     * @param doc		The XML document where the <tt>Domain</tt> instance must be written to
-     * @param d			The element where the <tt>Domain</tt> instance must be written to
+     * @param doc		The XML document where the <tt>Domain</tt> instance
+     *                  must be written to
+     * @param d			The element where the <tt>Domain</tt> instance
+     *                  must be written to
      * @return			The <tt>Domain</tt> instance
      * @see				<tt>Domain</tt> class
      */

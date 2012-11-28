@@ -34,6 +34,7 @@ import javax.swing.ListCellRenderer;
  * @author  Marcelo R.N. Mendes
  *
  */
+@SuppressWarnings("rawtypes")
 class ComboBoxRenderer extends JLabel implements ListCellRenderer {
 
     /** Serial id. */

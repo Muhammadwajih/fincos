@@ -19,7 +19,6 @@ package pt.uc.dei.fincos.controller.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -54,17 +53,16 @@ import pt.uc.dei.fincos.driver.ExternalFileWorkloadPhase;
  * @author  Marcelo R.N. Mendes
  *
  */
+@SuppressWarnings("rawtypes")
 public class ExternalFilePhasePanel extends javax.swing.JPanel {
 
     /** serial id. */
     private static final long serialVersionUID = -3941829337826804375L;
-    /** sample record */
+    /** sample record. */
     private HashMap<String, String> recordExample;
     private JFileChooser fileChooser;
-    private static final Font plain = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
-    private static final Font bold = new Font(Font.SANS_SERIF, Font.BOLD, 11);
 
-    /** Creates new form ExternalFilePhasePanel */
+    /** Creates new form ExternalFilePhasePanel. */
     public ExternalFilePhasePanel() {
         recordExample = new HashMap<String, String>();
         recordExample.put("timestamp", "08:15:00");
@@ -822,6 +820,9 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
 
 class TableHeaderRenderer extends DefaultTableCellRenderer
         implements MouseListener, MouseMotionListener {
+
+    /** serial id. */
+    private static final long serialVersionUID = 1352387347244889851L;
 
     private JTableHeader header;
     private DefaultTableCellRenderer oldRenderer;

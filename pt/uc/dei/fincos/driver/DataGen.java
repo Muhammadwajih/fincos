@@ -34,12 +34,13 @@ import pt.uc.dei.fincos.data.CSV_Writer;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class DataGen {
+public final class DataGen {
 
     /** Used to choose the next event type to be generated according to event mix. */
     private PredefinedListDomain typeChooser;
 
-    /** Random seed used when choosing the next event type to be generated according to event mix. */
+    /** Random seed used when choosing the next event type to be generated
+     *  according to event mix. */
     private Long mixSeed;
 
     /** Total number of events that must be generated. */
@@ -69,7 +70,8 @@ public class DataGen {
             objectTypes.put(type, mix);
         }
 
-        // Creates a  Domain to choose types iteratively according to the mix specified in the configuration file
+        /* Creates a  Domain to choose types iteratively according to the mix
+         * specified in the configuration file */
         if (workload.isDeterministicEventMix()) { // Deterministic
             typeChooser = new PredefinedListDomain(objectTypes.keySet().toArray(new Object[0]));
         } else { // Stochastic
@@ -84,7 +86,8 @@ public class DataGen {
      *
      * @param dataFilesDir      The directory where the data file(s) must be stored
      * @param fileCount         The number of files into which data will be stored
-     * @throws IOException
+     *
+     * @throws IOException      in an error occurs while trying to open/write the data file(s)
      */
     public void generateData(String dataFilesDir, int fileCount) throws IOException {
         // clear stats
@@ -103,7 +106,7 @@ public class DataGen {
             for (long j = 0; j < totalEventCount; j++) {
                 if (keepGenerating) {
                     // Generates next event and writes it to disk
-                    writers[(int)(j%fileCount)].writeRecord(getNextEvent());
+                    writers[(int) (j % fileCount)].writeRecord(getNextEvent());
                 } else {
                     break;
                 }

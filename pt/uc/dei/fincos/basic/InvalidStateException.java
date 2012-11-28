@@ -26,9 +26,14 @@ package pt.uc.dei.fincos.basic;
  *
  */
 public class InvalidStateException extends Exception {
-	/** serial id */
+	/** serial id. */
     private static final long serialVersionUID = -171460482317539819L;
 
+    /**
+     * Constructs a new InvalidStateException with the specified detail message.
+     *
+     * @param message   the detail message.
+     */
     public InvalidStateException(String message) {
 		super(message);
 	}

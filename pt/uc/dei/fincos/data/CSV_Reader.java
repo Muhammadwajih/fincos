@@ -33,7 +33,7 @@ import pt.uc.dei.fincos.basic.Globals;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class CSV_Reader {
+public final class CSV_Reader {
     /** Path for a CSV file to be read. */
     private String filePath;
 
@@ -47,8 +47,8 @@ public class CSV_Reader {
     /**
      *
      * @param path                     path for a CSV file to be read.
-     * @throws FileNotFoundException   if the named file does not exist, is a directory rather than a regular file,
-     *                                 or for some other reason cannot be opened for reading.
+     * @throws FileNotFoundException   if an attempt to open the file denoted by the specified
+     *                                 path has failed
      */
     public CSV_Reader(String path) throws FileNotFoundException {
         this(path, Globals.CSV_DELIMITER);
@@ -57,9 +57,10 @@ public class CSV_Reader {
     /**
      *
      * @param path                     path for a CSV file to be read.
-     * @param delimiter                character used to separate fields of the CSV records stored in the file
-     * @throws FileNotFoundException   if the named file does not exist, is a directory rather than a regular file,
-     *                                 or for some other reason cannot be opened for reading.
+     * @param delimiter                character used to separate fields of the CSV
+     *                                 records stored in the file
+     * @throws FileNotFoundException   if an attempt to open the file denoted by the
+     *                                 specified path has failed
      */
     public CSV_Reader(String path, String delimiter) throws FileNotFoundException {
         this.filePath = path;

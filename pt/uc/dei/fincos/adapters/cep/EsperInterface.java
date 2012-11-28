@@ -134,6 +134,10 @@ public final class EsperInterface extends CEP_EngineInterface {
         return instance;
     }
 
+    /**
+     * Destroys the singleton instance of the Esper adapter so that it is
+     * possible to create a new one.
+     */
     private static synchronized void destroyInstance() {
         instance = null;
     }
@@ -211,6 +215,26 @@ public final class EsperInterface extends CEP_EngineInterface {
         this.status.setStep(Step.CONNECTED);
         this.unlistenedQueries = new ArrayList<EPStatement>();
 
+        if (useExternalTimer) {
+            String t0Str = "0";
+
+            try {
+                t0Str = retrieveConnectionProperty("External_timer_t0");
+            } catch (Exception e) {
+                System.err.println("Warning: \"External_timer_t0\" property is missing. "
+                        + "Setting to default (0).");
+            }
+            long t0 = 0;
+            try {
+                t0 = Integer.parseInt(t0Str);
+            } catch (NumberFormatException e) {
+                System.err.println("Warning: Invalid value for \"External_timer_t0\""
+                        + " property (" + t0Str + "). " + "Setting to default (0).");
+            }
+            // Informs the engine of the current time.
+            advanceClock(t0);
+        }
+
         return true;
     }
 
@@ -224,7 +248,8 @@ public final class EsperInterface extends CEP_EngineInterface {
      * @param queriesFile   Path to a file containing queries expressed in
      *                      Esper's EPL query language
      * @param configFile    Path to Esper's configuration file
-     * @throws Exception
+     * @throws Exception    If an error occurs while parsing the XML
+     *                      configuration files
      */
     private void parseStreamsList(String queriesFile, String configFile) throws Exception {
         ArrayList<String> inputStreams = new ArrayList<String>();
@@ -266,7 +291,8 @@ public final class EsperInterface extends CEP_EngineInterface {
 
             if (type.getElementsByTagName("java-util-map") != null
                     && type.getElementsByTagName("java-util-map").getLength() > 0) {
-                NodeList attributes = ((Element) type.getElementsByTagName("java-util-map").item(0)).getElementsByTagName("map-property");
+                NodeList attributes = ((Element) type.getElementsByTagName("java-util-map").
+                                      item(0)).getElementsByTagName("map-property");
                 // Add streams whose events are represented as Maps
                 if (this.eventFormat == MAP_FORMAT) {
                     typeAtts = new LinkedHashMap<String, String>(attributes.getLength());
@@ -380,9 +406,11 @@ public final class EsperInterface extends CEP_EngineInterface {
                         outputListeners[i].load();
                         i++;
                     } else {
-                        System.err.println("WARNING: Query \"" + query.getKey() + "\" has no registered listener.");
+                        System.err.println("WARNING: Query \"" + query.getKey()
+                                           + "\" has no registered listener.");
                         System.out.println("Loading query: \n"  + query.getValue());
-                        EPStatement st = epService.getEPAdministrator().createEPL(query.getValue(), query.getKey());
+                        EPStatement st = epService.getEPAdministrator().createEPL(query.getValue(),
+                                                                                  query.getKey());
                         unlistenedQueries.add(st);
                     }
                 }
@@ -404,14 +432,14 @@ public final class EsperInterface extends CEP_EngineInterface {
     @Override
     public synchronized void send(Event e) throws Exception {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
-            if (this.useExternalTimer && e.getType().equals(extTSEventType)) {
-                advanceClock((Long) e.getAttributeValue(extTSIndex));
-            }
-
             if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(e);
             } else {
                 sendMapEvent(e);
+            }
+
+            if (this.useExternalTimer && e.getType().equals(extTSEventType)) {
+                advanceClock((Long) e.getAttributeValue(extTSIndex));
             }
         }
     }
@@ -419,24 +447,25 @@ public final class EsperInterface extends CEP_EngineInterface {
     @Override
     public synchronized void send(CSV_Event event) {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
-            if (this.useExternalTimer && event.getType().equals(extTSEventType)) {
-                advanceClock(Long.parseLong(event.getPayload()[extTSIndex]));
-            }
-
             if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(event);
             } else {
                 sendMapEvent(event);
             }
+
+            if (this.useExternalTimer && event.getType().equals(extTSEventType)) {
+                advanceClock(Long.parseLong(event.getPayload()[extTSIndex]));
+            }
         }
     }
 
     /**
-     * Send a Map event to Esper.
-     * Event record is initially represented using the FINCoS internal
-     * format and it is converted to a Map format before sending to Esper.
+     * Sends a Map event to Esper.
      *
-     * @param event
+     * Event record is initially represented using the FINCoS internal format
+     * and it is converted to a Map format before sending to Esper.
+     *
+     * @param event     the event to be sent
      */
     private void sendMapEvent(Event event) {
         String eventTypeName = event.getType().getName();
@@ -448,9 +477,11 @@ public final class EsperInterface extends CEP_EngineInterface {
                                   : event.getType().getAttributeCount();
 
             if (eventSchema.size() != fieldCount) {
-                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (fieldCount)
-                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
-                        + eventSchema.size() + ").");
+                System.err.println("ERROR: Number of fields in event \""
+                                   + event + "\" (" + (fieldCount)
+                                   + ") does not match schema of event type \""
+                                   + eventTypeName + "\" ("
+                                   + eventSchema.size() + ").");
                 return;
             }
 
@@ -490,11 +521,12 @@ public final class EsperInterface extends CEP_EngineInterface {
     }
 
     /**
-     * Send a POJO event to Esper.
-     * Event record is initially represented using the FINCoS internal
-     * format and it is converted to a Plain Java Object before sending to Esper.
+     * Sends a POJO event to Esper.
      *
-     * @param event
+     * Event record is initially represented using the FINCoS internal format
+     * and it is converted to a Plain Java Object before sending to Esper.
+     *
+     * @param event     the event to be sent
      */
     private void sendPOJOEvent(Event event) {
         String eventTypeName = event.getType().getName();
@@ -508,9 +540,11 @@ public final class EsperInterface extends CEP_EngineInterface {
                                   : event.getType().getAttributeCount();
 
             if (eventFields.length != eventFieldCount) {
-                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (eventFieldCount)
-                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
-                        + eventFields.length + ").");
+                System.err.println("ERROR: Number of fields in event \"" + event
+                                    + "\" (" + (eventFieldCount)
+                                    + ") does not match schema of event type \""
+                                    + eventTypeName + "\" ("
+                                    + eventFields.length + ").");
                 return;
             }
 
@@ -550,7 +584,8 @@ public final class EsperInterface extends CEP_EngineInterface {
                     }
                 } catch (ClassCastException cce) {
                     System.err.println("Invalid field value (" + event.getAttributeValue(i)
-                                       + ") for field [" + f + "]. It is not possible to send event.");
+                                     + ") for field [" + f
+                                     + "]. It is not possible to send event.");
                     return;
                 }
             }
@@ -559,7 +594,8 @@ public final class EsperInterface extends CEP_EngineInterface {
                 runtime.sendEvent(pojoEvent);
             }
         } catch (ClassNotFoundException cnfe) {
-            System.err.println("Unknown event type \"" + eventTypeName + "\"." + "It is not possible to send event.");
+            System.err.println("Unknown event type \"" + eventTypeName
+                             + "\"." + "It is not possible to send event.");
             return;
         } catch (Exception e) {
             System.err.println("Unexpected exception: " + e.getMessage()
@@ -570,11 +606,12 @@ public final class EsperInterface extends CEP_EngineInterface {
     }
 
     /**
-     * Send a Map event to Esper.
+     * Sends a Map event to Esper.
+     *
      * Event record is initially represented as a FINCoS CSV record
      * and it is converted to a Map format before sending to Esper.
      *
-     * @param event
+     * @param event     the event to be sent
      */
     private void sendMapEvent(CSV_Event event) {
         String eventTypeName = event.getType();
@@ -586,8 +623,10 @@ public final class EsperInterface extends CEP_EngineInterface {
                                   : event.getPayload().length;
 
             if (eventSchema.size() != fieldCount) {
-                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (fieldCount)
-                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
+                System.err.println("ERROR: Number of fields in event \""
+                        + event + "\" (" + (fieldCount)
+                        + ") does not match schema of event type \""
+                        + eventTypeName + "\" ("
                         + eventSchema.size() + ").");
                 return;
             }
@@ -596,7 +635,7 @@ public final class EsperInterface extends CEP_EngineInterface {
             int i = 0;
 
             for (Entry <String, String> field: eventSchema.entrySet()) {
-                if (i == eventSchema.size() - 1 && rtMode != Globals.NO_RT) { // Timestamp field (last one, if there is)
+                if (i == eventSchema.size() - 1 && rtMode != Globals.NO_RT) { // Timestamp field (last one, if it exists)
                     if (this.rtMode == Globals.ADAPTER_RT) {
                         /* Assigns a timestamp to the event just after conversion
                               (i.e., just before sending the event to the target system) */
@@ -636,11 +675,12 @@ public final class EsperInterface extends CEP_EngineInterface {
     }
 
     /**
-     * Send a POJO event to Esper.
-     * Event record is initially represented using the FINCoS internal
-     * format and it is converted to a Plain Java Object before sending to Esper.
+     * Sends a POJO event to Esper.
      *
-     * @param event
+     * Event record is initially represented using the FINCoS internal format
+     * and it is converted to a Plain Java Object before sending to Esper.
+     *
+     * @param event     the event to be sent
      */
     private void sendPOJOEvent(CSV_Event event) {
         String eventTypeName = event.getType();
@@ -654,9 +694,11 @@ public final class EsperInterface extends CEP_EngineInterface {
                                   : event.getPayload().length;
 
             if (eventFields.length != eventFieldCount) {
-                System.err.println("ERROR: Number of fields in event \"" + event + "\" (" + (eventFieldCount)
-                        + ") does not match schema of event type \"" + eventTypeName + "\" ("
-                        + eventFields.length + ").");
+                System.err.println("ERROR: Number of fields in event \""
+                                + event + "\" (" + (eventFieldCount)
+                                + ") does not match schema of event type \""
+                                + eventTypeName + "\" ("
+                                + eventFields.length + ").");
                 return;
             }
 
@@ -700,7 +742,8 @@ public final class EsperInterface extends CEP_EngineInterface {
                 runtime.sendEvent(pojoEvent);
             }
         } catch (ClassNotFoundException cnfe) {
-            System.err.println("Unknown event type \"" + eventTypeName + "\"." + "It is not possible to send event.");
+            System.err.println("Unknown event type \"" + eventTypeName + "\". "
+                             + "It is not possible to send event.");
             return;
         } catch (ClassCastException cce) {
             System.err.println("Invalid field value. It is not possible to send event.");
@@ -714,14 +757,16 @@ public final class EsperInterface extends CEP_EngineInterface {
     }
 
     /**
-     * Creates and loads into JVM a class with the same schema as the event type
-     * passed as argument.
+     * Creates and loads into JVM a class with the same schema
+     * as the event type passed as argument.
      *
      * @param eType			Schema of new class
-     * @throws CannotCompileException
-     * @throws NotFoundException
+     *
+     * @throws CannotCompileException   if class creation fails
+     * @throws NotFoundException        if class creation fails
      */
-    private void createBean(EventType eType) throws CannotCompileException, NotFoundException {
+    private void createBean(EventType eType)
+    throws CannotCompileException, NotFoundException {
         try {
             Class.forName(eType.getName());
         } catch (ClassNotFoundException e) {
@@ -749,15 +794,16 @@ public final class EsperInterface extends CEP_EngineInterface {
                 case LONG:
                     cfield = new CtField(CtClass.longType, att.getName(), schemaClass);
                     break;
-                case TIMESTAMP:
-                    cfield = new CtField(CtClass.longType, att.getName(), schemaClass);
-                    break;
                 }
                 if (cfield != null) {
                     cfield.setModifiers(Modifier.PUBLIC);
                     schemaClass.addField(cfield);
-                    schemaClass.addMethod(CtNewMethod.getter("get" + att.getName().substring(0, 1).toUpperCase() + att.getName().substring(1), cfield));
-                    schemaClass.addMethod(CtNewMethod.setter("set" + att.getName().substring(0, 1).toUpperCase() + att.getName().substring(1), cfield));
+                    String getterName = "get" + att.getName().substring(0, 1).toUpperCase()
+                                      + att.getName().substring(1);
+                    String setterName = "set" + att.getName().substring(0, 1).toUpperCase()
+                                      + att.getName().substring(1);
+                    schemaClass.addMethod(CtNewMethod.getter(getterName, cfield));
+                    schemaClass.addMethod(CtNewMethod.setter(setterName, cfield));
                 }
             }
 
@@ -765,6 +811,15 @@ public final class EsperInterface extends CEP_EngineInterface {
         }
     }
 
+    /**
+     * Indicates whether a given query running on Esper has a listener attached
+     * to it or not.
+     *
+     * @param queryName         the name of the query, as it was registered
+     * @param listenedQueries   the list of queries with listener
+     * @return                  <tt>true</tt> if the query has a listener,
+     *                          <tt>false</tt> otherwise
+     */
     private boolean hasListener(String queryName, String[] listenedQueries) {
         for (int i = 0; i < listenedQueries.length; i++) {
             if (queryName.equals(listenedQueries[i])) {
@@ -774,14 +829,15 @@ public final class EsperInterface extends CEP_EngineInterface {
         return false;
     }
 
+    /**
+     * Advances the external clock of the Esper instance, if necessary.
+     *
+     * @param extTimestamp  the latest timestamp
+     */
     private void advanceClock(Long extTimestamp) {
-        if (lastExtTS == -1) {
-            lastExtTS = extTimestamp;
-        }
-
         if (extTimestamp != lastExtTS) { // Time advanced
             this.runtime.sendEvent(new CurrentTimeEvent(extTimestamp));
+            lastExtTS = extTimestamp;
         }
-
     }
 }

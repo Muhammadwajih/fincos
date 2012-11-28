@@ -242,7 +242,7 @@ public final class Controller_GUI extends JFrame {
     /**
      * Updates the list of available connections.
      *
-     * @param connections
+     * @param connections   list of connections
      */
     public void setConnections(ArrayList<ConnectionConfig> connections) {
         this.connections = connections;
@@ -729,6 +729,7 @@ public final class Controller_GUI extends JFrame {
         });
     }
 
+    @SuppressWarnings("serial")
     private void initializeComponentsPanel() {
         componentsPanel = new JPanel(new GridLayout(1, 2));
 
@@ -1703,15 +1704,19 @@ public final class Controller_GUI extends JFrame {
         protected Boolean doInBackground() throws RemoteException, InvalidStateException {
             Boolean ret = null;
             try {
-                ret = facade.loadRemotSink(sink);
+                ret = facade.loadRemoteSink(sink);
             } catch (ConnectException ce) {
-                showInfo("Could not connect to remote sink " + sink.getAlias() + ". (" + ce.getMessage() + ")");
+                showInfo("Could not connect to remote sink " + sink.getAlias()
+                       + ". (" + ce.getMessage() + ")");
             } catch (NotBoundException nbe) {
-                showInfo("Could not connect to remote sink " + sink.getAlias() + ". (" + nbe.getClass() + "-" + nbe.getMessage() + ")");
+                showInfo("Could not connect to remote sink " + sink.getAlias()
+                       + ". (" + nbe.getClass() + "-" + nbe.getMessage() + ")");
             } catch (AccessException ae) {
-                showInfo("Could not connect to remote sink " + sink.getAlias() + ". (" + ae.getClass() + "-" + ae.getMessage() + ")");
+                showInfo("Could not connect to remote sink " + sink.getAlias()
+                       + ". (" + ae.getClass() + "-" + ae.getMessage() + ")");
             } catch (RemoteException re) {
-                showInfo("Could not connect to remote sink " + sink.getAlias() + ". (" + re.getClass() + "-" + re.getMessage() + ")");
+                showInfo("Could not connect to remote sink " + sink.getAlias()
+                       + ". (" + re.getClass() + "-" + re.getMessage() + ")");
             } catch (Exception e) {
                 showInfo("Error while loading " + sink.getAlias() + "(" + e.getMessage() + ")");
             }
@@ -1727,7 +1732,8 @@ public final class Controller_GUI extends JFrame {
                     if (get()) {
                         showInfo("Sink " + sink.getAlias() + " has been successfully loaded.");
                     } else {
-                        showInfo("Remote Sink " + sink.getAlias() + " reported that was not successfully loaded.");
+                        showInfo("Remote Sink " + sink.getAlias()
+                                + " reported that was not successfully loaded.");
                     }
                 }
             } catch (InterruptedException e) {
@@ -1767,12 +1773,15 @@ public final class Controller_GUI extends JFrame {
                     showInfo("  " + dr.getAlias() + " switched to next phase.");
                 } else if (op.equals("alter")) {
                     facade.alterRemoteDriverSubmissionRate(dr, eventRateFactor);
-                    showInfo("Event rate on  " + dr.getAlias() + " altered (x " + eventRateFactor + ").");
+                    showInfo("Event rate on  " + dr.getAlias()
+                            + " altered (x " + eventRateFactor + ").");
                 }
             } catch (InvalidStateException ise) {
                 showInfo("Cannot " + op + " " + dr.getAlias() + "(" + ise.getMessage() + ")");
             } catch (Exception e) {
-                showInfo("Could not " + op + " " + dr.getAlias() + "(" + e.getClass() + "-" + e.getMessage() + ")");
+                e.printStackTrace();
+                showInfo("Could not " + op + " " + dr.getAlias()
+                        + "(" + e.getClass() + "-" + e.getMessage() + ")");
             }
 
             return null;
@@ -1797,7 +1806,8 @@ public final class Controller_GUI extends JFrame {
                     showInfo("  " + sink.getAlias() + " stopped.");
                 }
             } catch (Exception e) {
-                showInfo("Could not " + op + " " + sink.getAlias() + "(" + e.getClass() + "-" + e.getMessage() + ")");
+                showInfo("Could not " + op + " " + sink.getAlias()
+                        + "(" + e.getClass() + "-" + e.getMessage() + ")");
             }
 
             return null;
@@ -1829,7 +1839,9 @@ public final class Controller_GUI extends JFrame {
         UIManager.put("TitledBorder.foreground", Color.BLACK);
     }
 
-    public static void main(String[] args) throws UnknownHostException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
+    public static void main(String[] args)
+    throws UnknownHostException, ClassNotFoundException, InstantiationException,
+    IllegalAccessException, UnsupportedLookAndFeelException {
         System.setSecurityManager(new SecurityManager());
         setUI();
         SwingUtilities.invokeLater(new Runnable() {

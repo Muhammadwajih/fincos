@@ -30,7 +30,7 @@ import java.security.InvalidParameterException;
  * @see EventType
  * @see Attribute
  */
-public class Event implements Serializable {
+public final class Event implements Serializable {
     /** serial id. */
     private static final long serialVersionUID = 2370123373567592329L;
 
@@ -59,14 +59,14 @@ public class Event implements Serializable {
      *
      * @param type                          Event's schema
      * @param attValues                     Values for the event's attributes
-     * @throws InvalidParameterException    if the values passed as argument do not match event type's schema
      */
-    public Event(EventType type, Object[] attValues) throws InvalidParameterException {
+    public Event(EventType type, Object[] attValues) {
         // Sets event's type
         this.type = type;
         // Sets event's value
         if (attValues.length != type.getAttributeCount()) {
-            throw new InvalidParameterException("Number of values doesn't match number of attributes.");
+            throw new InvalidParameterException("Number of values doesn't match "
+                                             + "number of attributes.");
         }
         this.payload = attValues;
     }
@@ -130,7 +130,6 @@ public class Event implements Serializable {
                 }
                 break;
             case LONG:
-            case TIMESTAMP:
                 if (value instanceof String) {
                     this.payload[attIndex] = Long.parseLong((String) value);
                 } else {

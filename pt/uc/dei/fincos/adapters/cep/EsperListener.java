@@ -59,21 +59,26 @@ public final class EsperListener extends OutputListener implements UpdateListene
     private int eventFormat;
 
     /**
-     * Constructor for direct communication between Esper and Sink. Events received from Esper are
-     * forwarded to Sink through method call.
+     * Constructor for direct communication between Esper and Sink.
+     * Events received from Esper are forwarded to Sink through method call.
      *
      * @param lsnrID                an alias for this listener
-     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
-     * @param sinkInstance          reference to the Sink instance to which results must be forwarded
-     * @param epService             Esper Service Instance
-     * @param queryOutputName       Name of output stream which this listener subscribes to
+     * @param rtMode                response time measurement mode
+     *                              (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution
+     *                              (either Milliseconds or Nanoseconds)
+     * @param sinkInstance          reference to the Sink instance to which
+     *                              results must be forwarded
+     * @param epService             Esper service instance
+     * @param queryOutputName       name of output stream which this listener
+     *                              subscribes to
      * @param queryText             Query text, expressed in Esper's EPL
      * @param querySchema           Schema of output stream
      * @param eventFormat           Either MAP or POJO
      */
-    public EsperListener(String lsnrID, int rtMode, int rtResolution, Sink sinkInstance,
-            EPServiceProvider epService, String queryOutputName,String queryText,
+    public EsperListener(String lsnrID, int rtMode, int rtResolution,
+            Sink sinkInstance, EPServiceProvider epService,
+            String queryOutputName, String queryText,
             LinkedHashMap<String, String> querySchema, int eventFormat) {
         super(lsnrID, rtMode, rtResolution, sinkInstance);
         this.epService = epService;
@@ -86,11 +91,11 @@ public final class EsperListener extends OutputListener implements UpdateListene
     @Override
     public void load() throws Exception {
         try {
-            // TODO: Loading of queries on Esper should not be done here, but instead at the EsperAdapter!
             System.out.println("Loading query: \n" + queryText);
             query = epService.getEPAdministrator().createEPL(queryText, queryOutputName);
         } catch (Exception e) {
-            throw new Exception("Could not create EPL statement (" + e.getMessage() + ").");
+            throw new Exception("Could not create EPL statement ("
+                                + e.getMessage() + ").");
         }
     }
 
@@ -115,6 +120,12 @@ public final class EsperListener extends OutputListener implements UpdateListene
         }
     }
 
+    /**
+     * Processes an event coming from Esper.
+     *
+     * @param event         the incoming event
+     * @param timestamp     the timestamp associated with the event
+     */
     private void processIncomingEvent(EventBean event, long timestamp) {
         onOutput(toFieldArray(event, timestamp)); //TODO: Remove this or optimize code
     }
@@ -122,7 +133,8 @@ public final class EsperListener extends OutputListener implements UpdateListene
     /**
      * Translates the event from the Esper native format to Array of Objects.
      *
-     * @param event The event in Esper's native representation
+     * @param event         The event in Esper's native representation
+     * @param timestamp     The timestamp associated with the incoming event
      * @return      The event as an array of objects
      *
      */
@@ -132,8 +144,8 @@ public final class EsperListener extends OutputListener implements UpdateListene
 
         if (querySchema != null) { ////Input events are MAPs
             int i = 1;
-            /* If response time is being measured, leave a slot for the arrival time of the
-            event (filled here or at the Sink). */
+            /* If response time is being measured, leave a slot for the arrival
+             *  time of the event (filled here or at the Sink). */
             fieldCount = rtMode != Globals.NO_RT ? querySchema.size() + 2
                     : querySchema.size() + 1;
             eventObj = new Object[fieldCount];

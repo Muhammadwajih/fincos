@@ -22,40 +22,71 @@ import java.io.Serializable;
 
 /**
  * A basic class which stores status information (current step and progress)
- * for components of the framework (e.g. Drivers and Sinks).
+ * for components of the framework (i.e. Drivers and Sinks).
  *
  * @author  Marcelo R.N. Mendes
  *
  * @see Step
  *
  */
-public class Status implements Serializable {
+public final class Status implements Serializable {
+
+    /** serial id. */
     private static final long serialVersionUID = 2111379592220537821L;
 
+    /** Current step of the component. */
     private Step step;
+
+    /** Progress of the component's current activity. */
     private double progress;
 
+    /**
+     * Default constructor.
+     */
     public Status() {
         this(Step.DISCONNECTED, 0);
     }
 
+    /**
+     *
+     * @param step      current step of the component
+     * @param progress  progress of the component's current activity
+     */
     public Status(Step step, double progress) {
         this.setStep(Step.DISCONNECTED);
         this.setProgress(0);
     }
 
+    /**
+     * Sets the current step of the component.
+     *
+     * @param step  the new value for the component's step
+     */
     public void setStep(Step step) {
         this.step = step;
     }
 
+    /**
+     *
+     * @return  the current step of the component
+     */
     public Step getStep() {
         return step;
     }
 
+    /**
+     * Sets the progress of the component's current activity.
+     *
+     * @param progress  the component's progress
+     */
     public void setProgress(double progress) {
         this.progress = progress;
     }
 
+    /**
+    *
+    * @return  the progress of the component's current activity
+    */
     public double getProgress() {
         return progress;
     }

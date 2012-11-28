@@ -38,9 +38,7 @@ import pt.uc.dei.fincos.sink.Sink;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class DaemonServer implements RemoteDaemonServerFunctions{
-	/** serial id. */
-    private static final long serialVersionUID = 3890334664677241753L;
+public class DaemonServer implements RemoteDaemonServerFunctions {
 
     /** The list of Drivers running at this service instance. */
     private HashMap<String, Driver> driverList;
@@ -48,19 +46,19 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
     /** The list of Sink running at this service instance. */
 	private HashMap<String, Sink> sinkList;
 
-	public DaemonServer() throws RemoteException {
+	/**
+	 * Default constructor.
+	 */
+	public DaemonServer() {
 	    super();
 		driverList = new HashMap<String, Driver>();
 		sinkList = new HashMap<String, Sink>();
 	}
 
-	public DaemonServer(String ID) {
-		driverList = new HashMap<String, Driver>();
-		sinkList = new HashMap<String, Sink>();
-	}
-
 	/**
-	 * Prepares the daemon server's to accept RMI calls
+	 * Prepares the daemon server's to accept RMI calls.
+	 *
+	 * @throws Exception   if an error occurs while starting the daemon server
 	 *
 	 */
 	private void start() throws Exception {
@@ -68,14 +66,14 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
 			Runtime.getRuntime().exec("rmiregistry " + Globals.RMI_PORT);
 			System.out.println("Done!");
 			System.out.println("Trying to initialize RMI interface...");
-			RemoteDaemonServerFunctions stub = (RemoteDaemonServerFunctions) UnicastRemoteObject.exportObject(this, 0);
+			UnicastRemoteObject.exportObject(this, 0);
 			Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
 			registry.rebind("FINCoS", this);
 			System.out.println("Done!");
 	}
 
 	@Override
-	public void startDriver(String alias) throws RemoteException {
+	public final void startDriver(String alias) throws RemoteException {
 		Driver driver = this.driverList.get(alias);
 		if (driver == null) {
 		    System.out.println("Initializing new Driver application.");
@@ -89,7 +87,7 @@ public class DaemonServer implements RemoteDaemonServerFunctions{
 	}
 
 	@Override
-	public void startSink(String alias) throws RemoteException {
+	public final void startSink(String alias) throws RemoteException {
 		Sink sink = this.sinkList.get(alias);
 		if (sink == null) {
 		    System.out.println("Initializing new Sink application.");

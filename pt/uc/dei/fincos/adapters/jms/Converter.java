@@ -67,7 +67,7 @@ public abstract class Converter {
     /**
      * Converts an event, read from a datafile, to a JMS message.
      *
-     * @param evt               the event to be converted
+     * @param event             the event to be converted
      * @param jmsSession        the JMS session used to create messages
      *
      * @return                  an instance of a subclass of {@link Message}
@@ -88,9 +88,11 @@ public abstract class Converter {
     /**
      * Converts a JMS message to a comma-separated record.
      *
-     * @param msg   the JMS message
-     * @param src  the source of the JMS message
-     * @return      a CSV record containing the message's payload
+     * @param msg           the JMS message
+     * @param src           the source of the JMS message
+     * @return              a CSV record containing the message's payload
+     *
+     * @throws JMSException if an error occur while converting the message
      */
     abstract String toCSV(Message msg, String src) throws JMSException;
 

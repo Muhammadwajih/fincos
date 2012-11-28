@@ -23,8 +23,12 @@ package pt.uc.dei.fincos.perfmon;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class Stream {
+public final class Stream {
+
+    /** Input stream. */
 	public static final int INPUT = 0;
+
+	/** Output stream. */
 	public static final int OUTPUT = 1;
 
 	/** Either INPUT or OUTPUT. */

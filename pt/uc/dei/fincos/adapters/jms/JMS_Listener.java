@@ -32,7 +32,7 @@ import pt.uc.dei.fincos.sink.Sink;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class JMS_Listener extends OutputListener implements MessageListener {
+public final class JMS_Listener extends OutputListener implements MessageListener {
 
     /** Converts JMS messages to events, as represented in FINCoS. */
     private final Converter msgConverter;
@@ -41,8 +41,10 @@ public class JMS_Listener extends OutputListener implements MessageListener {
     /**
      *
      * @param lsnrID        an alias for this listener
-     * @param rtMode        response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param rtMode        response time measurement mode
+     *                      (either END-TO-END or ADAPTER)
+     * @param rtResolution  response time measurement resolution
+     *                      (either Milliseconds or Nanoseconds)
      * @param sinkInstance  reference to the Sink instance to which events must be forwarded
      * @param msgConverter  converts JMS messages to events, as represented in FINCoS
      */
@@ -67,7 +69,6 @@ public class JMS_Listener extends OutputListener implements MessageListener {
             String src = ((Queue) msg.getJMSDestination()).getQueueName();
             // Converts and forwards the event message to a Sink
             super.onOutput(msgConverter.toObjectArray(msg, src, timestamp));
-            //System.out.println("[" + this.listenerID + "] Received: " + msgConverter.toObjectArray(msg, src));
         } catch (JMSException jmsExc) {
             throw new RuntimeException(jmsExc.getMessage());
         } catch (Exception e) {

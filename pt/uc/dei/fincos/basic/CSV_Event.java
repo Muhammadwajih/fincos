@@ -23,8 +23,10 @@ package pt.uc.dei.fincos.basic;
  *
  *  @author  Marcelo R.N. Mendes
  *
+ *  @see    Event
+ *
  */
-public class CSV_Event {
+public final class CSV_Event {
 
     /** The name of the type of this record. */
     private String type;
@@ -49,34 +51,62 @@ public class CSV_Event {
     }
 
 
+    /**
+     * Sets this event's type.
+     *
+     * @param type  the event type
+     */
     public void setType(String type) {
         this.type = type;
     }
 
 
+    /**
+     *
+     * @return  this event's type
+     */
     public String getType() {
         return type;
     }
 
 
+    /**
+     * Sets the timestamp of this event.
+     *
+     * @param timestamp     the timestamp associated with this event
+     */
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
 
+    /**
+     *
+     * @return  the timestamp associated with this event
+     */
     public long getTimestamp() {
         return timestamp;
     }
 
 
+    /**
+     * Sets the payload of this event.
+     *
+     * @param payload   the event's payload
+     */
     public void setPayload(String[] payload) {
         this.payload = payload;
     }
 
 
+    /**
+     *
+     * @return  this event's payload
+     */
     public String[] getPayload() {
         return payload;
     }
+
 
     /**
     *

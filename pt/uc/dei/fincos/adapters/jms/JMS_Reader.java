@@ -35,7 +35,7 @@ import pt.uc.dei.fincos.sink.Sink;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class JMS_Reader extends JMS_Adapter {
+public final class JMS_Reader extends JMS_Adapter {
 
     /** Message consumers. */
     private final ArrayList<MessageConsumer> consumers;
@@ -47,12 +47,14 @@ public class JMS_Reader extends JMS_Adapter {
     * @param outputListeners   a mapping [listener] -> [list-of-destinations-to-be-listened]
     * @param rtMode            either END-TO-END or ADAPTER
     * @param rtResolution      either Milliseconds or Nanoseconds
-    * @param sinkInstance      reference to the Sink instance to which messages must be forwarded    *
+    * @param sinkInstance      reference to the Sink instance to which messages
+    *                          must be forwarded
     *
     * @throws NamingException  if a naming exception is encountered
     * @throws JMSException     if an error occurs during connection with JMS provider
     */
-   public JMS_Reader(Properties connProps, String connFactoryName, HashMap<String, String[]> outputListeners,
+   public JMS_Reader(Properties connProps, String connFactoryName,
+           HashMap<String, String[]> outputListeners,
            int rtMode, int rtResolution, Sink sinkInstance)
    throws NamingException, JMSException {
        this(connProps, connFactoryName, new MapMessageConverter(rtMode, rtResolution),
@@ -63,10 +65,13 @@ public class JMS_Reader extends JMS_Adapter {
      *
      * @param connProps         connection properties
      * @param connFactoryName   name of the connection factory at the JNDI server
-     * @param msgConverter      converts events, as represented in FINCoS, to JMS messages and vice-versa
+     * @param msgConverter      converts events, as represented in FINCoS, to JMS
+     *                          messages and vice-versa
      * @param outputListeners   a mapping [listener] -> [list-of-destinations-to-be-listened]
-     * @param rtMode            response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution      response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param rtMode            response time measurement mode
+     *                          (either END-TO-END or ADAPTER)
+     * @param rtResolution      response time measurement resolution
+     *                          (either Milliseconds or Nanoseconds)
      * @param sinkInstance      reference to the Sink instance to which messages must be forwarded
      *
      * @throws NamingException  if a naming exception is encountered
@@ -78,7 +83,6 @@ public class JMS_Reader extends JMS_Adapter {
     throws NamingException, JMSException {
         super(connProps, connFactoryName, msgConverter);
         consumers = new ArrayList<MessageConsumer>();
-        int i = 1;
         // Creates a listener for every entry in outputListeners
         for (Entry<String, String[]> entry: outputListeners.entrySet()) {
             String[] outputChannels = entry.getValue();
@@ -91,7 +95,6 @@ public class JMS_Reader extends JMS_Adapter {
                 consumers.add(consumer);
                 consumer.setMessageListener(lsnr);
             }
-            i++;
         }
         // Start the queue connection.
         conn.start();

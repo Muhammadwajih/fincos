@@ -38,7 +38,7 @@ import pt.uc.dei.fincos.driver.WorkloadPhase;
  * @see ComponentConfig
  *
  */
-public class DriverConfig extends ComponentConfig implements Cloneable {
+public final class DriverConfig extends ComponentConfig implements Cloneable {
     /** Serial id. */
     private static final long serialVersionUID = -3142718728972724155L;
 
@@ -59,7 +59,8 @@ public class DriverConfig extends ComponentConfig implements Cloneable {
      *                                  (-1 for creating as many threads as the number of processors
      *                                  in the host machine)
      * @param loggingEnabled            Indicates if sent events must be logged to disk
-     * @param fieldsToLog               Either all fields (LOG_ALL_FIELDS) or only timestamps (LOG_ONLY_TIMESTAMPS)
+     * @param fieldsToLog               Either all fields (LOG_ALL_FIELDS) or
+     *                                  only timestamps (LOG_ONLY_TIMESTAMPS)
      * @param loggingSamplingRate       The fraction of events that will be logged
      * @param logFlushInterval          The periodic interval at which log is flushed to disk
      *
@@ -67,12 +68,17 @@ public class DriverConfig extends ComponentConfig implements Cloneable {
     public DriverConfig(String alias, InetAddress address, ConnectionConfig connection,
             WorkloadPhase[] workload, int threadCount, boolean loggingEnabled, int fieldsToLog,
             double loggingSamplingRate, int logFlushInterval) {
-        super(alias, address, connection, loggingEnabled, fieldsToLog, loggingSamplingRate, logFlushInterval);
+        super(alias, address, connection, loggingEnabled, fieldsToLog,
+              loggingSamplingRate, logFlushInterval);
         this.setWorkload(workload);
         this.setThreadCount(threadCount);
     }
 
-
+    /**
+     * Sets the workload (list of phases) for this Driver.
+     *
+     * @param workload  the list of phases
+     */
     public void setWorkload(WorkloadPhase[] workload) {
         this.workload = workload;
     }
@@ -131,10 +137,9 @@ public class DriverConfig extends ComponentConfig implements Cloneable {
                 }
             } else if (phase instanceof ExternalFileWorkloadPhase) {
                 externalFilePhase = (ExternalFileWorkloadPhase) phase;
-                if (externalFilePhase.containsEventTypes()) {
-                    //streams.add(new EventType("Unknown", new Attribute[0]));
-                } else {
-                    streams.add(new EventType(externalFilePhase.getSingleEventTypeName(), new Attribute[0]));
+                if (!externalFilePhase.containsEventTypes()) {
+                    streams.add(new EventType(externalFilePhase.getSingleEventTypeName(),
+                                              new Attribute[0]));
                 }
             }
         }

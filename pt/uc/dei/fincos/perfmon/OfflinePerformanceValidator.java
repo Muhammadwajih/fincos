@@ -36,8 +36,9 @@ import pt.uc.dei.fincos.data.CSV_Writer;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class OfflinePerformanceValidator {
-    /** A flag to indicate if the computed performance stats must be saved to a FINCoS Perfmon log file.*/
+public final class OfflinePerformanceValidator {
+    /** A flag to indicate if the computed performance stats must be saved
+     *  to a FINCoS Perfmon log file.*/
     private boolean saveToFile;
 
     /** Used to write the computed stats to a FINCoS Perfmon log file. */
@@ -47,7 +48,7 @@ public class OfflinePerformanceValidator {
     private boolean keepProcessing = true;
 
     /** A flag that indicates that the Sink log file has been processed. */
-    public boolean finished = true;
+    private boolean finished = true;
 
     /** Stores query stats over time. */
     private TreeSet<PerformanceStats> statsOverTime;
@@ -83,8 +84,8 @@ public class OfflinePerformanceValidator {
      * @param outputLogFilePath     Path of the Perfmon log file to be generated
      * @throws Exception            If an I/O error occurs.
      */
-    public OfflinePerformanceValidator(String[] inputLogFilesPaths, boolean saveToFile, String outputLogFilePath)
-    throws Exception {
+    public OfflinePerformanceValidator(String[] inputLogFilesPaths, boolean saveToFile,
+            String outputLogFilePath) throws Exception {
         this.inputLogFilesPaths = inputLogFilesPaths;
         statsOverTime = new TreeSet<PerformanceStats>();
         this.saveToFile = saveToFile;
@@ -99,36 +100,42 @@ public class OfflinePerformanceValidator {
                     long t0 = OfflinePerformanceValidator.getLogStartTimeInMillis(logFilePath);
                     long t1 = OfflinePerformanceValidator.getLogEndTimeInMillis(logFilePath);
                     perfLogWriter.writeRecord(" \"" + logFilePath + "\" [" + new Date(t0)
-                                            + "] to [" +  new Date(t1) + "]");
+                            + "] to [" + new Date(t1) + "]");
                 } catch (NumberFormatException e) {
-                    throw new Exception("Invalid log file: \"" + logFilePath + "\". Log processing halted.");
+                    throw new Exception("Invalid log file: \"" + logFilePath
+                                      + "\". Log processing halted.");
                 }
             }
             perfLogWriter.writeRecord("log file(s).\n"
-                                    + "Timestamp" + Globals.CSV_DELIMITER
-                                    + "Server" + Globals.CSV_DELIMITER
-                                    + "Stream" + Globals.CSV_DELIMITER
-                                    + "Avg_Throughput" + Globals.CSV_DELIMITER
-                                    + "Min_Throughput" + Globals.CSV_DELIMITER
-                                    + "Max_Throughput" + Globals.CSV_DELIMITER
-                                    + "Last_Throughput" + Globals.CSV_DELIMITER
-                                    + "Avg_RT" + Globals.CSV_DELIMITER
-                                    + "Min_RT" + Globals.CSV_DELIMITER
-                                    + "Max_RT" + Globals.CSV_DELIMITER
-                                    + "Stdev_RT" + Globals.CSV_DELIMITER
-                                    + "Last_RT");
+                    + "Timestamp" + Globals.CSV_DELIMITER
+                    + "Server" + Globals.CSV_DELIMITER
+                    + "Stream" + Globals.CSV_DELIMITER
+                    + "Avg_Throughput" + Globals.CSV_DELIMITER
+                    + "Min_Throughput" + Globals.CSV_DELIMITER
+                    + "Max_Throughput" + Globals.CSV_DELIMITER
+                    + "Last_Throughput" + Globals.CSV_DELIMITER
+                    + "Avg_RT" + Globals.CSV_DELIMITER
+                    + "Min_RT" + Globals.CSV_DELIMITER
+                    + "Max_RT" + Globals.CSV_DELIMITER
+                    + "Stdev_RT" + Globals.CSV_DELIMITER
+                    + "Last_RT");
         }
     }
 
     /**
      * Returns the list of stats in a per-second basis, sorted by timestamp.
      *
-     * @param startTime     Starting point from which log files must be processed(in milliseconds)
-     * @param endTime       Ending point until which log files must be processed(in milliseconds)
+     * @param startTime     Starting point from which log files must be processed
+     *                      (in milliseconds)
+     * @param endTime       Ending point until which log files must be processed
+     *                      (in milliseconds)
+     *
      * @return              Historical performance stats
+     *
      * @throws Exception    If an I/O error occurs
      */
-    public TreeSet<PerformanceStats> processLogFiles(long startTime, long endTime) throws Exception {
+    public TreeSet<PerformanceStats> processLogFiles(long startTime, long endTime)
+    throws Exception {
         processors = new LogProcessor[inputLogFilesPaths.length];
 
         long t0 = System.currentTimeMillis();
@@ -167,15 +174,15 @@ public class OfflinePerformanceValidator {
      */
     public synchronized void stopProcessing() {
         this.keepProcessing = false;
-        finished = false;
+        this.finished = false;
     }
 
     /**
-     *  Retrieves the start time of a given log file.
+     * Retrieves the start time of a given log file.
      *
-     * @param inputLogFile      The path of the log file
-     * @return                  The start time of inputLogFile
-     * @throws Exception        If an I/O error occurs
+     * @param inputLogFile  The path of the log file
+     * @return              The start time of inputLogFile
+     * @throws Exception    If an I/O error occurs
      */
     public static long getLogStartTimeInMillis(String inputLogFile) throws Exception {
         long startTime;
@@ -190,7 +197,8 @@ public class OfflinePerformanceValidator {
             if (firstLine == null) {
                 throw new Exception("The log file is empty.");
             }
-            startTime = Long.parseLong(CSV_Reader.split(firstLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
+            startTime = Long.parseLong(CSV_Reader.split(firstLine,
+                            Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -205,11 +213,11 @@ public class OfflinePerformanceValidator {
     }
 
     /**
-     *  Retrieves the end time of a given log file.
+     * Retrieves the end time of a given log file.
      *
-     * @param inputLogFile      The path of the log file
-     * @return                  the end time of inputLogFile
-     * @throws Exception        If an I/O error occurs
+     * @param inputLogFile The path of the log file
+     * @return the end time of inputLogFile
+     * @throws Exception If an I/O error occurs
      */
     public static long getLogEndTimeInMillis(String inputLogFile) throws Exception {
         RandomAccessFile randomFile = null;
@@ -227,7 +235,8 @@ public class OfflinePerformanceValidator {
             } while (c != '\n');
 
             String lastLine = randomFile.readLine();
-            endTime = Long.parseLong(CSV_Reader.split(lastLine, Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
+            endTime = Long.parseLong(CSV_Reader.split(lastLine,
+                    Globals.CSV_DELIMITER)[TIMESTAMP_FIELD]);
         } catch (NumberFormatException e) {
             throw new Exception("Invalid log file: \"" + inputLogFile + "\".");
         } finally {
@@ -243,7 +252,8 @@ public class OfflinePerformanceValidator {
 
     /**
      *
-     * @return  the progress of the log processing task (i.e. amount_of_work_done/total_amount_of_work)
+     * @return the progress of the log processing task (i.e.
+     * amount_of_work_done/total_amount_of_work)
      */
     public synchronized double getProgress() {
         if (processors != null) {
@@ -257,11 +267,11 @@ public class OfflinePerformanceValidator {
     }
 
     /**
-     * Add stats to the historical series. If there is already a stats equal to that being added
-     * (i.e. with the same combination of the attributes "server", "stream", and "timestamp"),
-     * it is updated appropriately.
+     * Add stats to the historical series. If there is already a stats equal to
+     * that being added (i.e. with the same combination of the attributes
+     * "server", "stream", and "timestamp"), it is updated appropriately.
      *
-     * @param newStats  The new performance stats to be added.
+     * @param newStats The new performance stats to be added.
      */
     private void addHistoricStats(PerformanceStats newStats) {
         synchronized (statsOverTime) {
@@ -284,33 +294,64 @@ public class OfflinePerformanceValidator {
     }
 
     /**
+     *
+     * @return  <tt>true</tt> if the log processing has finished,
+     *          <tt>false</tt> otherwise
+     */
+    public boolean isFinished() {
+        return finished;
+    }
+
+    /**
      * Log processing task (executes as a separate thread).
      */
     class LogProcessor extends Thread {
-        /** Reads a Sink log file. */
+
+        /**
+         * Reads a Sink log file.
+         */
         CSV_Reader logReader;
-
-        /** Keeps a snapshot of the performance stats. */
+        /**
+         * Keeps a snapshot of the performance stats.
+         */
         HashMap<String, PerformanceStats> streamsStats;
-
-        /** Starting point from which the log file must be processed(in milliseconds). */
+        /**
+         * Starting point from which the log file must be processed
+         * (in milliseconds).
+         */
         long startTime;
-
-        /** Ending point until which the log file must be processed(in milliseconds).*/
+        /**
+         * Ending point until which the log file must be processed
+         * (in milliseconds).
+         */
         long endTime;
-
-        /** Latency measurement mode used in the test during which the log file was generated. */
+        /**
+         * Latency measurement mode used in the test during which the log file
+         * was generated.
+         */
         int rtMeasurementMode;
-
-        /** Resolution of latency measurement (either milliseconds or nanoseconds). */
+        /**
+         * Resolution of latency measurement (either milliseconds or
+         * nanoseconds).
+         */
         int rtResolution;
-
-        /** Variables to keep track of the progress of this log processing task. */
+        /**
+         * Variables to keep track of the progress of this log processing task.
+         */
         long processedCount = 0;
         long totalReadBytes = 0;
         long logFileSizeInBytes;
 
-        public LogProcessor(String inputLogFilePath, long startTime, long endTime) throws IOException {
+        /**
+         *
+         *
+         * @param inputLogFilePath  path for the log file to be processed
+         * @param startTime         start of measurement interval
+         * @param endTime           end of measurement interval
+         * @throws IOException      if an error occurs while opening the log file
+         */
+        public LogProcessor(String inputLogFilePath, long startTime, long endTime)
+        throws IOException {
             this.startTime = startTime;
             this.endTime = endTime;
             logReader = new CSV_Reader(inputLogFilePath);
@@ -324,9 +365,10 @@ public class OfflinePerformanceValidator {
             long outputArrivalTime = 0, causerEmissionTime = 0, timestamp = 0;
             String[] splitEv;
             long lowerTS = startTime;
-            PerformanceStats currentStreamStats, historicStats;
+            PerformanceStats streamStats, historicStats;
             try {
-                long charsPerByte = (long) java.nio.charset.Charset.defaultCharset().newDecoder().averageCharsPerByte();
+                long charsPerByte = (long) java.nio.charset.Charset.defaultCharset().
+                                           newDecoder().averageCharsPerByte();
 
                 // parses log header
                 String connection;
@@ -346,9 +388,12 @@ public class OfflinePerformanceValidator {
                     System.err.println("Invalid log file.");
                     return;
                 }
-                // ignores next two lines of log header
-                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Driver/Sink alias
-                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Driver/Sink address
+
+                // Ignores log header (Driver/Sink alias)
+                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2);
+
+                // Ignores log header (Driver/Sink address)
+                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2);
 
                 // Connection alias
                 connection = logReader.getNextLine();
@@ -357,8 +402,8 @@ public class OfflinePerformanceValidator {
                     connection = connection.substring(connection.indexOf(":") + 2);
                 }
 
-                // ignores next line of log header
-                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2); // Log Start time
+                // ignores next line of log header (Log Start time)
+                totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2);
 
                 // Determines Response time measurement mode of the test
                 String rtModeStr = logReader.getNextLine();
@@ -387,9 +432,11 @@ public class OfflinePerformanceValidator {
                 String logSamplingRateStr = logReader.getNextLine();
                 totalReadBytes += (logSamplingRateStr.length() / charsPerByte + 2);
                 if (logSamplingRateStr != null) {
-                    logSamplingRateStr = logSamplingRateStr.substring(logSamplingRateStr.indexOf(":") + 2);
+                    logSamplingRateStr =
+                            logSamplingRateStr.substring(logSamplingRateStr.indexOf(":") + 2);
                 }
-                int logSamplingFactor = (int) Math.round(1 / Double.parseDouble(logSamplingRateStr));
+                int logSamplingFactor =
+                        (int) Math.round(1 / Double.parseDouble(logSamplingRateStr));
 
                 double rt;
                 while (keepProcessing && (event = logReader.getNextLine()) != null) {
@@ -408,50 +455,53 @@ public class OfflinePerformanceValidator {
                         }
 
                         // For every new event, update stats of corresponding stream
-                        currentStreamStats = streamsStats.get(streamName);
-                        if (currentStreamStats == null) {
-                            currentStreamStats = new PerformanceStats(connection, new Stream(streamType, streamName));
-                            streamsStats.put(streamName, currentStreamStats);
+                        streamStats = streamsStats.get(streamName);
+                        if (streamStats == null) {
+                            Stream s = new Stream(streamType, streamName);
+                            streamStats = new PerformanceStats(connection, s);
+                            streamsStats.put(streamName, streamStats);
                         }
-                        currentStreamStats.lastEventCount += logSamplingFactor;
-                        currentStreamStats.totalEventCount += logSamplingFactor;
+                        streamStats.lastEventCount += logSamplingFactor;
+                        streamStats.totalEventCount += logSamplingFactor;
                         if (rtMeasurementMode != Globals.NO_RT) {
                             outputArrivalTime = Long.parseLong(splitEv[splitEv.length - 1]);
                             causerEmissionTime = Long.parseLong(splitEv[splitEv.length - 2]);
 
                             rt = (outputArrivalTime - causerEmissionTime) / rtFactor;
                             if (rt >= 0) {
-                                currentStreamStats.lastRT = rt;
-                                currentStreamStats.minRT = Math.min(currentStreamStats.lastRT, currentStreamStats.minRT);
-                                currentStreamStats.maxRT = Math.max(currentStreamStats.lastRT, currentStreamStats.maxRT);
-                                currentStreamStats.totalRT += currentStreamStats.lastRT;
-                                currentStreamStats.sumSqrRT += currentStreamStats.lastRT * currentStreamStats.lastRT;
+                                streamStats.lastRT = rt;
+                                streamStats.minRT = Math.min(streamStats.lastRT, streamStats.minRT);
+                                streamStats.maxRT = Math.max(streamStats.lastRT, streamStats.maxRT);
+                                streamStats.totalRT += streamStats.lastRT;
+                                streamStats.sumSqrRT += streamStats.lastRT * streamStats.lastRT;
                             } else {
-                                System.err.println("Warning: Negative response time (" + rt + "). " +
-                                "This may indicate problems with system(s) clock(s).");
+                                System.err.println("Warning: Negative response time (" + rt + "). "
+                                        + "This may indicate problems with system(s) clock(s).");
                             }
 
                         } else {
-                            currentStreamStats.lastRT = Double.NaN;
-                            currentStreamStats.minRT = Double.NaN;
-                            currentStreamStats.maxRT = Double.NaN;
-                            currentStreamStats.totalRT = Double.NaN;
-                            currentStreamStats.sumSqrRT = Double.NaN;
+                            streamStats.lastRT = Double.NaN;
+                            streamStats.minRT = Double.NaN;
+                            streamStats.maxRT = Double.NaN;
+                            streamStats.totalRT = Double.NaN;
+                            streamStats.sumSqrRT = Double.NaN;
                         }
 
 
                         // Periodically updates 1-second-basis stats of ALL streams
                         if (timestamp >= (lowerTS + PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS)) {
                             for (Map.Entry<String, PerformanceStats> e : streamsStats.entrySet()) {
-                                currentStreamStats = e.getValue();
+                                streamStats = e.getValue();
                                 // Advances time of the stats
-                                currentStreamStats.elapsedTime += PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS;
+                                streamStats.elapsedTime +=
+                                        PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS;
                                 // Recompute periodic stats
-                                currentStreamStats.refreshPeriodicStats();
-                                historicStats = (PerformanceStats) currentStreamStats.clone();
-                                historicStats.timestamp = lowerTS + PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS;
+                                streamStats.refreshPeriodicStats();
+                                historicStats = (PerformanceStats) streamStats.clone();
+                                historicStats.timestamp = lowerTS
+                                        + PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS;
                                 addHistoricStats(historicStats);
-                                currentStreamStats.lastEventCount = 0;
+                                streamStats.lastEventCount = 0;
                             }
                             lowerTS += PerformanceStats.DEFAULT_TIME_BUCKET_IN_MILLIS;
                         }
@@ -474,6 +524,11 @@ public class OfflinePerformanceValidator {
             }
 
         }
+
+        /**
+         *
+         * @return  the progress of the performance validation task
+         */
         public double getProgress() {
             return 1.0 * this.totalReadBytes / this.logFileSizeInBytes;
         }

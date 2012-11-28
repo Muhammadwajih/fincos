@@ -42,21 +42,27 @@ import pt.uc.dei.fincos.controller.SinkConfig;
 
 
 /**
- * GUI for configuration of Sinks
+ * GUI for configuration of Sinks.
  *
  * @author  Marcelo R.N. Mendes
  *
  */
-public class SinkDetail extends ComponentDetail {
+@SuppressWarnings({"rawtypes", "unchecked"})
+public final class SinkDetail extends ComponentDetail {
 
-    /** serial id */
+    /** serial id. */
     private static final long serialVersionUID = 594175403586841062L;
 
     private SinkConfig oldCfg;
 
     private JPopupMenu streamsPopup = new JPopupMenu();
 
-    /** Creates new form Sink */
+    /**
+     * Creates new form for editing a Sink configuration.
+     *
+     * @param sink  a Sink configuration
+     *              (used when in editing mode)
+     */
     public SinkDetail(SinkConfig sink) {
         super(null);
         initComponents();
@@ -85,11 +91,17 @@ public class SinkDetail extends ComponentDetail {
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
+    /**
+     * Fills the UI with the parameters of a Sink configuration.
+     *
+     * @param sink  the Sink configuration
+     */
     public void fillProperties(SinkConfig sink) {
         this.aliasField.setText(sink.getAlias());
         this.addressField.setText(sink.getAddress().getHostAddress());
         if (sink.getConnection() != null) {
-            int connIndex = Controller_GUI.getInstance().getConnectionIndex(sink.getConnection().alias);
+            int connIndex =
+                    Controller_GUI.getInstance().getConnectionIndex(sink.getConnection().alias);
             this.connCombo.setSelectedIndex(connIndex);
         } else {
             this.connCombo.setSelectedIndex(-1);
@@ -381,7 +393,7 @@ public class SinkDetail extends ComponentDetail {
                                         Double.parseDouble((String) logSamplingComboBox.getSelectedItem()),
                                         logFlushInterval);
                         if (Controller_GUI.getInstance().checkSinkUniqueConstraint(oldCfg, newCfg)) {
-                            aliasField.setBackground(UIManager.getColor ("TextField.background"));
+                            aliasField.setBackground(UIManager.getColor("TextField.background"));
                             switch (op) {
                             case UPDATE:
                                 Controller_GUI.getInstance().updateSink(oldCfg, newCfg);
@@ -417,14 +429,19 @@ public class SinkDetail extends ComponentDetail {
                 JList list = (JList) evt.getSource();
                 int index = list.locationToIndex(evt.getPoint());
                 if (evt.getClickCount() == 2 && index != -1) {
-                    String currentName = (String) ((DefaultListModel)streamsList.getModel()).get(index);
+                    String currentName =
+                            (String) ((DefaultListModel) streamsList.getModel()).get(index);
                     String newName = JOptionPane.showInputDialog("New stream name:", currentName);
                     if (newName == null) {
                         return;
                     } else if (newName.isEmpty()) {
-                        JOptionPane.showMessageDialog(null, "Invalid stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null, "Invalid stream name.",
+                                                      "Invalid input",
+                                                      JOptionPane.ERROR_MESSAGE);
                     } else if (!newName.equals(currentName) && !checkUniqueStreamName(newName)) {
-                        JOptionPane.showMessageDialog(null, "Duplicate stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null, "Duplicate stream name.",
+                                                      "Invalid input",
+                                                      JOptionPane.ERROR_MESSAGE);
                     } else {
                         ((DefaultListModel) streamsList.getModel()).setElementAt(newName, index);
                     }
@@ -461,11 +478,15 @@ public class SinkDetail extends ComponentDetail {
                 if (streamName == null) {
                     return;
                 } else if (streamName.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Invalid stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Invalid stream name.",
+                                                  "Invalid input",
+                                                  JOptionPane.ERROR_MESSAGE);
                 } else if (!checkUniqueStreamName(streamName)) {
-                    JOptionPane.showMessageDialog(null, "Duplicate stream name.", "Invalid input", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Duplicate stream name.",
+                                                  "Invalid input",
+                                                  JOptionPane.ERROR_MESSAGE);
                 } else {
-                    ((DefaultListModel)streamsList.getModel()).addElement(streamName);
+                    ((DefaultListModel) streamsList.getModel()).addElement(streamName);
                 }
 
             }
@@ -497,7 +518,7 @@ public class SinkDetail extends ComponentDetail {
             this.aliasField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.aliasField.setBackground(UIManager.getColor ("TextField.background"));
+            this.aliasField.setBackground(UIManager.getColor("TextField.background"));
         }
 
         if (this.addressField == null
@@ -505,7 +526,7 @@ public class SinkDetail extends ComponentDetail {
             this.addressField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.addressField.setBackground(UIManager.getColor ("TextField.background"));
+            this.addressField.setBackground(UIManager.getColor("TextField.background"));
         }
 
         if (this.connCombo.getSelectedIndex() == -1
@@ -514,7 +535,7 @@ public class SinkDetail extends ComponentDetail {
             this.connCombo.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.connCombo.setBackground(UIManager.getColor ("ComboBox.background"));
+            this.connCombo.setBackground(UIManager.getColor("ComboBox.background"));
         }
 
         if (logCheckBox.isSelected() && (logFlushField.getText() == null

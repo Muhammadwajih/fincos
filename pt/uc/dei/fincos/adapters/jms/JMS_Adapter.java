@@ -53,7 +53,8 @@ public abstract class JMS_Adapter {
      *
      * @param connProps             connection properties
      * @param connFactoryName       name of the connection factory at the JNDI server
-     * @param msgConverter          converts events, as represented in FINCoS, to JMS messages and vice-versa
+     * @param msgConverter          converts events, as represented in FINCoS, into JMS
+     *                              messages and vice-versa
      *
      * @throws NamingException  if a naming exception is encountered
      * @throws JMSException     if an error occurs during connection with JMS provider

@@ -56,14 +56,17 @@ import pt.uc.dei.fincos.basic.Step;
 import pt.uc.dei.fincos.controller.ConnectionConfig;
 import pt.uc.dei.fincos.controller.Logger;
 import pt.uc.dei.fincos.controller.SinkConfig;
+import pt.uc.dei.fincos.driver.Driver;
 import pt.uc.dei.fincos.perfmon.SinkPerfStats;
 
 /**
- * Sink application. Receives and processes results from a CEP engine.
+ * Sink application. Receives and processes results from the system under test.
  *
  * @author  Marcelo R.N. Mendes
+ *
+ * @see Driver
  */
-public class Sink extends JFrame implements SinkRemoteFunctions {
+public final class Sink extends JFrame implements SinkRemoteFunctions {
     /** Serial id. */
     private static final long serialVersionUID = -8020918447595615618L;
 
@@ -76,22 +79,26 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     /** Used to receive events from a JMS provider. */
     private JMS_Reader jmsInterface;
 
-    /** How this Sink receives events from CEP engines (directly through their API or through JMS messages). */
+    /** How this Sink receives events from CEP engines
+     * (directly through their API or through JMS messages). */
     private AdapterType adapterType;
 
     /** Logs received events to disk. */
     private Logger logger;
 
-    /** Which fields will be logged to disk (all or timestamps only). */
+    /** Which fields will be logged to disk
+     * (all or timestamps only). */
     private int fieldsToLog;
 
     /** Logging sampling. */
     private int logSamplMod;
 
-    /** Response time measurement mode (either END-TO-END or ADAPTER). */
+    /** Response time measurement mode
+     * (either END-TO-END or ADAPTER). */
     protected int rtMode;
 
-    /** Response time measurement resolution (either Milliseconds or Nanoseconds). */
+    /** Response time measurement resolution
+     * (either Milliseconds or Nanoseconds). */
     protected int rtResolution;
 
     /** Current state of this Sink. */
@@ -136,7 +143,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         statusPanel =  new JPanel();
         statusPanel.setLayout(null);
         statusPanel.setPreferredSize(new Dimension(200, 400));
-        statusPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Status"));
+        statusPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Status"));
         statusLabel = new JLabel();
         eventCountLabel = new JLabel("Rcvd events: 0");
 
@@ -147,7 +155,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         eventCountLabel.setBounds(20, 45, 175, 50);
 
         infoArea = new JTextArea(10, 30);
-        infoArea.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
+        infoArea.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
         JScrollPane infoScroll = new JScrollPane(infoArea);
         infoArea.setEditable(false);
 
@@ -164,7 +173,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         refreshGUI();
 
         int delay = 1000 / Globals.DEFAULT_GUI_REFRESH_RATE;
-        Timer guiRefresher = new Timer(delay, new ActionListener(){
+        Timer guiRefresher = new Timer(delay, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 refreshGUI();
@@ -181,7 +190,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
             showInfo("Done! Waiting for remote commands...");
         } catch (Exception e) {
             this.status.setStep(Step.ERROR);
-            String logMsg = "ERROR: Could not initialize remote interface: " + e.getMessage();
+            String logMsg = "ERROR: Could not initialize remote interface: "
+                          + e.getMessage();
             System.err.println(logMsg);
             showInfo(logMsg);
             try {
@@ -196,12 +206,20 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         }
     }
 
+    /**
+     * Locates the RMI registry and binds this Sink.
+     *
+     * @throws RemoteException  if an error occurs when contacting the reigistry.
+     */
     private void initializeRMI() throws RemoteException {
         SinkRemoteFunctions stub = (SinkRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
         Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
         registry.rebind(alias, stub);
     }
 
+    /**
+     * Updates the UI of this Sink.
+     */
     private void refreshGUI() {
         switch (this.status.getStep()) {
         case DISCONNECTED:
@@ -211,6 +229,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         case READY:
         case PAUSED:
         case STOPPED:
+        case FINISHED:
             this.statusLabel.setIcon(Globals.BLUE_SIGN);
             break;
         case LOADING:
@@ -222,8 +241,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
             break;
         }
 
-        eventCountLabel.setText("Rcvd events: " +
-                Globals.LONG_FORMAT.format(receivedEvents));
+        eventCountLabel.setText("Rcvd events: "
+                + Globals.LONG_FORMAT.format(receivedEvents));
 
         if (this.status.getStep() == Step.READY && receivedEvents > 0) {
             this.status.setStep(Step.RUNNING);
@@ -237,7 +256,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
 
     @Override
     public boolean load(SinkConfig sinkCfg, int rtMode, int rtResolution)
-    throws RemoteException, InvalidStateException, Exception {
+    throws Exception {
         if (this.status.getStep() == Step.DISCONNECTED
             || this.status.getStep() == Step.ERROR
             || this.status.getStep() == Step.STOPPED) {
@@ -246,22 +265,30 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                 connProps.put(e.getKey(), e.getValue());
             }
             if (sinkCfg.getConnection().type == ConnectionConfig.JMS) {
-                this.adapterType = AdapterType.JMS;
+                this.adapterType =  AdapterType.JMS;
                 String cfName = (String) connProps.get("cfName");
                 showInfo("Connecting to JMS Provider...");
                 HashMap<String, String[]> lsnrs = new HashMap<String, String[]>();
                 lsnrs.put("Lsnr-1", sinkCfg.getOutputStreamList());
                 try {
-                    this.jmsInterface = new JMS_Reader(connProps, cfName, lsnrs, rtMode, rtResolution, this);
+                    this.jmsInterface = new JMS_Reader(connProps, cfName, lsnrs,
+                                                       rtMode, rtResolution, this);
                     showInfo("Done!");
                 } catch (Exception e) {
-                    this.showInfo("ERROR: Could not connect to JMS provider. (" + e.getMessage() + ").");
+                    this.showInfo("ERROR: Could not connect to JMS provider. ("
+                                + e.getMessage() + ").");
+                    this.status.setStep(Step.ERROR);
+                    return false;
+                } catch (Error err) {
+                    this.showInfo("ERROR: Could not connect to JMS provider. ("
+                                + err.getMessage() + ").");
                     this.status.setStep(Step.ERROR);
                     return false;
                 }
             } else if (sinkCfg.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
                 this.adapterType = AdapterType.CEP;
-                cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
+                cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps,
+                                        rtMode, rtResolution);
                 if (cepEngineInterface == null) {
                     throw new Exception("Unsupported CEP engine");
                 }
@@ -272,7 +299,13 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                     showInfo("Done!");
                 } catch (Exception e) {
                     e.printStackTrace();
-                    this.showInfo("ERROR: Could not connect to CEP engine. (" + e.getMessage() + ").");
+                    this.showInfo("ERROR: Could not connect to CEP engine. ("
+                                + e.getMessage() + ").");
+                    this.status.setStep(Step.ERROR);
+                    return false;
+                } catch (Error err) {
+                    this.showInfo("ERROR: Could not connect to CEP engine. ("
+                                + err.getMessage() + ").");
                     this.status.setStep(Step.ERROR);
                     return false;
                 }
@@ -313,8 +346,11 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                         + "\n Response Time Mode: " + rtModeStr
                         + "\n Response Time Resolution: " + rtResolutionStr
                         + "\n Log Sampling rate: " + sinkCfg.getLoggingSamplingRate();
-                    logger = new Logger(Globals.APP_PATH + "log" + File.separator + sinkCfg.getAlias() + ".log",
-                                        logHeader, sinkCfg.getLogFlushInterval(), sinkCfg.getLoggingSamplingRate(),
+                    String logFile = Globals.APP_PATH + "log" + File.separator
+                                    + sinkCfg.getAlias() + ".log";
+                    logger = new Logger(logFile, logHeader,
+                                        sinkCfg.getLogFlushInterval(),
+                                        sinkCfg.getLoggingSamplingRate(),
                                         sinkCfg.getFieldsToLog());
                     logSamplMod = (int) (1 / sinkCfg.getLoggingSamplingRate());
                     fieldsToLog = sinkCfg.getFieldsToLog();
@@ -333,7 +369,7 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
         }
     }
 
-
+    @Override
     public void unload() {
         perfStats = new SinkPerfStats();
 
@@ -360,6 +396,11 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
     }
 
 
+    /**
+     * Displays a message on Sink's UI.
+     *
+     * @param msg   the message to be displayed
+     */
     private void showInfo(final String msg) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -370,6 +411,13 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
          });
     }
 
+    /**
+     * Converts an event represented as array of objects
+     * into a textual CSV representation.
+     *
+     * @param event     the event, as an array of Objects
+     * @return          the event represented as a CSV record
+     */
     private String toCSV(Object[] event) {
         StringBuilder sb = new StringBuilder();
         sb.append(event[0]);
@@ -431,8 +479,8 @@ public class Sink extends JFrame implements SinkRemoteFunctions {
                 }
             }
         } catch (IOException ioe) {
-            System.err.println("Error while processing event \"" + event +
-                    "\" (" + ioe.getMessage() + ").");
+            System.err.println("Error while processing event \"" + event
+                                + "\" (" + ioe.getMessage() + ").");
         }
     }
 

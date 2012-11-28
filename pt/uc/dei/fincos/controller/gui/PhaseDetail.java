@@ -44,14 +44,25 @@ import pt.uc.dei.fincos.driver.WorkloadPhase;
  *
  * @author  Marcelo R.N. Mendes
  */
-@SuppressWarnings("serial")
-public class PhaseDetail extends ComponentDetail {
+public final class PhaseDetail extends ComponentDetail {
 
-    protected ArrayList<EventType> syntheticTypes = new ArrayList<EventType>();
+    /** serial id. */
+    private static final long serialVersionUID = 4634783547971155251L;
+
+    /** List of configured types for this phase (if it is synthetic). */
+    protected ArrayList<EventType> syntheticTypes;
+
+    /** Old phase configuration (used when in EDIT mode). */
     private WorkloadPhase oldCfg;
+
+    /** UI for synthetic phases. */
     private SyntheticPhasePanel syntheticPanel;
+
+    /** UI for phases based on data files. */
     private ExternalFilePhasePanel externalFilePanel;
-    DriverDetail parent;
+
+    /** The parent component of this form. */
+    final DriverDetail parent;
 
     /**
      * Creates new form PhaseDetail.
@@ -62,6 +73,7 @@ public class PhaseDetail extends ComponentDetail {
      */
     public PhaseDetail(DriverDetail parent, WorkloadPhase phase) {
         super(parent);
+        syntheticTypes = new ArrayList<EventType>();
         syntheticPanel = new SyntheticPhasePanel(this);
         externalFilePanel = new ExternalFilePhasePanel();
 
@@ -178,7 +190,7 @@ public class PhaseDetail extends ComponentDetail {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-        private void addListeners() {
+    private void addListeners() {
         phaseDetailPanel.setLayout(new BorderLayout());
         phaseDetailPanel.setPreferredSize(new Dimension(300, 275));
 
@@ -215,15 +227,17 @@ public class PhaseDetail extends ComponentDetail {
                         WorkloadPhase newCfg;
 
                         if (syntheticRadio.isSelected()) { // synthetic data
-                            LinkedHashMap<EventType, Double> schema = new LinkedHashMap<EventType, Double>();
+                            LinkedHashMap<EventType, Double> schema =
+                                    new LinkedHashMap<EventType, Double>();
 
                             DefaultTableModel model =
-                                (DefaultTableModel) syntheticPanel.schemaTable.getModel();
+                                    (DefaultTableModel) syntheticPanel.schemaTable.getModel();
 
                             Long randomSeed = null;
                             if (syntheticPanel.dataGenSeedCheck.isSelected()) {
                                 try {
-                                    randomSeed = Long.parseLong(syntheticPanel.dataGenSeedField.getText());
+                                    String rndSeedStr = syntheticPanel.dataGenSeedField.getText();
+                                    randomSeed = Long.parseLong(rndSeedStr);
                                 } catch (NumberFormatException nfe) {
                                     JOptionPane.showMessageDialog(null, "Invalid seed value.");
                                     return;
@@ -234,13 +248,15 @@ public class PhaseDetail extends ComponentDetail {
                                 for (Attribute att : syntheticTypes.get(i).getAttributes()) {
                                     att.getDomain().setRandomSeed(randomSeed);
                                 }
-                                schema.put(syntheticTypes.get(i),
-                                        Double.parseDouble((String) syntheticPanel.schemaTable.getValueAt(i, 2)));
+                                String mixStr =
+                                        (String) syntheticPanel.schemaTable.getValueAt(i, 2);
+                                double mix = Double.parseDouble(mixStr);
+                                schema.put(syntheticTypes.get(i), mix);
                             }
 
-                            int dataGenMode =
-                                syntheticPanel.dataGenRTRadio.isSelected() ? SyntheticWorkloadPhase.RUNTIME
-                                        : SyntheticWorkloadPhase.DATASET;
+                            int dataGenMode = syntheticPanel.dataGenRTRadio.isSelected()
+                                              ? SyntheticWorkloadPhase.RUNTIME
+                                              : SyntheticWorkloadPhase.DATASET;
 
                             ArrivalProcess arrivalProcess = ArrivalProcess.DETERMINISTIC;
                             if (syntheticPanel.poissonCheckBox.isSelected()) {
@@ -252,9 +268,8 @@ public class PhaseDetail extends ComponentDetail {
                                     Double.parseDouble(syntheticPanel.initialRateTextField.getText()),
                                     Double.parseDouble(syntheticPanel.finalRateTextField.getText()),
                                     arrivalProcess, schema, syntheticPanel.deterministicMixCheckBox.isSelected(),
-                                    dataGenMode, randomSeed
-                            );
-                        } else  { // external file
+                                    dataGenMode, randomSeed);
+                        } else { // external file
                             double rate = 1;
 
                             if (externalFilePanel.useFixedRateRdBtn.isSelected()) {
@@ -284,18 +299,17 @@ public class PhaseDetail extends ComponentDetail {
                                     externalFilePanel.getTypeIndex(),
                                     externalFilePanel.typeField.getText(),
                                     loopCount,
-                                    rate
-                            );
+                                    rate);
                         }
 
                         switch (op) {
-                        case UPDATE:
-                            parent.updatePhase(oldCfg, newCfg);
-                            dispose();
-                            break;
-                        case INSERT:
-                            parent.addPhase(newCfg);
-                            dispose();
+                            case UPDATE:
+                                parent.updatePhase(oldCfg, newCfg);
+                                dispose();
+                                break;
+                            case INSERT:
+                                parent.addPhase(newCfg);
+                                dispose();
                         }
 
 
@@ -309,7 +323,6 @@ public class PhaseDetail extends ComponentDetail {
                 }
 
             }
-
         });
 
         cancelBtn.setIcon(new ImageIcon("imgs/cancel.png"));
@@ -318,17 +331,15 @@ public class PhaseDetail extends ComponentDetail {
             public void actionPerformed(ActionEvent e) {
                 dispose();
             }
-
         });
     }
-
 
     /**
      * Creates a form for configuring a data type.
      *
-     * @param type      Data type configuration properties, when in UPDATE mode,
-     *                  or <tt>null</tt>, in INSERTION mode.
-     * @return          a reference to the just created form
+     * @param type Data type configuration properties, when in UPDATE mode, or
+     * <tt>null</tt>, in INSERTION mode.
+     * @return a reference to the just created form
      */
     protected TypeDetail openTypeDetail(EventType type) {
         long randomSeed = 0;
@@ -337,7 +348,7 @@ public class PhaseDetail extends ComponentDetail {
             try {
                 randomSeed = Long.parseLong(syntheticPanel.dataGenSeedField.getText());
             } catch (NumberFormatException e) {
-                ;
+                System.err.println("WARN: Invalid random number generation seed.");
             }
         }
         return new TypeDetail(this, type, randomSeed);
@@ -346,8 +357,8 @@ public class PhaseDetail extends ComponentDetail {
     /**
      * Fills the UI with the phase properties passed as argument.
      *
-     * @param phase     Phase configuration properties to be shown in UI, when in UPDATE mode,
-     *                  or <tt>null</tt>, in INSERTION mode.
+     * @param phase Phase configuration properties to be shown in UI, when in
+     * UPDATE mode, or <tt>null</tt>, in INSERTION mode.
      */
     public void fillProperties(WorkloadPhase phase) {
         if (phase instanceof SyntheticWorkloadPhase) {
@@ -405,26 +416,29 @@ public class PhaseDetail extends ComponentDetail {
 
     private boolean validateFields() {
         if (syntheticRadio.isSelected()) { // synthetic data
-            return (syntheticPanel.durationTextField.getText() != null &&
-                    !syntheticPanel.durationTextField.getText().isEmpty() &&
-                    syntheticPanel.initialRateTextField.getText() != null &&
-                    !syntheticPanel.initialRateTextField.getText().isEmpty() &&
-                    syntheticPanel.finalRateTextField.getText() != null &&
-                    !syntheticPanel.finalRateTextField.getText().isEmpty() &&
-                    syntheticPanel.schemaTable.getRowCount() > 1 &&
-                    (!syntheticPanel.dataGenSeedCheck.isSelected() ||
-                            syntheticPanel.dataGenSeedField.getText() != null &&
-                            !syntheticPanel.dataGenSeedField.getText().isEmpty()
+            return (syntheticPanel.durationTextField.getText() != null
+                 && !syntheticPanel.durationTextField.getText().isEmpty()
+                 && syntheticPanel.initialRateTextField.getText() != null
+                 && !syntheticPanel.initialRateTextField.getText().isEmpty()
+                 && syntheticPanel.finalRateTextField.getText() != null
+                 && !syntheticPanel.finalRateTextField.getText().isEmpty()
+                 && syntheticPanel.schemaTable.getRowCount() > 1
+                 && (!syntheticPanel.dataGenSeedCheck.isSelected()
+                  || syntheticPanel.dataGenSeedField.getText() != null
+                  && !syntheticPanel.dataGenSeedField.getText().isEmpty()
                     )
             );
         } else { // external file
-            return (externalFilePanel.filePathField.getText() != null &&
-                    !externalFilePanel.filePathField.getText().isEmpty() &&
-                    (externalFilePanel.tsCheckBox.isSelected() ||
-                            (!externalFilePanel.tsCheckBox.isSelected() && externalFilePanel.rateField.getText() != null && !externalFilePanel.rateField.getText().isEmpty())
-                    ) &&
-                    (externalFilePanel.typeYesRdBtn.isSelected() ||
-                            (externalFilePanel.typeNoRdBtn.isSelected() && externalFilePanel.typeField.getText() != null && !externalFilePanel.typeField.getText().isEmpty())
+            return (externalFilePanel.filePathField.getText() != null
+                    && !externalFilePanel.filePathField.getText().isEmpty()
+                    && (externalFilePanel.tsCheckBox.isSelected()
+                        || (!externalFilePanel.tsCheckBox.isSelected()
+                            && externalFilePanel.rateField.getText() != null
+                            && !externalFilePanel.rateField.getText().isEmpty()))
+                    && (externalFilePanel.typeYesRdBtn.isSelected()
+                       || (externalFilePanel.typeNoRdBtn.isSelected()
+                           && externalFilePanel.typeField.getText() != null
+                           && !externalFilePanel.typeField.getText().isEmpty())
                     )
             );
         }

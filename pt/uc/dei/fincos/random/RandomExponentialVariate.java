@@ -37,12 +37,13 @@ public final class RandomExponentialVariate extends Variate {
     /**
      * Creates a new exponential variate.
      *
-     * @param seed         seed for random number generation
-     * @param lambda       the rate of requisitions of a Poisson process
-     *                     (inverse of mean)
-     * @throws Exception
+     * @param seed          seed for random number generation
+     * @param lambda        the rate of requisitions of a Poisson process
+     *                      (inverse of mean)
+     * @throws Exception    if the value passed for lambda is negative
      */
-    public RandomExponentialVariate(Long seed, double lambda) throws Exception {
+    public RandomExponentialVariate(Long seed, double lambda)
+    throws Exception {
         super(seed);
         if (lambda > 0) {
             this.lambda = lambda;

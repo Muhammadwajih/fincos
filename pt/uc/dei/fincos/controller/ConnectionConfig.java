@@ -27,20 +27,23 @@ import java.util.LinkedHashMap;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class ConnectionConfig implements Serializable {
+public final class ConnectionConfig implements Serializable, Cloneable {
     /** Serial id. */
-    private static final long serialVersionUID = -2795429110558612161L;
+    private static final long serialVersionUID = -1527657198530605646L;
 
     /** A unique identifier for this connection. */
-    public String alias;
+    public final String alias;
 
     /** Either CEP_ADAPTER or JMS. */
-    public int type;
+    public final int type;
 
     /** Vendor-specific parameters used to establish the connection .*/
-    public LinkedHashMap<String, String> properties;
+    public final LinkedHashMap<String, String> properties;
 
+    /** Direct connection with CEP engine via custom-code Adapter.  */
     public static final int CEP_ADAPTER = 0;
+
+    /** Communication via JMS. */
     public static final int JMS = 1;
 
     /**
@@ -61,7 +64,9 @@ public class ConnectionConfig implements Serializable {
 
     @Override
     public String toString() {
-        return "ConnectionConfig [alias=" + alias + ", type=" + type + ", properties=" + properties + "]";
+        return "ConnectionConfig [alias=" + alias + ", "
+                               + "type=" + type + ", "
+                               + "properties=" + properties + "]";
     }
 
     @Override
@@ -95,9 +100,10 @@ public class ConnectionConfig implements Serializable {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public ConnectionConfig clone() {
-        return new ConnectionConfig(this.alias, this.type, (LinkedHashMap<String, String>) this.properties.clone());
+        return new ConnectionConfig(this.alias, this.type,
+                    (LinkedHashMap<String, String>) this.properties.clone());
     }
-
 }
