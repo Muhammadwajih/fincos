@@ -56,22 +56,32 @@ public class HistogramPanel extends JPanel {
     /** serial id. */
     private static final long serialVersionUID = -2702545159393767976L;
 
+    /** Widht of the histogram bins. */
     protected double binWidth;
+
+    /** Path for the log files. */
     private String[] logFilePath;
+
+    /** Name of the stream the response time histogram refers to. */
     private String stream;
+
+    /** Start of measurement interval. */
     private long startTimestamp;
+
+    /** End of measurement interval. */
     private long endTimestamp;
 
 
     /**
-     * Creates new form HistogramForm
+     * Creates new form HistogramForm.
      *
-     * @param logFilesPath
-     * @param streamName
-     * @param startTimestamp
-     * @param endTimestamp
+     * @param logFilesPath      path for the log files
+     * @param streamName        name of the stream to which
+     *                          the response time histogram refers
+     * @param startTimestamp    start of measurement interval
+     * @param endTimestamp      end of measurement interval
      */
-    public HistogramPanel(String logFilesPath[], String streamName,
+    public HistogramPanel(String[] logFilesPath, String streamName,
             long startTimestamp, long endTimestamp) {
         this.logFilePath = logFilesPath;
         this.stream = streamName;
@@ -502,11 +512,15 @@ public class HistogramPanel extends JPanel {
                     maxFreq = e.getValue();
                     dataset.add(e.getKey(), maxFreq, seriesName);
 
-                    XYPointerAnnotation maxAnnotation = new XYPointerAnnotation(
-                            "\u2265" + Globals.FLOAT_FORMAT_2.format(e.getKey()) + "\n",
-                            e.getKey(),
-                            Math.min(0.85 * plot.getRangeAxis().getUpperBound(), 1.01 * maxFreq),
-                            -1.571);
+                    String label = "\u2265"
+                                 +  Globals.FLOAT_FORMAT_2.format(e.getKey())
+                                 + "\n";
+                    double x = e.getKey();
+                    double y = Math.min(0.85 * plot.getRangeAxis().getUpperBound(),
+                                        1.01 * maxFreq);
+                    double angle = -1.571;
+                    XYPointerAnnotation maxAnnotation =
+                            new XYPointerAnnotation(label, x, y, angle);
                     plot.addAnnotation(maxAnnotation);
                 }
                 counter++;

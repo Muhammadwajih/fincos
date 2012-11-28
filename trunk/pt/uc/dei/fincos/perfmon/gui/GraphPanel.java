@@ -70,6 +70,7 @@ import pt.uc.dei.fincos.perfmon.Stream;
  * @author  Marcelo R.N. Mendes
  *
  */
+@SuppressWarnings({"serial", "rawtypes", "unchecked"})
 public class GraphPanel extends JPanel {
     /** serial id. */
     private static final long serialVersionUID = -9023933264149434389L;
@@ -280,7 +281,6 @@ public class GraphPanel extends JPanel {
 
     }
 
-    @SuppressWarnings("serial")
     private void loadGUIComponents() {
         // Counters Table
         JPanel countersTablePanel = new JPanel(new BorderLayout());
@@ -294,7 +294,6 @@ public class GraphPanel extends JPanel {
             }
 
             @Override
-            @SuppressWarnings("unchecked")
             public Class getColumnClass(int c) {
                 return getValueAt(0, c).getClass();
             }

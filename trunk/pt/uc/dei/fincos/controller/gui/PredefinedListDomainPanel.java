@@ -37,7 +37,10 @@ import pt.uc.dei.fincos.basic.PredefinedListDomain;
  */
 public final class PredefinedListDomainPanel extends javax.swing.JPanel {
 
-    /** Creates new form PredefinedListDomainPanel */
+    /** serial id. */
+    private static final long serialVersionUID = 4610659214847612111L;
+
+    /** Creates new form PredefinedListDomainPanel. */
     public PredefinedListDomainPanel() {
         initComponents();
         addListeners();

@@ -30,7 +30,7 @@ import java.io.Serializable;
  * @see Domain
  *
  */
-public class Attribute implements Serializable, Cloneable {
+public final class Attribute implements Serializable, Cloneable {
     /** serial id. */
     private static final long serialVersionUID = -1795395382042692076L;
 
@@ -87,7 +87,7 @@ public class Attribute implements Serializable, Cloneable {
     }
 
     /**
-     * Sets the name of this attribute
+     * Sets the name of this attribute.
      *
      * @param name  the new name
      */
@@ -98,7 +98,7 @@ public class Attribute implements Serializable, Cloneable {
 
     /**
      *
-     * @return  the domain of values assumed by this attribute.
+     * @return  the domain of values assumed by this attribute
      */
     public Domain getDomain() {
         return domain;
@@ -126,7 +126,7 @@ public class Attribute implements Serializable, Cloneable {
     }
 
     @Override
-    public Object clone() {
+    public Attribute clone() {
         return new Attribute(this.type, this.name, this.domain);
     }
 }

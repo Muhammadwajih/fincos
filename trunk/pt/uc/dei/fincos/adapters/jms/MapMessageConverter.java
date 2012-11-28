@@ -33,11 +33,12 @@ import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
 
 /**
- * Converts an event, as represented in FINCoS, to a JMS map message ({@link MapMessage}), and vice versa.
+ * Converts an event, as represented in FINCoS, to a JMS map message
+ * ({@link MapMessage}), and vice versa.
  *
  * @author  Marcelo R.N. Mendes
  */
-public class MapMessageConverter extends Converter {
+public final class MapMessageConverter extends Converter {
 
     /**
      *
@@ -62,7 +63,6 @@ public class MapMessageConverter extends Converter {
                 msg.setInt(atts[i].getName(), (Integer) payload[i]);
                 break;
             case LONG:
-            case TIMESTAMP:
                 msg.setLong(atts[i].getName(), (Long) payload[i]);
                 break;
             case FLOAT:
@@ -143,6 +143,7 @@ public class MapMessageConverter extends Converter {
         StringBuilder sb = new StringBuilder();
         sb.append(src);
         MapMessage map = (MapMessage) msg;
+        @SuppressWarnings("unchecked")
         Enumeration<String> atts = map.getMapNames();
         while (atts.hasMoreElements()) {
             sb.append(Globals.CSV_DELIMITER);
@@ -156,6 +157,7 @@ public class MapMessageConverter extends Converter {
         ArrayList<Object> evtData = new ArrayList<Object>();
         evtData.add(src);
         MapMessage map = (MapMessage) msg;
+        @SuppressWarnings("unchecked")
         Enumeration<String> atts = map.getMapNames();
         while (atts.hasMoreElements()) {
             evtData.add(map.getObject(atts.nextElement()));

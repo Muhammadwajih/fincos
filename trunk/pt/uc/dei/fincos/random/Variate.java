@@ -65,7 +65,7 @@ public abstract class Variate implements Serializable {
      *
      * @param seed  the new seed
      */
-    public final void setRandomSeed(Long seed){
+    public final void setRandomSeed(Long seed) {
         if (this.rnd != null) {
             if (seed != null) {
                 this.rnd.setSeed(seed);

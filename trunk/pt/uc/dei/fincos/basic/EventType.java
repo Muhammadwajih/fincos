@@ -33,7 +33,7 @@ import java.util.LinkedHashSet;
  * @see Attribute
  *
  */
-public class EventType implements Serializable {
+public final class EventType implements Serializable {
 
     /** serial id. */
     private static final long serialVersionUID = 2785420172709613384L;
@@ -185,6 +185,11 @@ public class EventType implements Serializable {
         return this.hashCode;
     }
 
+    /**
+     * Recomputes the hash code for this event type.
+     *
+     * @return  the type's hash code
+     */
     private int computeHashCode() {
         final int prime = 31;
         int result = 1;

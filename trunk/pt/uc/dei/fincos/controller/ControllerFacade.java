@@ -19,22 +19,22 @@
 package pt.uc.dei.fincos.controller;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.rmi.AccessException;
-import java.rmi.ConnectException;
-import java.rmi.NotBoundException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import pt.uc.dei.fincos.basic.Globals;
-import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.basic.Step;
 import pt.uc.dei.fincos.driver.DriverRemoteFunctions;
@@ -44,7 +44,7 @@ import pt.uc.dei.fincos.sink.SinkRemoteFunctions;
 
 /**
  *
- * Facade class that implementing controller functions:
+ * Facade class that implementing controller functions.
  * 1) Loading of test setup from configuration file
  * 2) Keeping the list of configured Drivers and Sinks
  * 3) RMI communication with drivers and sinks:
@@ -101,6 +101,9 @@ public final class ControllerFacade {
         return instance;
     }
 
+    /**
+     * default constructor.
+     */
     private ControllerFacade() {
         remoteDrivers = new HashMap<DriverConfig, DriverRemoteFunctions>(1);
         remoteSinks = new HashMap<SinkConfig, SinkRemoteFunctions>(1);
@@ -142,20 +145,22 @@ public final class ControllerFacade {
             cleanup();
             e.printStackTrace();
             throw new Exception("Could not open configuration file. "
-                              + "File may be corrupted.");
+                    + "File may be corrupted.");
         }
 
         try {
             this.updateTestOptions(config.getResponseTimeMode(),
-                                   config.getResponseTimeResolution(),
-                                   config.isUsingCreationTime());
-        } catch (FileNotFoundException fnfe) {
-            throw fnfe;
+                    config.getResponseTimeResolution(),
+                    config.isUsingCreationTime());
         } catch (Exception e) {
             throw new IllegalArgumentException(e.getMessage());
         }
     }
 
+    /**
+     * Closes the test setup file and clears the list
+     * of Drivers and Sinks.
+     */
     private void cleanup() {
         config.closeFile();
         if (this.drivers != null) {
@@ -192,34 +197,40 @@ public final class ControllerFacade {
     /**
      * Saves an already open test setup file to disk.
      *
-     * @throws FileNotFoundException
-     * @throws ParserConfigurationException
-     * @throws IOException
-     * @throws TransformerException
-     * @throws Exception
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open the setup file
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
      */
-    public void saveTestSetupFile() throws  FileNotFoundException, ParserConfigurationException,
-    IOException, TransformerException, Exception {
+    public void saveTestSetupFile()
+    throws ParserConfigurationException, IOException, TransformerException {
         DriverConfig[] driverList = new DriverConfig[drivers.size()];
         SinkConfig[] sinkList = new SinkConfig[sinks.size()];
         if (config.isFileOpen()) {
             config.save(drivers.toArray(driverList), sinks.toArray(sinkList),
                     rtMode, rtResolution, useEventsCreationTime);
         } else {
-            throw new Exception("Could not save test setup. File path has not been informed.");
+            throw new IllegalStateException("Could not save test setup. "
+                              + " File path has not been informed.");
         }
     }
 
     /**
      * Saves an already open test setup into a new file on disk.
      *
-     * @param f                                 the new file, where the setup must be saved
-     * @throws FileNotFoundException
-     * @throws ParserConfigurationException
-     * @throws IOException
+     * @param f                                 the new file, where the setup
+     *                                          must be saved
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open the setup file
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
      * @throws TransformerException
      */
-    public void saveTestSetupFileAs(File f) throws  FileNotFoundException, ParserConfigurationException,
+    public void saveTestSetupFileAs(File f) throws  ParserConfigurationException,
     IOException, TransformerException {
         DriverConfig[] driverList = new DriverConfig[drivers.size()];
         SinkConfig[] sinkList = new SinkConfig[sinks.size()];
@@ -267,7 +278,8 @@ public final class ControllerFacade {
      * Returns the total duration of the test in seconds
      * (applies only if all Drivers have synthetic workloads).
      *
-     * @return the maximum duration amongst all configured drivers, or -1 if any Driver has a phase based on an external dataset file
+     * @return the maximum duration amongst all configured drivers,
+     *         or -1 if any Driver has a phase based on an external dataset file
      */
     public long getTestDuration() {
         long duration = 0;
@@ -316,8 +328,8 @@ public final class ControllerFacade {
      *
      * @param oldCfg    the old configuration of the Driver
      * @param newCfg    the new configuration of the Driver
-     * @return          <tt>true</tt> if the Driver has been successfully updated,
-     *                  <tt>false</tt> otherwise
+     * @return          <tt>true</tt> if the Driver has been successfully
+     *                  updated, <tt>false</tt> otherwise
      */
     public synchronized boolean updateDriver(DriverConfig oldCfg, DriverConfig newCfg) {
         int index = this.drivers.indexOf(oldCfg);
@@ -403,13 +415,14 @@ public final class ControllerFacade {
      *
      * Sets values for test parameters.
      *
-     * @param rtMode     Either END_TO_END_RT_MILLIS, ADAPTER_RT_NANOS, or NO_RT
-     * @param useCreationTime       Indicates if event's creation time must be used instead of their send time
-     *
-     * @throws Exception
+     * @param rtMode            response time measurement mode
+     *                          (either END_TO_END_RT_MILLIS, ADAPTER_RT_NANOS, or NO_RT)
+     * @param rtResolution      response time measurement resolution
+     *                          (either milliseconds or nanoseconds)
+     * @param useCreationTime   indicates if event's creation time must be used instead
+     *                          of their send time
      */
-    public void updateTestOptions(int rtMode, int rtResolution, boolean useCreationTime) throws Exception
-    {
+    public void updateTestOptions(int rtMode, int rtResolution, boolean useCreationTime) {
         this.rtMode = rtMode;
         this.rtResolution = rtResolution;
         this.useEventsCreationTime = useCreationTime;
@@ -445,26 +458,23 @@ public final class ControllerFacade {
     /**
      * Loads a remote Driver through RMI.
      *
-     * @param dr                    the remote Driver to be loaded
-     * @return                      <tt>true</tt> if the Driver has been successfully loaded,
-     *                              <tt>false</tt> otherwise
-     * @throws ConnectException     if an error occurs while connecting with the remote Driver
-     * @throws NotBoundException    if an error occurs while connecting with the remote Driver
-     * @throws AccessException      if an error occurs while connecting with the remote Driver
-     * @throws RemoteException      if an error occurs while connecting with the remote Driver
-     * @throws Exception            for unexpected errors
+     * @param dr            the remote Driver to be loaded
+     * @return              <tt>true</tt> if the Driver has been successfully
+     *                      loaded, <tt>false</tt> otherwise
+     * @throws Exception    if an error occurs while trying to connect with
+     *                      the remote Sink
      */
-    public Boolean loadRemoteDriver(DriverConfig dr)
-            throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
-            {
+    public Boolean loadRemoteDriver(DriverConfig dr) throws Exception {
         Boolean ret = null;
 
         DriverRemoteFunctions remoteDr;
-        Registry daemonRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.RMI_PORT);
-        RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
+        String drAddr = dr.getAddress().getHostAddress();
+        Registry daemonRegistry = LocateRegistry.getRegistry(drAddr, Globals.RMI_PORT);
+        RemoteDaemonServerFunctions remoteDaemon =
+                (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
         remoteDaemon.startDriver(dr.getAlias());
 
-        Registry driverRegistry = LocateRegistry.getRegistry(dr.getAddress().getHostAddress(), Globals.RMI_PORT);
+        Registry driverRegistry = LocateRegistry.getRegistry(drAddr, Globals.RMI_PORT);
         remoteDr = (DriverRemoteFunctions) driverRegistry.lookup(dr.getAlias());
         synchronized (remoteDrivers) {
             remoteDrivers.put(dr, remoteDr);
@@ -475,31 +485,28 @@ public final class ControllerFacade {
         }
 
         return ret;
-            }
+    }
 
     /**
      * Loads a remote Sink through RMI.
      *
-     * @param sink                  the remote Sink to be loaded
-     * @return                      <tt>true</tt> if the Sink has been successfully loaded,
-     *                              <tt>false</tt> otherwise
-     * @throws ConnectException     if an error occurs while connecting with the remote Sink
-     * @throws NotBoundException    if an error occurs while connecting with the remote Sink
-     * @throws AccessException      if an error occurs while connecting with the remote Sink
-     * @throws RemoteException      if an error occurs while connecting with the remote Sink
-     * @throws Exception            for unexpected errors
+     * @param sink          the remote Sink to be loaded
+     * @return              <tt>true</tt> if the Sink has been successfully
+     *                      loaded, <tt>false</tt> otherwise
+     * @throws Exception    if an error occurs while trying to connect with
+     *                      the remote Sink
      */
-    public Boolean loadRemotSink(SinkConfig sink)
-            throws ConnectException, NotBoundException, AccessException, RemoteException, Exception
-            {
+    public Boolean loadRemoteSink(SinkConfig sink) throws Exception {
         Boolean ret = null;
 
         SinkRemoteFunctions remoteSink;
-        Registry daemonRegistry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.RMI_PORT);
-        RemoteDaemonServerFunctions remoteDaemon = (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
+        String sinkAddress = sink.getAddress().getHostAddress();
+        Registry daemonRegistry = LocateRegistry.getRegistry(sinkAddress, Globals.RMI_PORT);
+        RemoteDaemonServerFunctions remoteDaemon =
+                (RemoteDaemonServerFunctions) daemonRegistry.lookup("FINCoS");
         remoteDaemon.startSink(sink.getAlias());
 
-        Registry registry = LocateRegistry.getRegistry(sink.getAddress().getHostAddress(), Globals.RMI_PORT);
+        Registry registry = LocateRegistry.getRegistry(sinkAddress, Globals.RMI_PORT);
         remoteSink = (SinkRemoteFunctions) registry.lookup(sink.getAlias());
         synchronized (remoteSinks) {
             remoteSinks.put(sink, remoteSink);
@@ -510,123 +517,231 @@ public final class ControllerFacade {
         }
 
         return ret;
-            }
+    }
 
+    /**
+     * Indicates if a Driver is connected.
+     *
+     * @param dr    the Driver
+     * @return      <tt>true</tt> if the Driver is connected,
+     *              <tt>false</tt> otherwise
+     */
     public synchronized boolean isDriverConnected(DriverConfig dr) {
-        if(this.remoteDrivers == null || this.remoteDrivers.isEmpty()) {
+        if (this.remoteDrivers == null || this.remoteDrivers.isEmpty()) {
             return false;
-        }
-        else {
+        } else {
             DriverRemoteFunctions remoteDr = remoteDrivers.get(dr);
             return remoteDr != null;
         }
     }
 
+    /**
+     * Indicates if a Sink is connected.
+     *
+     * @param sink  the Sink
+     * @return      <tt>true</tt> if the Sink is connected,
+     *              <tt>false</tt> otherwise
+     */
     public synchronized boolean isSinkConnected(SinkConfig sink) {
-        SinkRemoteFunctions remoteSink = remoteSinks.get(sink);
-        return remoteSink != null;
+        if (this.remoteSinks == null || this.remoteSinks.isEmpty()) {
+            return false;
+        } else {
+            SinkRemoteFunctions remoteSink = remoteSinks.get(sink);
+            return remoteSink != null;
+        }
     }
 
+    /**
+     * Retrieves a reference for a remote Driver.
+     *
+     * @param dr            the configuration of the Driver to be retrieved
+     * @return              a pointer to the remote Driver
+     * @throws Exception    if the Driver passed as argument is not in
+     *                      the list of connected Drivers.
+     */
     private DriverRemoteFunctions lookupRemoteDriver(DriverConfig dr)
-            throws Exception {
-        if(remoteDrivers == null || remoteDrivers.isEmpty()) {
-            throw new Exception("Remote connection with Drivers has not been established or" +
-                    " no Driver has been configured.");
+    throws Exception {
+        if (remoteDrivers == null || remoteDrivers.isEmpty()) {
+            throw new Exception("Remote connection with Drivers has not been "
+                    + "established or no Driver has been configured.");
         }
         DriverRemoteFunctions ret = remoteDrivers.get(dr);
 
-        if(ret == null)
+        if (ret == null) {
             throw new Exception("Driver is not connected.");
-        else
+        } else {
             return ret;
+        }
     }
 
+    /**
+     * Retrieves a reference for a remote Sink.
+     *
+     * @param sink          the configuration of the Sink to be retrieved
+     * @return              a pointer to the remote Sink
+     * @throws Exception    if the Sink passed as argument is not in
+     *                      the list of connected Sinks.
+     */
     private SinkRemoteFunctions lookupRemoteSink(SinkConfig sink)
-            throws Exception {
-        if(remoteSinks == null || remoteSinks.isEmpty()) {
-            throw new Exception("Remote connection with Sinks has not been established or" +
-                    " no Sink has been configured.");
+    throws Exception {
+        if (remoteSinks == null || remoteSinks.isEmpty()) {
+            throw new Exception("Remote connection with Sinks has not been "
+                    + "established or no Sink has been configured.");
         }
         SinkRemoteFunctions ret = remoteSinks.get(sink);
 
-        if(ret == null)
+        if (ret == null) {
             throw new Exception("Sink is not connected.");
-        else
+        } else {
             return ret;
+        }
     }
 
+    /**
+     * Starts a Driver via RMI call.
+     *
+     * @param dr            the Driver to be started
+     * @throws Exception    if the Driver is not connected or the RMI call fails
+     */
     public synchronized void startRemoteDriver(DriverConfig dr)
-            throws RemoteException, InvalidStateException, Exception
-            {
+    throws Exception {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.start();
-            }
+    }
 
+    /**
+     * Pauses a Driver via RMI call.
+     *
+     * @param dr            the Driver to be paused
+     * @throws Exception    if the Driver is not connected or the RMI call fails
+     */
     public synchronized void pauseRemoteDriver(DriverConfig dr)
-            throws RemoteException, InvalidStateException, Exception
-            {
+    throws Exception {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.pause();
-            }
+    }
 
+    /**
+     * Stops a Driver via RMI call.
+     *
+     * @param dr            the Driver to be stopped
+     * @throws Exception    if the Driver is not connected or the RMI call fails
+     */
     public synchronized void stopRemoteDriver(DriverConfig dr)
-            throws RemoteException, InvalidStateException, Exception
-            {
+    throws Exception {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.stop();
-            }
+    }
 
+    /**
+     * Stops a Sink via RMI call.
+     *
+     * @param sink          the Sink to be stopped
+     * @throws Exception    if the Sink is not connected or the RMI call fails
+     */
     public synchronized void stopRemoteSink(SinkConfig sink)
-            throws RemoteException, Exception
-            {
+    throws Exception {
         SinkRemoteFunctions remoteSink = this.lookupRemoteSink(sink);
         remoteSink.unload();
-            }
+    }
 
+    /**
+     * Switches a Driver to its next phase via RMI call
+     * (if there is no more phases, the test is finished).
+     *
+     * @param dr            the Driver
+     * @throws Exception    if the Driver is not running or the RMI call fails
+     */
     public synchronized void switchRemoteDriverToNextPhase(DriverConfig dr)
-            throws RemoteException, InvalidStateException, Exception
-            {
+    throws Exception {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.switchToNextPhase();
-            }
+    }
 
-    public synchronized void alterRemoteDriverSubmissionRate(DriverConfig dr, double eventRateFactor)
-            throws RemoteException, InvalidStateException, Exception
-            {
+    /**
+     * Changes the event submission rate on a Driver via RMI call.
+     *
+     * @param dr                the Driver
+     * @param eventRateFactor   factor by which event rates specified in
+     *                          configuration file must be multiplied
+     * @throws Exception        if the Driver is not running or the RMI call fails
+     */
+    public synchronized void alterRemoteDriverSubmissionRate(DriverConfig dr,
+            double eventRateFactor) throws Exception  {
         DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
         remoteDr.alterRate(eventRateFactor);
-            }
+    }
 
+    /**
+     * Retrieves the current state of a Driver via RMI call.
+     *
+     * @param dr                the Driver whose status must be retrieved
+     * @return                  the status of the Driver
+     * @throws RemoteException  if the Driver has just disconnected.
+     */
     public synchronized Status getDriverStatus(DriverConfig dr)
-            throws RemoteException
-            {
+    throws RemoteException {
         try {
             DriverRemoteFunctions remoteDr = this.lookupRemoteDriver(dr);
             return remoteDr.getStatus();
-        }
-        catch (RemoteException re) { // Driver has just disconnected: forward this information with an exception
+        } catch (RemoteException re) {
+            /* Driver has just disconnected: forward
+             * this information with an exception. */
             this.remoteDrivers.put(dr, null);
             throw re;
-        }
-        catch (Exception e) { // Driver disconnection has been detected before.
+        } catch (Exception e) {
+            // Driver disconnection has been detected before.
             return DISCONNECTED;
         }
+    }
 
-            }
-
+    /**
+     * Retrieves the current state of a Sink via RMI call.
+     *
+     * @param sink              the Sink whose status must be retrieved
+     * @return                  the status of the Sink
+     * @throws RemoteException  if the Sink has just disconnected.
+     */
     public synchronized Status getSinkStatus(SinkConfig sink)
-            throws RemoteException
-            {
+    throws RemoteException {
         try {
             SinkRemoteFunctions remoteSink = this.lookupRemoteSink(sink);
             return remoteSink.getStatus();
-        }
-        catch (RemoteException re) { // Sink has just disconnected: forward this information with an exception
+        } catch (RemoteException re) {
+            /* Sink has just disconnected: forward
+             * this information with an exception. */
             this.remoteSinks.put(sink, null);
             throw re;
-        }
-        catch (Exception e) { // Sink disconnection has been detected before.
+        } catch (Exception e) {
+            // Sink disconnection has been detected before.
             return DISCONNECTED;
         }
+    }
+
+    /**
+     * Retrieves all IP addresses assigned to all network cards of this machine.
+     *
+     * @param addressList       A pointer to a list to be filled with the IP addresses
+     * @throws SocketException  if an I/O error occurs
+     */
+    public static void retrieveMyIPAddresses(Set<InetAddress> addressList)
+    throws SocketException {
+        Enumeration<NetworkInterface> nics =
+                java.net.NetworkInterface.getNetworkInterfaces();
+        NetworkInterface nic;
+        Enumeration<InetAddress> nicAddresses;
+
+        // Iterates over NICs list
+        while (nics.hasMoreElements()) {
+            nic = nics.nextElement();
+            if (nic.isLoopback()) {
+                continue;
             }
+            nicAddresses = nic.getInetAddresses();
+            // Iterates over addresses of a NIC
+            while (nicAddresses.hasMoreElements()) {
+                addressList.add(nicAddresses.nextElement());
+            }
+        }
+    }
 }

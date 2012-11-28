@@ -39,19 +39,23 @@ public interface DriverRemoteFunctions extends Remote {
      * Initializes a Driver.
      *
      * @param cfg                       The configuration parameters of a Driver
-     * @param rtMode                    Response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution              Response time measurement resolution (either Milliseconds or Nanoseconds)
-     * @param useCreationTime           Indicates if event's creation time must be used instead of their send time
-     * @param dataFilesDir              An optional parameter indicating the path to an external dataset file
+     * @param rtMode                    Response time measurement mode
+     *                                  (either END-TO-END or ADAPTER)
+     * @param rtResolution              Response time measurement resolution
+     *                                  (either Milliseconds or Nanoseconds)
+     * @param useCreationTime           Indicates if event's creation time must be used
+     *                                  instead of their send time
+     * @param dataFilesDir              An optional parameter indicating the path to an
+     *                                  external dataset file
      *
-     * @return                          <tt>true</tt> if the Driver has been successfully initialized, <tt>false</tt> otherwise.
+     * @return                          <tt>true</tt> if the Driver has been successfully
+     *                                  initialized, <tt>false</tt> otherwise.
      *
-     * @throws InvalidStateException   if the Driver has already been loaded.
-     * @throws RemoteException         for unsuccessful RMI calls.
-     * @throws Exception               for unexpected errors.
+     * @throws Exception               if the Driver has already been loaded,
+     *                                 for unsuccessful RMI calls and for unexpected errors.
      */
     boolean load(DriverConfig cfg, int rtMode, int rtResolution, boolean useCreationTime,
-            String dataFilesDir) throws InvalidStateException, RemoteException, Exception;
+            String dataFilesDir) throws Exception;
 
 
     /**
@@ -94,9 +98,10 @@ public interface DriverRemoteFunctions extends Remote {
     /**
      * Alter event submission rate.
      *
-     * @param factor                       factor by which event rates specified in configuration file must be multiplied
-     * @throws InvalidStateException       if the Driver is not running
-     * @throws RemoteException             for unsuccessful RMI calls
+     * @param factor                    factor by which event rates specified
+     *                                  in configuration file must be multiplied
+     * @throws InvalidStateException    if the Driver is not running
+     * @throws RemoteException          for unsuccessful RMI calls
      */
     void alterRate(double factor) throws InvalidStateException, RemoteException;
 

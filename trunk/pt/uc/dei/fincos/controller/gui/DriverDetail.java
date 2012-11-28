@@ -47,7 +47,7 @@ import pt.uc.dei.fincos.driver.WorkloadPhase;
  * @author  Marcelo R.N. Mendes
  *
  */
-@SuppressWarnings("serial")
+@SuppressWarnings({ "serial", "rawtypes" })
 public class DriverDetail extends ComponentDetail {
 
     /** List of workload phases for the Driver being configured. */
@@ -327,6 +327,7 @@ public class DriverDetail extends ComponentDetail {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    @SuppressWarnings("unchecked")
     private void initConnCombo() {
         ConnectionConfig[] conns = Controller_GUI.getInstance().getConnections();
         String[] txts = new String[conns.length + 1];
@@ -414,7 +415,7 @@ public class DriverDetail extends ComponentDetail {
                                     Double.parseDouble((String) logSamplingComboBox.getSelectedItem()),
                                     logFlushInterval);
                             if (Controller_GUI.getInstance().checkDriverUniqueConstraint(oldCfg, newCfg)) {
-                                aliasField.setBackground(UIManager.getColor ("TextField.background"));
+                                aliasField.setBackground(UIManager.getColor("TextField.background"));
                                 switch (op) {
                                     case UPDATE:
                                         Controller_GUI.getInstance().updateDriver(oldCfg, newCfg);
@@ -607,7 +608,7 @@ public class DriverDetail extends ComponentDetail {
             this.aliasField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            aliasField.setBackground(UIManager.getColor ("TextField.background"));
+            aliasField.setBackground(UIManager.getColor("TextField.background"));
         }
 
         if (this.addressField == null
@@ -615,7 +616,7 @@ public class DriverDetail extends ComponentDetail {
             this.addressField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.addressField.setBackground(UIManager.getColor ("TextField.background"));
+            this.addressField.setBackground(UIManager.getColor("TextField.background"));
         }
 
         if (this.connCombo.getSelectedIndex() == -1
@@ -624,14 +625,14 @@ public class DriverDetail extends ComponentDetail {
             this.connCombo.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.connCombo.setBackground(UIManager.getColor ("ComboBox.background"));
+            this.connCombo.setBackground(UIManager.getColor("ComboBox.background"));
         }
 
         if (phasesTable.getRowCount() <= 1) {
             this.phasesTable.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
-            this.phasesTable.setBackground(UIManager.getColor ("Table.background"));
+            this.phasesTable.setBackground(UIManager.getColor("Table.background"));
         }
 
         if (logCheckBox.isSelected() && (logFlushField.getText() == null

@@ -28,7 +28,7 @@ import java.security.InvalidParameterException;
  *
  * @see SyntheticWorkloadPhase
  */
-public class ExternalFileWorkloadPhase extends WorkloadPhase {
+public final class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** serial id. */
     private static final long serialVersionUID = -8771391854252211855L;
 
@@ -50,7 +50,8 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** The index of the field containing the timestamp of the records in the data file. */
     private int timestampIndex;
 
-    /** A flag indicating if the timestamp field (if present) must be included in the payload of the events. */
+    /** A flag indicating if the timestamp field (if present)
+     * must be included in the payload of the events. */
     private boolean includeTS;
 
     /** A flag indicating if the external file contains event types. */
@@ -59,7 +60,7 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** The index of the field containing the type of the records in the data file. */
     private int typeIndex;
 
-    /** The external file does not contain event types. All events are of the same type*/
+    /** The external file does not contain event types. All events are of the same type. */
     private String singleEventTypeName;
 
     /** Injection rate, when not using the timestamps in the data file. */
@@ -77,12 +78,16 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /** Timestamp of the data file is expressed as a date and time record. */
     public static final int DATE_TIME = 2;
 
+    /** First field in the event. */
     public static final int FIRST_FIELD = 0;
 
+    /** Second field in the event. */
     public static final int SECOND_FIELD = 1;
 
+    /** Last field in the event. */
     public static final int LAST_FIELD = 2;
 
+    /** Second last field in the event. */
     public static final int SECOND_LAST_FIELD = 3;
 
 
@@ -90,14 +95,19 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
     /**
      *
      * @param filePath              the path of the data file
-     * @param delimiter             sequence of characters used to separate the fields of the records in the data file
+     * @param delimiter             sequence of characters used to separate the
+     *                              fields of the records in the data file
      * @param containsTimestamps    a flag indicating if the data file contains timestamps
-     * @param useTimestamps         a flag indicating if the timestamps in the file should be used for event submission
+     * @param useTimestamps         a flag indicating if the timestamps in the
+     *                              file should be used for event submission
      * @param timestampUnit         the time unit of the timestamps in the external data file
-     * @param timestampIndex        the index of the field containing the timestamp of the records in the data file
-     * @param includeTimestamp      A flag indicating if the timestamp field (if present) must be included in the payload of the events
+     * @param timestampIndex        the index of the field containing the timestamp
+     *                              of the records in the data file
+     * @param includeTimestamp      A flag indicating if the timestamp field (if present)
+     *                              must be included in the payload of the events
      * @param containsEventTypes    a flag indicating if the data file contains event types
-     * @param typeIndex             the index of the field containing the type of the records in the data file
+     * @param typeIndex             the index of the field containing the type
+     *                              of the records in the data file
      * @param singleEventTypeName   type of the events in the data file, if it is not typed.
      * @param loopCount             the number of times the external file will be submitted
      * @param eventSubmissionRate   injection rate, when not using the timestamps in the data file
@@ -121,8 +131,17 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         setSingleEventTypeName(singleEventTypeName);
     }
 
-    private void setTimestampUnit(int timestampUnit) throws InvalidParameterException {
-        if (timestampUnit == MILLISECONDS || timestampUnit == SECONDS || timestampUnit == DATE_TIME) {
+    /**
+     * Sets the the time unit of the timestamps in the external data file.
+     *
+     * @param timestampUnit     the time unit
+     *                          (either MILLISECONDS, SECONDS, or DATE_TIME)
+     *
+     */
+    private void setTimestampUnit(int timestampUnit) {
+        if (timestampUnit == MILLISECONDS
+         || timestampUnit == SECONDS
+         || timestampUnit == DATE_TIME) {
             this.timestampUnit = timestampUnit;
         } else {
             throw new InvalidParameterException("Invalid timestamp unit.");
@@ -137,6 +156,12 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return timestampUnit;
     }
 
+    /**
+     * Sets The index of the field containing the timestamp of the records in the data file.
+     *
+     * @param timestampIndex    either FIRST_FIELD, SECOND_FIELD,
+     *                          LAST_FIELD or SECOND_LAST_FIELD
+     */
     private void setTimestampIndex(int timestampIndex) {
         if (timestampIndex == FIRST_FIELD
             || timestampIndex == SECOND_FIELD
@@ -156,18 +181,33 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return timestampIndex;
     }
 
+    /**
+     * Sets the value of the flag indicating whether the timestamp field (if present)
+     * must be included in the payload of the events or not.
+     *
+     * @param includeTS     <tt>true</tt> for including the timestamp on the event's payload,
+     *                      <tt>false</tt> otherwise
+     */
     private void setIncludeTS(boolean includeTS) {
         this.includeTS = includeTS;
     }
 
     /**
+     * Indicates whether the timestamp field (if present) is included
+     * in the payload of the events or not.
      *
-     * @return  a flag indicating if the timestamp field (if present) must be included in the payload of the events
+     * @return  <tt>true</tt> when the timestamp is included on the event's payload,
+     *          <tt>false</tt> otherwise
      */
     public boolean isIncludingTS() {
         return includeTS;
     }
 
+    /**
+     * Sets the path of the external file.
+     *
+     * @param filePath  the path for the external file
+     */
     private void setFilePath(String filePath) {
         this.filePath = filePath;
     }
@@ -180,30 +220,55 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return filePath;
     }
 
+    /**
+     * Sets the sequence of characters used to separate the
+     * fields of the records in the data file.
+     *
+     * @param delimiter     the sequence of characters
+     */
     private void setDelimiter(String delimiter) {
         this.delimiter = delimiter;
     }
 
     /**
      *
-     * @return  sequence of characters used to separate the fields of the records in the data file
+     * @return  sequence of characters used to separate the fields
+     *          of the records in the data file
      */
     public String getDelimiter() {
         return delimiter;
     }
 
+    /**
+     * Sets the value of the flag that indicates whether
+     * the external file contains timestamps or not.
+     *
+     * @param containsTimestamps    <tt>true</tt> if the data file
+     *                              contains timestamps,
+     *                              <tt>false</tt> otherwise
+     */
     private void setContainsTimestamps(boolean containsTimestamps) {
         this.containsTimestamps = containsTimestamps;
     }
 
     /**
      *
-     * @return  <tt>true</tt> if the data file contains timestamps, <tt>false</tt> otherwise
+     * @return  <tt>true</tt> if the data file contains timestamps,
+     *          <tt>false</tt> otherwise
      */
     public boolean containsTimestamps() {
         return containsTimestamps;
     }
 
+    /**
+     * Sets the value of the flag that indicates whether
+     * the timestamps in the data file will be used
+     * for load submission or not.
+     *
+     * @param useTimestamps <tt>true</tt> if the timestamps in the data file
+     *                      will be used for load submission,
+     *                      <tt>false</tt> otherwise
+     */
     private void setUseTimestamps(boolean useTimestamps) {
         this.useTimestamps = useTimestamps;
     }
@@ -217,19 +282,33 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return useTimestamps;
     }
 
+    /**
+     * Sets the value of the flag that indicates whether
+     * the external file contains event types or not.
+     *
+     * @param containsEventTypes    <tt>true</tt> if the file is typed,
+     *                              <tt>false</tt> otherwise
+     */
     private void setContainsEventTypes(boolean containsEventTypes) {
         this.containsEventTypes = containsEventTypes;
     }
 
     /**
      *
-     * @return  <tt>true</tt> if the data file contains event types, <tt>false</tt> otherwise
+     * @return  <tt>true</tt> if the data file contains event types,
+     *          <tt>false</tt> otherwise
      */
     public boolean containsEventTypes() {
         return containsEventTypes;
     }
 
-
+    /**
+     * Sets the index of the field containing the type
+     * of the records in the data file.
+     *
+     * @param typeIndex     either FIRST_FIELD, SECOND_FIELD,
+     *                             LAST_FIELD or SECOND_LAST_FIELD
+     */
     private void setTypeIndex(int typeIndex) {
         if (typeIndex == FIRST_FIELD
                 || typeIndex == SECOND_FIELD
@@ -249,6 +328,12 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return typeIndex;
     }
 
+    /**
+     * Sets the type of the events in the data file, if it is not typed.
+     *
+     * @param singleEventTypeName   the name of the type for all events
+     *                              in the data file
+     */
     private void setSingleEventTypeName(String singleEventTypeName) {
         this.singleEventTypeName = singleEventTypeName;
     }
@@ -261,7 +346,13 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return singleEventTypeName;
     }
 
-    private void setEventSubmissionRate(double eventSubmissionRate) throws InvalidParameterException {
+    /**
+     * Sets the event submission rate
+     * (when not using the timestamps in the data file).
+     *
+     * @param eventSubmissionRate   the input rate
+     */
+    private void setEventSubmissionRate(double eventSubmissionRate) {
         if (eventSubmissionRate > 0) {
             this.eventSubmissionRate = eventSubmissionRate;
         } else {
@@ -277,11 +368,17 @@ public class ExternalFileWorkloadPhase extends WorkloadPhase {
         return eventSubmissionRate;
     }
 
+    /**
+     * Sets the number of times the external file will be submitted.
+     *
+     * @param loopCount     number of repetitions
+     */
     private void setLoopCount(int loopCount) {
         if (loopCount > 0) {
             this.loopCount = loopCount;
         } else {
-            System.err.println("WARNING: Invalid loop count (" + loopCount + "). Setting to default: 1.");
+            System.err.println("WARNING: Invalid loop count (" + loopCount
+                             + "). Setting to default: 1.");
             this.loopCount = 1;
         }
     }

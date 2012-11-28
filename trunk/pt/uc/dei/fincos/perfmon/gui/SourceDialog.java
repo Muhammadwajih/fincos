@@ -53,12 +53,14 @@ import pt.uc.dei.fincos.perfmon.Stream;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class SourceDialog extends javax.swing.JDialog {
+@SuppressWarnings("rawtypes")
+public final class SourceDialog extends javax.swing.JDialog {
 
-    private final Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
+    /** serial id. */
+    private static final long serialVersionUID = 1337262720248316269L;
 
     /** List of log files to be processed by this perfmon instance. */
-    ArrayList <String> sinkLogFiles;
+    private ArrayList <String> sinkLogFiles;
 
     /** Start of measurement interval for Sink log files. */
     private Date sinkLogStartTime = new Date();
@@ -66,9 +68,16 @@ public class SourceDialog extends javax.swing.JDialog {
     /** End of measurement interval for Sink log files. */
     private Date sinkLogEndTime = new Date(sinkLogStartTime.getTime() + 3600000);
 
+    /** The instance of Perfmon that this forms belongs to. */
     private PerformanceMonitor parent;
 
-    /** Creates new form SourceDialog */
+    private final Font f = new java.awt.Font("Tahoma", java.awt.Font.PLAIN, 11);
+
+    /**
+     * Creates new form SourceDialog.
+     *
+     * @param parent    the parent component of this form.
+     */
     public SourceDialog(PerformanceMonitor parent) {
         super(parent, true);
         this.parent = parent;

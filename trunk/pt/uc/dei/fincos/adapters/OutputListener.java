@@ -39,7 +39,8 @@ public abstract class OutputListener extends Thread {
      * (either Milliseconds or Nanoseconds). */
     protected final int rtResolution;
 
-    /** Reference to the Sink instance to which results must be forwarded (DIRECT COMMUNICATION). */
+    /** Reference to the Sink instance to which results must be forwarded
+     * (DIRECT COMMUNICATION). */
     protected final Sink sinkInstance;
 
     /** Flag used to interrupt event listening. */
@@ -49,8 +50,10 @@ public abstract class OutputListener extends Thread {
      * Constructor for DIRECT COMMUNICATION.
      *
      * @param lsnrID        an alias for this listener
-     * @param rtMode        response time measurement mode (either END-TO-END, ADAPTER or NO_RT)
-     * @param rtResolution  response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param rtMode        response time measurement mode
+     *                      (either END-TO-END, ADAPTER or NO_RT)
+     * @param rtResolution  response time measurement resolution
+     *                      (either Milliseconds or Nanoseconds)
      * @param sinkInstance  reference to the Sink instance to which results must be forwarded
      */
     public OutputListener(String lsnrID, int rtMode, int rtResolution, Sink sinkInstance) {
@@ -67,7 +70,7 @@ public abstract class OutputListener extends Thread {
      *
      * @param e     the incoming event, represented as an array of values
      */
-    public void onOutput(Object[] e) {
+    public final void onOutput(Object[] e) {
         this.sinkInstance.processOutputEvent(e);
     }
 

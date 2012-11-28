@@ -36,10 +36,15 @@ import pt.uc.dei.fincos.random.Variate;
  *
  * @author  Marcelo R.N. Mendes
  *
+ *
  */
+@SuppressWarnings("rawtypes")
 public final class SequentialDomainPanel extends javax.swing.JPanel {
 
-    /** Creates new form SequentialDomainPanel */
+    /** serial id. */
+    private static final long serialVersionUID = 5551963651687036502L;
+
+    /** Creates new form SequentialDomainPanel. */
     public SequentialDomainPanel() {
         initComponents();
         addListeners();

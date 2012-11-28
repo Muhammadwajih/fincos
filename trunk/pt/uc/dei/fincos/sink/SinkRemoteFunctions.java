@@ -21,7 +21,6 @@ package pt.uc.dei.fincos.sink;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import pt.uc.dei.fincos.basic.InvalidStateException;
 import pt.uc.dei.fincos.basic.Status;
 import pt.uc.dei.fincos.controller.SinkConfig;
 import pt.uc.dei.fincos.perfmon.SinkPerfStats;
@@ -38,17 +37,19 @@ public interface SinkRemoteFunctions extends Remote {
      * Initializes a Sink.
      *
      * @param sinkCfg                   the configuration to be loaded
-     * @param rtMode                    response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution              response time measurement resolution (either Milliseconds or Nanoseconds)
+     * @param rtMode                    response time measurement mode
+     *                                  (either END-TO-END or ADAPTER)
+     * @param rtResolution              response time measurement resolution
+     *                                  (either Milliseconds or Nanoseconds)
      *
-     * @return                          <tt>true</tt> if the Driver has been successfully initialized, <tt>false</tt> otherwise.
+     * @return                          <tt>true</tt> if the Sink has been successfully
+     *                                  initialized, <tt>false</tt> otherwise.
      *
-     * @throws InvalidStateException    if the Sink has already been loaded.
-     * @throws RemoteException          for unsuccessful RMI calls.
-     * @throws Exception                for unexpected errors.
+     * @throws Exception                if the Sink has already been loaded,
+     *                                  for unsuccessful RMI calls, and for unexpected errors.
      */
     boolean load(SinkConfig sinkCfg, int rtMode, int rtResolution)
-    throws RemoteException, InvalidStateException, Exception;
+    throws Exception;
 
 
     /**
@@ -79,7 +80,7 @@ public interface SinkRemoteFunctions extends Remote {
 
 
     /**
-     * Retrieves performance stats from this Driver.
+     * Retrieves performance stats from this Sink.
      *
      * @return  a map stream -> number of events received since the
      * @throws RemoteException  for unsuccessful RMI calls

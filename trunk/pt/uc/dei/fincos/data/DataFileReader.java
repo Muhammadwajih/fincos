@@ -37,17 +37,19 @@ import pt.uc.dei.fincos.driver.ExternalFileWorkloadPhase;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class DataFileReader {
+public final class DataFileReader {
 
     /** Path for the data file. */
 	private String path;
 
+	/** Reads the data file. */
 	private CSV_Reader reader;
 
-	/** Sequence of characters used to separate the fields of the records in the data file. */
+	/** Sequence of characters used to separate the fields of the
+	 * records in the data file. */
 	private final String delimiter;
 
-	/** Pre-defined types (from configuration file). */
+	/** Predefined types (from configuration file). */
 	private Set<EventType> types;
 
 	/** types that are not explicitly mentioned in config file. */
@@ -68,7 +70,8 @@ public class DataFileReader {
     /** The index of the field containing the timestamp of the records in the data file. */
     private final int timestampIndex;
 
-    /** A flag indicating if the timestamp field (if present) must be included in the payload of the read events. */
+    /** A flag indicating if the timestamp field (if present) must be included in the
+     *  payload of the read events. */
     private boolean includeTS;
 
 	/** Event type name to be used when the data file does not contain event types. */
@@ -79,19 +82,27 @@ public class DataFileReader {
 	 * Constructor for workloads using external data files.
 	 *
 	 * @param path                     The path for the data file
-	 * @param delimiter                Sequence of characters used to separate the fields of the records in the data file
+	 * @param delimiter                Sequence of characters used to separate the fields
+	 *                                 of the records in the data file
 	 * @param containsTimestamp        Indicates if the data file contains timestamps
-	 * @param timestampUnit            The time unit of the timestamps in the data file (if it contains)
-	 * @param timestampIndex           The index of the field containing the timestamp of the records in the data file
-	 * @param includeTS                A flag indicating if the timestamp field (if present) must be included in the payload of the read events
+	 * @param timestampUnit            The time unit of the timestamps in the data file
+	 *                                 (if it contains)
+	 * @param timestampIndex           The index of the field containing the timestamp
+	 *                                 of the records in the data file
+	 * @param includeTS                A flag indicating if the timestamp field
+	 *                                 (if present) must be included in the payload of
+	 *                                 the events
 	 * @param containsEventsType       Indicates if the data file contains events' type
-	 * @param typeIndex                The index of the field containing the type of the records in the data file.
-	 * @param eventTypeName            Event type name to be used when the data file does not contain event types
+	 * @param typeIndex                The index of the field containing the type of the
+	 *                                 records in the data file.
+	 * @param eventTypeName            Event type name to be used when the data file does
+	 *                                 not contain event types
 	 * @throws FileNotFoundException   If the data file cannot be opened
 	 */
 	public DataFileReader(String path, String delimiter,
-	        boolean containsTimestamp, int timestampUnit, int timestampIndex, boolean includeTS,
-	        boolean containsEventsType, int typeIndex, String eventTypeName)
+	        boolean containsTimestamp, int timestampUnit, int timestampIndex,
+	        boolean includeTS, boolean containsEventsType, int typeIndex,
+	        String eventTypeName)
 	throws FileNotFoundException {
 		this.path = path;
 		this.delimiter = delimiter;
@@ -118,10 +129,11 @@ public class DataFileReader {
 	 * Constructor for Synthetic workloads.
 	 *
 	 * @param path                     The path for the data file
-	 * @param eventTypes               Pre-defined types obtained from configuration file
+	 * @param eventTypes               Predefined types obtained from configuration file
 	 * @throws FileNotFoundException   If the data file cannot be opened
 	 */
-	public DataFileReader(String path, Set<EventType> eventTypes) throws FileNotFoundException {
+	public DataFileReader(String path, Set<EventType> eventTypes)
+	throws FileNotFoundException {
 		this.path = path;
 		this.delimiter = Globals.CSV_DELIMITER;
 		this.types = eventTypes;
@@ -138,8 +150,8 @@ public class DataFileReader {
 	/**
 	 * Retrieves the next event from the data file.
 	 *
-	 * @return		           The event, represented as an array of in CSV format
-	 * @throws IOException
+	 * @return		       the event, represented as an array of in CSV format
+	 * @throws Exception   if an error occurs while reading/parsing the event from disk
 	 */
 	public CSV_Event getNextCSVEvent() throws Exception {
 	    String[] record = reader.getNextRecord();
@@ -199,8 +211,8 @@ public class DataFileReader {
 	/**
 	 * Retrieves the next event from the data file.
 	 *
-	 * @return		The event in the framework internal representation format
-	 * @throws IOException
+	 * @return		       The event in the framework internal representation format
+	 * @throws Exception   if an error occurs while reading/parsing the event from disk
 	 */
 	public Event getNextEvent() throws Exception {
 		String[] record = reader.getNextRecord();
@@ -217,9 +229,9 @@ public class DataFileReader {
 	 * internal event representation.
 	 * (LEGACY METHOD)
 	 *
-	 * @param csvRecord			An event represented as CSV record
-	 * @return					An event represented as an instance of class <tt>Event</tt>
-	 * @throws IOException
+	 * @param csvRecord    an event represented as CSV record
+	 * @return             an event represented as an instance of class {@link Event}
+	 * @throws Exception   if an error occurs while parsing the event
 	 */
 	private Event fromCSVToEvent(String[] csvRecord) throws Exception {
 		Event e = null;
@@ -260,7 +272,8 @@ public class DataFileReader {
 		}
 
 		if (types != null) {
-		    type = this.getEventType(typeName, types); // tries to find in the list of types from config file
+		    // tries to find in the list of types from config file
+		    type = this.getEventType(typeName, types);
 		}
 
         if (type == null) {
@@ -291,13 +304,12 @@ public class DataFileReader {
 	}
 
 	/**
-	 * Utilitary function used to converts an event expressed as CSV textual
-	 * record into internal event representation.
-	 * (LEGACY METHOD)
+	 * Retrieves the type associated with a given type name.
 	 *
-	 * @param typeName
-	 * @param types
-	 * @return
+	 * @param typeName     the name of the type
+	 * @param types        list of configured event types
+	 * @return             an instance of {@link EventType}, or <tt>null</tt>
+	 *                     if there is no type with the specified name
 	 */
 	private EventType getEventType(String typeName, Set<EventType> types) {
 		if (types != null) {
@@ -311,6 +323,12 @@ public class DataFileReader {
 		return null;
 	}
 
+	/**
+	 * Sets the event type name to be used when the data file
+	 * does not contain event types.
+	 *
+	 * @param eventTypeName    the type name
+	 */
 	private void setEventTypeName(String eventTypeName) {
 		if (eventTypeName != null && !eventTypeName.isEmpty()) {
 			this.eventTypeName = eventTypeName;
@@ -320,23 +338,46 @@ public class DataFileReader {
 		}
 	}
 
+	/**
+	 * Closes the data file and releases any system resources associated with it.
+	 */
 	public void closeFile() {
 		try {
 			this.reader.closeFile();
 		} catch (IOException e) {
-			System.err.println("WARNING: Could not close data file (" + e.getMessage() + ")");
+			System.err.println("Error while closing data file"
+			                 + " (" + e.getMessage() + ").");
 		}
 	}
 
-	private void open(String path) throws FileNotFoundException{
+	/**
+	 * Opens the data file.
+	 *
+	 * @param path                     path for the data file
+	 * @throws FileNotFoundException   if the data file cannot be opened
+	 */
+	private void open(String path) throws FileNotFoundException {
 		this.reader = new CSV_Reader(path, this.delimiter);
 	}
 
+	/**
+	 * Closes and reopens the data file.
+	 * @throws FileNotFoundException   if the data file cannot be opened
+	 */
 	public void reOpen() throws FileNotFoundException {
 		this.closeFile();
 		this.open(path);
 	}
 
+	/**
+	 * Gets the absolute index of the timestamp field
+	 * in the records of the data file.
+	 *
+	 * @param csvRecord    a record from the data file
+	 * @return             the absolute index of the timestamp field,
+	 *                     or <tt>-1</tt>, if the data file does not
+	 *                     contain timestamps.
+	 */
 	private int getTSIndex(String[] csvRecord) {
         switch (timestampIndex) {
         case ExternalFileWorkloadPhase.FIRST_FIELD:
@@ -352,6 +393,15 @@ public class DataFileReader {
         }
     }
 
+	/**
+     * Gets the absolute index of the type field
+     * in the records of the data file.
+     *
+     * @param csvRecord    a record from the data file
+     * @return             the absolute index of the type field,
+     *                     or <tt>-1</tt>, if the data file does not
+     *                     contain event types.
+     */
 	private int getTypeIndex(String[] csvRecord) {
 	    switch (typeIndex) {
         case ExternalFileWorkloadPhase.FIRST_FIELD:

@@ -39,7 +39,7 @@ import pt.uc.dei.fincos.basic.Event;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class JMS_Writer extends JMS_Adapter implements InputAdapter {
+public final class JMS_Writer extends JMS_Adapter implements InputAdapter {
 
     /** Maps input channel names into JMS senders/destinations. */
     private HashMap<String, MessageProducer> senders;
@@ -49,7 +49,8 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
      *
      * @param connProps         connection properties
      * @param connFactoryName   name of the connection factory at the JNDI server
-     * @param inputChannels     a list of JMS destinations into which this adapter will insert messages
+     * @param inputChannels     a list of JMS destinations into which this adapter
+     *                          will insert messages
      * @param rtMode            either END-TO-END or ADAPTER
      * @param rtResolution      either Milliseconds or Nanoseconds
      *
@@ -58,7 +59,8 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
      */
     public JMS_Writer(Properties connProps, String connFactoryName, String[] inputChannels,
             int rtMode, int rtResolution) throws NamingException, JMSException {
-        this(connProps, connFactoryName, inputChannels, new MapMessageConverter(rtMode, rtResolution));
+        this(connProps, connFactoryName, inputChannels,
+             new MapMessageConverter(rtMode, rtResolution));
     }
 
     /**
@@ -66,14 +68,16 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
      *
      * @param connProps         connection properties
      * @param connFactoryName   name of the connection factory at the JNDI server
-     * @param inputChannels     a list of JMS destinations into which this adapter will insert messages
-     * @param msgConverter      converts events, as represented in FINCoS, to JMS messages and vice-versa
+     * @param inputChannels     a list of JMS destinations into which this adapter
+     *                          will insert messages
+     * @param msgConverter      converts events, as represented in FINCoS, to JMS
+     *                          messages and vice-versa
      *
      * @throws NamingException  if a naming exception is encountered
      * @throws JMSException     if an error occurs during connection with JMS provider
      */
-    public JMS_Writer(Properties connProps, String connFactoryName, String[] inputChannels, Converter msgConverter)
-    throws NamingException, JMSException {
+    public JMS_Writer(Properties connProps, String connFactoryName, String[] inputChannels,
+            Converter msgConverter) throws NamingException, JMSException {
         super(connProps, connFactoryName, msgConverter);
         // Start the queue connection.
         conn.start();
@@ -131,7 +135,17 @@ public class JMS_Writer extends JMS_Adapter implements InputAdapter {
         sender.send(msg);
     }
 
-    private MessageProducer createMessageProducerFor(String dest) throws NamingException, JMSException {
+    /**
+     * Creates a message producer for a given JMS destination.
+     *
+     * @param dest      the name of the JMS destination
+     * @return          an instance of {@link MessageProducer}
+     *
+     * @throws NamingException  if a naming exception is encountered
+     * @throws JMSException     if an error occurs while creating the message producer
+     */
+    private MessageProducer createMessageProducerFor(String dest)
+    throws NamingException, JMSException {
         Queue q = (Queue) ctxt.lookup(dest);
         MessageProducer producer = session.createProducer(q);
         senders.put(dest, producer);

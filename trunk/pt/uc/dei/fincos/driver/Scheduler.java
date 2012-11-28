@@ -26,13 +26,13 @@ import java.util.Random;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class Scheduler {
+public final class Scheduler {
 
-    /** Distribution of event's inter-arrival time. */
+    /** Distribution of event's interarrival time. */
     public enum ArrivalProcess {
-        /** constant inter-arrival time (1/rate). */
+        /** constant interarrival time (1/rate). */
         DETERMINISTIC,
-        /** exponentially distributed inter-arrival time. */
+        /** exponentially distributed interarrival time. */
         POISSON
     };
 
@@ -110,7 +110,7 @@ public class Scheduler {
      * Sets the final event submission rate to the specified value,
      * or to 0.1 events/sec if the value is non-positive.
      *
-     * @param rate          the new final event submission rate
+     * @param finalRate     the new final event submission rate
      */
     private void setFinalRate(double finalRate)  {
         if (finalRate > 0) {
@@ -124,7 +124,7 @@ public class Scheduler {
      * Sets the test duration to the specified value,
      * or to 1 nanosecond if the value is non-positive.
      *
-     * @param rate          the new final event submission rate
+     * @param testDuration          the new test duration
      */
     private void setTestDuration(long testDuration) {
         if (testDuration > 0) {
@@ -187,7 +187,8 @@ public class Scheduler {
      * @return      Current event rate, considering current time and the initial and final rates
      */
     private double getEventRate(long t) {
-        return this.rateFactor * (this.initialRate + t * (this.finalRate - this.initialRate) / this.testDuration);
+        return this.rateFactor * (this.initialRate + t * (this.finalRate - this.initialRate)
+                                                       / this.testDuration);
     }
 
     /**

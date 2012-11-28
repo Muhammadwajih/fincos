@@ -22,7 +22,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 /**
- * Remote functions of the Daemon Server application
+ * Remote functions of the Daemon Server application.
  *
  * @author  Marcelo R.N. Mendes
  *
@@ -32,20 +32,20 @@ import java.rmi.RemoteException;
 public interface RemoteDaemonServerFunctions extends Remote {
 
 	/**
-	 * Initializes an instance of a Driver with the given Alias
+	 * Initializes an instance of a Driver with the given alias.
 	 *
-	 * @param Alias				An alias for the Driver
-	 * @throws RemoteException
+	 * @param alias				   an alias for the Driver
+	 * @throws RemoteException     if the RMI call fails
 	 */
-	public void startDriver(String Alias) throws RemoteException;
+	void startDriver(String alias) throws RemoteException;
 
 
 	/**
-	 * Initializes an instance of a Sink with the given Alias
+	 * Initializes an instance of a Sink with the given alias.
 	 *
-	 * @param Alias				An alias for the Sink
-	 * @throws RemoteException
+	 * @param alias				   an alias for the Sink
+	 * @throws RemoteException     if the RMI call fails
 	 */
-	public void startSink(String Alias) throws RemoteException;
+	void startSink(String alias) throws RemoteException;
 
 }

@@ -67,12 +67,14 @@ public abstract class ComponentConfig implements Serializable {
      * @param address               IP address where this component runs
      * @param connection            a connection with the target system
      * @param loggingEnabled        Indicates if sent/received events must be logged to disk
-     * @param fieldsToLog           Either all fields (LOG_ALL_FIELDS) or only timestamps (LOG_ONLY_TIMESTAMPS)
+     * @param fieldsToLog           Either all fields (LOG_ALL_FIELDS)
+     *                              or only timestamps (LOG_ONLY_TIMESTAMPS)
      * @param loggingSamplingRate   The fraction of events that will be logged
      * @param logFlushInterval      The periodic interval at which log is flushed to disk
      */
-    public ComponentConfig(String alias, InetAddress address, ConnectionConfig connection, boolean loggingEnabled,
-            int fieldsToLog, double loggingSamplingRate, int logFlushInterval) {
+    public ComponentConfig(String alias, InetAddress address, ConnectionConfig connection,
+                           boolean loggingEnabled, int fieldsToLog, double loggingSamplingRate,
+                           int logFlushInterval) {
         this.alias = alias;
         this.address = address;
         this.connection = connection;
@@ -86,7 +88,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @return  The unique identifier of this component.
      */
-    public String getAlias() {
+    public final String getAlias() {
         return alias;
     }
 
@@ -95,7 +97,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param alias a unique identifier.
      */
-    public void setAlias(String alias) {
+    public final void setAlias(String alias) {
         this.alias = alias;
     }
 
@@ -103,7 +105,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @return  the address where this component must run.
      */
-    public InetAddress getAddress() {
+    public final InetAddress getAddress() {
         return address;
     }
 
@@ -112,7 +114,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param address   component's address
      */
-    public void setAddress(InetAddress address) {
+    public final void setAddress(InetAddress address) {
         this.address = address;
     }
 
@@ -121,7 +123,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param connection    the connection configuration object
      */
-    public void setConnection(ConnectionConfig connection) {
+    public final void setConnection(ConnectionConfig connection) {
         this.connection = connection;
     }
 
@@ -129,7 +131,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @return  the connection through which this component will send/receive events.
      */
-    public ConnectionConfig getConnection() {
+    public final ConnectionConfig getConnection() {
         return connection;
     }
 
@@ -140,7 +142,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param loggingEnabled    <tt>true</tt> to enable log, <tt>false</tt> do disable it
      */
-    public void setLoggingEnabled(boolean loggingEnabled) {
+    public final void setLoggingEnabled(boolean loggingEnabled) {
         this.loggingEnabled = loggingEnabled;
     }
 
@@ -149,7 +151,7 @@ public abstract class ComponentConfig implements Serializable {
      * @return  <tt>true</tt> if this component is configured to log events to disk,
      *          <tt>false</tt> otherwise.
      */
-    public boolean isLoggingEnabled() {
+    public final boolean isLoggingEnabled() {
         return loggingEnabled;
     }
 
@@ -159,7 +161,7 @@ public abstract class ComponentConfig implements Serializable {
      * @param fieldsToLog   Either {@link Globals}.LOG_ALL_FIELDS or
      *                      {@link Globals}.LOG_ONLY_TIMESTAMPS
      */
-    public void setFieldsToLog(int fieldsToLog) {
+    public final void setFieldsToLog(int fieldsToLog) {
         this.fieldsToLog = fieldsToLog;
     }
 
@@ -167,7 +169,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @return  fields must be logged.
      */
-    public int getFieldsToLog() {
+    public final int getFieldsToLog() {
         return fieldsToLog;
     }
 
@@ -176,7 +178,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param loggingSamplingRate   the fraction of events that will be logged
      */
-    public void setLoggingSamplingRate(double loggingSamplingRate) {
+    public final void setLoggingSamplingRate(double loggingSamplingRate) {
         this.loggingSamplingRate = loggingSamplingRate;
     }
 
@@ -184,7 +186,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @return  the fraction of events that will be logged to disk.
      */
-    public double getLoggingSamplingRate() {
+    public final double getLoggingSamplingRate() {
         return loggingSamplingRate;
     }
 
@@ -194,7 +196,7 @@ public abstract class ComponentConfig implements Serializable {
      *
      * @param logFlushInterval  the log flush interval
      */
-    public void setLogFlushInterval(int logFlushInterval) {
+    public final void setLogFlushInterval(int logFlushInterval) {
         this.logFlushInterval = logFlushInterval;
     }
 
@@ -203,7 +205,7 @@ public abstract class ComponentConfig implements Serializable {
      * @return  the frequency interval (in milliseconds) at which this component's
      *          log must be flushed to disk.
      */
-    public int getLogFlushInterval() {
+    public final int getLogFlushInterval() {
         return logFlushInterval;
     }
 

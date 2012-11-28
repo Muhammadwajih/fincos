@@ -29,7 +29,7 @@ import java.util.HashMap;
  *
  * @see SinkPerfStats
  */
-public class DriverPerfStats implements Serializable {
+public final class DriverPerfStats implements Serializable {
     /** serial id. */
     private static final long serialVersionUID = 6940744959618534404L;
 
@@ -42,10 +42,22 @@ public class DriverPerfStats implements Serializable {
     /** A map stream -> number of events received. */
     private HashMap<String, Integer> streamStats;
 
+    /**
+     * Initializes an empty set of performance stats.
+     */
     public DriverPerfStats() {
         this.reset();
     }
 
+    /**
+     * Initializes an new set of performance stats.
+     *
+     * @param start         the start time of the interval which this
+     *                      set of performance stats refers to
+     * @param end           the end time of the interval which this
+     *                      set of performance stats refers to
+     * @param streamStats   the performance stats (a map Stream -> Event Count)
+     */
     public DriverPerfStats(long start, long end, HashMap<String, Integer> streamStats) {
         super();
         this.start = start;
@@ -53,14 +65,35 @@ public class DriverPerfStats implements Serializable {
         this.streamStats = streamStats;
     }
 
+    /**
+     * Increments the number of received events from the
+     * stream passed as argument by one.
+     *
+     * @param stream    the event stream
+     */
     public void incrementCount(String stream) {
         this.incrementCount(stream, 1, System.currentTimeMillis());
     }
 
+    /**
+     * Increments the number of received events from the
+     * stream passed as argument by one.
+     *
+     * @param stream        the event stream
+     * @param timestamp     the timestamp of the last received event
+     */
     public void incrementCount(String stream, long timestamp) {
         this.incrementCount(stream, 1, timestamp);
     }
 
+    /**
+     * Increments the number of received events from the
+     * stream passed as argument.
+     *
+     * @param stream        the event stream
+     * @param increment     the increment
+     * @param timestamp     the timestamp of the last received event
+     */
     public void incrementCount(String stream, int increment, long timestamp) {
         if (start == -1) {
             start = timestamp;

@@ -31,11 +31,13 @@ import pt.uc.dei.fincos.data.CSV_Writer;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class Logger extends CSV_Writer {
+public final class Logger extends CSV_Writer {
+
     /** Log sampling fraction. */
     private int logSamplMod;
 
-    /** Which fields are to be logged by this logger (either all fields or just timestamps). */
+    /** Indicates which fields are to be logged by this logger
+     * (either all fields or just timestamps). */
     private int fieldsToLog;
 
     /** Number of log requests. */
@@ -44,12 +46,14 @@ public class Logger extends CSV_Writer {
     /**
      * Default constructor. Logs all events and all fields.
      *
-     * @param path				Path of log file
-     * @param logFileHeader		A header for the log file
-     * @param flushInterval		Interval between log flushes (writes to disk)
-     * @throws IOException
+     * @param path				path for the log file
+     * @param logFileHeader		a header for the log file
+     * @param flushInterval		interval between log flushes (writes to disk)
+     *
+     * @throws IOException      if an error occurs while opening/writing to the log file
      */
-    public Logger(String path, String logFileHeader, int flushInterval) throws IOException {
+    public Logger(String path, String logFileHeader, int flushInterval)
+    throws IOException {
         super(path, flushInterval);
         writeRecord(logFileHeader);
         this.logSamplMod = 1; // Logs all entries
@@ -59,12 +63,12 @@ public class Logger extends CSV_Writer {
     /**
      * Constructor.
      *
-     * @param path				Path of log file
-     * @param logFileHeader		A header for the log file
-     * @param flushInterval		Interval between log flushes (writes to disk)
-     * @param logSamplingRate	The fraction of events that must be logged to disk
-     * @param fieldsToLog		Either LOG_ALL_FIELDS or LOG_ONLY_TIMESTAMPS
-     * @throws IOException
+     * @param path				path for the log file
+     * @param logFileHeader		a header for the log file
+     * @param flushInterval		interval between log flushes (writes to disk)
+     * @param logSamplingRate	the fraction of events that must be logged to disk
+     * @param fieldsToLog		either LOG_ALL_FIELDS or LOG_ONLY_TIMESTAMPS
+     * @throws IOException      if an error occurs while opening/writing to the log file
      */
     public Logger(String path, String logFileHeader, int flushInterval,
             double logSamplingRate, int fieldsToLog) throws IOException {
@@ -76,55 +80,42 @@ public class Logger extends CSV_Writer {
 
     /**
      *
-     * @param fieldsToLog	Either LOG_ALL_FIELDS or LOG_ONLY_TIMESTAMPS. If receives a different
-     * 						value, sets to default LOG_ALL_FIELDS.
+     * @param fieldsToLog	either LOG_ALL_FIELDS or LOG_ONLY_TIMESTAMPS.
      */
     public void setFieldsToLog(int fieldsToLog) {
-        if (fieldsToLog == Globals.LOG_ALL_FIELDS || fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
+        if (fieldsToLog == Globals.LOG_ALL_FIELDS
+         || fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
             this.fieldsToLog = fieldsToLog;
         } else {
-            System.err.println("WARNING: Invalid logging mode. Setting to default LOG_ALL_FIELDS");
+            System.err.println("WARNING: Invalid logging mode. "
+                             + "Setting to default LOG_ALL_FIELDS");
             this.fieldsToLog = Globals.LOG_ALL_FIELDS;
         }
     }
 
     /**
      *
-     * @return  which fields are to be logged by this logger (either all fields or just timestamps)
-     */
-    public int getFieldsToLog() {
-        return fieldsToLog;
-    }
-
-    /**
-     *
-     * @param logSamplingRate 	The fraction of events that must be logged to disk.
-     * 							It must be less than or equal to one. If it is greater	than one,
-     * 							disables sampling (sets to one).
+     * @param logSamplingRate 	the fraction of events that must be logged to disk.
+     *                          the value must be in the interval ]0,1]
      */
     public void setLogSamplingRate(double logSamplingRate) {
         if (logSamplingRate <= 1.0) {
             this.logSamplMod = (int) (1 / logSamplingRate);
         } else {
-            System.err.println("WARNING: Invalid logging sampling rate. Setting to default (no sampling)");
+            System.err.println("WARNING: Invalid logging sampling rate. "
+                             + "Setting to default (no sampling)");
             this.logSamplMod = 1; // log all entries
         }
     }
 
-    /**
-     *
-     * @return  the inverse of the configured log sampling ratio (1 / logSamplingRate)
-     */
-    public int getLogSamplMod() {
-        return logSamplMod;
-    }
 
     /**
      * Logs an event.
      *
-     * @param evt           The event to be logged
-     * @param timestamp     The timestamp of the entry (in milliseconds, using a valid clock time)
-     * @throws IOException
+     * @param evt           the event to be logged
+     * @param timestamp     the timestamp of the entry
+     *                      (in milliseconds, using a valid clock time)
+     * @throws IOException  if an error occurs while writing to the log file
      */
     public void log(Event evt, long timestamp) throws IOException {
         synchronized (this) {
@@ -136,7 +127,8 @@ public class Logger extends CSV_Writer {
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
                 this.writeRecord(timestamp + Globals.CSV_DELIMITER + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(timestamp + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(timestamp + Globals.CSV_DELIMITER
+                               + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -144,8 +136,8 @@ public class Logger extends CSV_Writer {
     /**
      * Logs an event.
      *
-     * @param evt           The event to be logged
-     * @throws IOException
+     * @param evt           the event to be logged
+     * @throws IOException  if an error occurs while writing to the log file
      */
     public void log(Event evt) throws IOException {
         synchronized (this) {
@@ -155,9 +147,13 @@ public class Logger extends CSV_Writer {
         if (entriesCount % logSamplMod == 0) {
             String entry = evt.toCSV();
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
+                this.writeRecord(System.currentTimeMillis()
+                               + Globals.CSV_DELIMITER
+                               + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(System.currentTimeMillis()
+                               + Globals.CSV_DELIMITER
+                               + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
@@ -165,8 +161,8 @@ public class Logger extends CSV_Writer {
     /**
      * Logs a CSV event.
      *
-     * @param evt           The event to be logged
-     * @throws IOException
+     * @param evt           the event to be logged
+     * @throws IOException  if an error occurs while writing to the log file
      */
     public void log(CSV_Event evt) throws IOException {
         synchronized (this) {
@@ -176,23 +172,27 @@ public class Logger extends CSV_Writer {
         if (entriesCount % logSamplMod == 0) {
             String entry = evt.toCSV();
             if (fieldsToLog == Globals.LOG_ALL_FIELDS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + entry);
+                this.writeRecord(System.currentTimeMillis()
+                                + Globals.CSV_DELIMITER
+                                + entry);
             } else if (fieldsToLog == Globals.LOG_ONLY_TIMESTAMPS) {
-                this.writeRecord(System.currentTimeMillis() + Globals.CSV_DELIMITER + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
+                this.writeRecord(System.currentTimeMillis()
+                                + Globals.CSV_DELIMITER
+                                + CSV_Reader.split(entry, Globals.CSV_DELIMITER)[0]);
             }
         }
     }
 
     /**
-     * Flushes log entries to disk and closes log file.
+     * Flushes log entries to disk and closes the log file.
      *
-     * @throws IOException
      */
     public void close()  {
         try {
             super.closeFile();
         } catch (IOException e) {
-            System.err.println("Could not close log file (" +e.getMessage()+")");
+            System.err.println("Error while closing log file ("
+                               + e.getMessage() + ").");
             e.printStackTrace();
         }
     }

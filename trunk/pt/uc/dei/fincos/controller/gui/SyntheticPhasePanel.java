@@ -42,6 +42,7 @@ import pt.uc.dei.fincos.driver.SyntheticWorkloadPhase;
  * @author  Marcelo R.N. Mendes
  *
  */
+@SuppressWarnings({"serial", "rawtypes"})
 public class SyntheticPhasePanel extends javax.swing.JPanel {
 
     /** serial id. */
@@ -184,10 +185,12 @@ public class SyntheticPhasePanel extends javax.swing.JPanel {
                 true, false, true
             };
 
+            @Override
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
 
+            @Override
             public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
@@ -361,9 +364,12 @@ public class SyntheticPhasePanel extends javax.swing.JPanel {
             for (Entry<EventType, Double> e : phase.getSchema().entrySet()) {
                 owner.syntheticTypes.add(e.getKey());
                 ((DefaultTableModel) schemaTable.getModel()).addRow(
-                        new Object[] {e.getKey().getName(), e.getKey().getAttributesNamesList(), ""+e.getValue()});
+                        new Object[] {e.getKey().getName(),
+                        e.getKey().getAttributesNamesList(),
+                        "" + e.getValue()});
             }
-            ((DefaultTableModel) schemaTable.getModel()).addRow(new Object[] {null, null, null});
+            ((DefaultTableModel) schemaTable.getModel()).addRow(
+                    new Object[] {null, null, null});
         }
 
         deterministicMixCheckBox.setSelected(phase.isDeterministicEventMix());

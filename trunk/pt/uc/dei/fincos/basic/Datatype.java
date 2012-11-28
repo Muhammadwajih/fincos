@@ -26,11 +26,10 @@ package pt.uc.dei.fincos.basic;
  *
  */
 public enum Datatype {
-INTEGER,
-LONG,
-FLOAT,
-DOUBLE,
-TEXT,
-BOOLEAN,
-TIMESTAMP
+    INTEGER,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    TEXT,
+    BOOLEAN
 }

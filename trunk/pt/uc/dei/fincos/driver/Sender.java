@@ -38,8 +38,10 @@ import pt.uc.dei.fincos.perfmon.DriverPerfStats;
  * @see Driver
  *
  */
-public class Sender extends Thread {
-    /** Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider). */
+public final class Sender extends Thread {
+
+    /** Interface with the system to where events must be sent
+     * (i.e., a CEP engine or a JMS provider). */
     private InputAdapter adapter;
 
     /** How latency is computed: end-to-end (from Drivers to Sink) or inside adapters. */
@@ -81,7 +83,8 @@ public class Sender extends Thread {
     /** Time that the Thread was paused since last pause, in nanoseconds. */
     private long timeInPause = 0;
 
-    /** A multiplication factor used to increase or decrease the rate at which events are submitted. */
+    /** A multiplication factor used to increase or decrease the rate
+     *  at which events are submitted. */
     private double factor = 1.0;
 
     /** Indicates if online performance monitoring is enabled. */
@@ -94,15 +97,19 @@ public class Sender extends Thread {
      * Constructor #1: event submission is controlled by the Scheduler passed as argument;
      *                 events' data is generated in runtime.
      *
-     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
+     * @param adapter               Interface with the system to where events must be sent
+     *                              (i.e., a CEP engine or a JMS provider)
      * @param scheduler             Schedules event submission according to a given rate
      * @param dataGen               Events' data generator
      * @param group                 A thread group
      * @param id                    A thread ID
      * @param loopCount             Number of repetitions of the workload
-     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
-     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
+     * @param rtMode                response time measurement mode
+     *                              (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution
+     *                              (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of
+     *                              *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataGen dataGen,
@@ -131,16 +138,21 @@ public class Sender extends Thread {
      * Constructor #2: event submission is controlled by the Scheduler passed as argument;
      *                 events' data is loaded from data file.
      *
-     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
+     * @param adapter               Interface with the system to where events must be sent
+     *                              (i.e., a CEP engine or a JMS provider)
      * @param scheduler             Schedules event submission according to a given rate
      * @param dataReader            Reads data sets from disk
-     * @param containsTimestamps    Indicates if the events in the data file are associated to timestamps
+     * @param containsTimestamps    Indicates if the events in the data file are
+     *                              associated to timestamps
      * @param group                 A thread group
      * @param id                    A thread ID
      * @param loopCount             Number of repetitions of the workload
-     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
-     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
+     * @param rtMode                response time measurement mode
+     *                              (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution
+     *                              (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of
+     *                              *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, Scheduler scheduler, DataFileReader dataReader,
@@ -168,13 +180,17 @@ public class Sender extends Thread {
     /**
      * Constructor #3: event submission is controlled by timestamps in a datafile.
      *
-     * @param adapter               Interface with the system to where events must be sent (i.e., a CEP engine or a JMS provider)
+     * @param adapter               Interface with the system to where events must be sent
+     *                              (i.e., a CEP engine or a JMS provider)
      * @param dataReader            Reads events from a data file at disk
      * @param timestampUnit         Time Unit of timestamps in data file
      * @param loopCount             Number of repetitions of the workload
-     * @param rtMode                response time measurement mode (either END-TO-END or ADAPTER)
-     * @param rtResolution          response time measurement resolution (either Milliseconds or Nanoseconds)
-     * @param useScheduleTime       use events' *scheduled time* instead of *sending time* for response time measurement.
+     * @param rtMode                response time measurement mode
+     *                              (either END-TO-END or ADAPTER)
+     * @param rtResolution          response time measurement resolution
+     *                              (either Milliseconds or Nanoseconds)
+     * @param useScheduleTime       use events' *scheduled time* instead of
+     *                              *sending time* for response time measurement.
      * @param perfTracingEnabled    indicates if online performance monitoring is enabled
      */
     public Sender(InputAdapter adapter, DataFileReader dataReader,
@@ -431,9 +447,11 @@ public class Sender extends Thread {
                         }
 
                         currentTS = event.getTimestamp();
-                        interTime = Math.round(1E6 * timeResolution * (currentTS - lastTS) / factor);
+                        interTime = Math.round(1E6 * timeResolution * (currentTS - lastTS)
+                                                                    / factor);
                         expectedElapsedTime += interTime;
-                        scheduledTime = firstTimestamp + (expectedElapsedTime + timeInPause) / SLEEP_TIME_RESOLUTION;
+                        scheduledTime = firstTimestamp + (expectedElapsedTime + timeInPause)
+                                                         / SLEEP_TIME_RESOLUTION;
                         now = System.currentTimeMillis();
                         sleepTime = scheduledTime - now;
                         if (sleepTime > 0) {
@@ -463,7 +481,8 @@ public class Sender extends Thread {
             System.err.println("Cannot read datafile (" + ioe.getMessage() + ")");
             this.status.setStep(Step.ERROR);
         } catch (Exception exc) {
-            System.err.println("Unexpected exception. (" + exc.getClass() + "-" + exc.getMessage() + ")\n load submisson will abort.");
+            System.err.println("Unexpected exception. (" + exc.getClass()
+                             + "-" + exc.getMessage() + ")\n load submisson will abort.");
             exc.printStackTrace();
             this.status.setStep(Step.ERROR);
             return;
@@ -474,6 +493,12 @@ public class Sender extends Thread {
         }
     }
 
+    /**
+     * Sends an event to the system under test.
+     *
+     * @param event         the event to be sent
+     * @throws Exception    if an error occurs during event submission
+     */
     private void sendEvent(Event event) throws Exception {
         // Response time measurement:
         if (rtMode == Globals.END_TO_END_RT && !useScheduledTime) {  // Do not use scheduled time...
@@ -503,6 +528,12 @@ public class Sender extends Thread {
         sentEventCount++;
     }
 
+    /**
+     * Sends an event to the system under test.
+     *
+     * @param event         the event to be sent
+     * @throws Exception    if an error occurs during event submission
+     */
     private void sendEvent(CSV_Event event) throws Exception {
         // Response time measurement:
         if (rtMode == Globals.END_TO_END_RT && !useScheduledTime) {  // Do not use scheduled time...
@@ -544,7 +575,8 @@ public class Sender extends Thread {
     /**
      * Indicates if this sender thread is using event's scheduled time as their timestamp.
      *
-     * @return  <tt>true</tt> if events' scheduled time is being used as their timestamp, <tt>false</tt> otherwise
+     * @return  <tt>true</tt> if events' scheduled time is being used as their timestamp,
+     *          <tt>false</tt> otherwise
      */
     public boolean isUsingScheduledTime() {
         return useScheduledTime;
@@ -561,10 +593,17 @@ public class Sender extends Thread {
         this.perfTracingEnabled = true;
     }
 
+    /**
+     *
+     * @return  the performance stats for this sender
+     */
     protected DriverPerfStats getPerfStats() {
         return this.perfStats;
     }
 
+    /**
+     * Resets the performance stats of this sender.
+     */
     protected void resetPerfStats() {
         this.perfStats.reset();
     }

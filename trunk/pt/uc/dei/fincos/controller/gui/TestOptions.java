@@ -23,9 +23,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
-import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import pt.uc.dei.fincos.basic.Globals;
 import pt.uc.dei.fincos.controller.ControllerFacade;
@@ -37,18 +35,12 @@ import pt.uc.dei.fincos.controller.ControllerFacade;
  */
 public final class TestOptions extends javax.swing.JFrame {
 
-    /** serial id */
-    private static final long serialVersionUID = 1679474313988723749L;
+    /** serial id. */
+    private static final long serialVersionUID = -3117561866636141262L;
 
-    /** Creates new form TestOptions */
-    private JFileChooser connPropertiesChooser;
-
+    /** Creates new form TestOptions. */
     public TestOptions() {
         super("Test Options");
-        connPropertiesChooser = new JFileChooser(Globals.APP_PATH + "config");
-        connPropertiesChooser.setFileFilter(new FileNameExtensionFilter("Properties file (.properties)", "properties"));
-        connPropertiesChooser.setAcceptAllFileFilterUsed(false);
-        connPropertiesChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
         initComponents();
         rtCheckBox.setSelected(true);

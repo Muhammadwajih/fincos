@@ -34,9 +34,13 @@ import pt.uc.dei.fincos.random.Variate;
  * @author  Marcelo R.N. Mendes
  *
  */
+@SuppressWarnings("rawtypes")
 public final class RandomlDomainPanel extends javax.swing.JPanel {
 
-    /** Creates new form RandomlDomainPanel */
+    /** serial id. */
+    private static final long serialVersionUID = -2474137429601814058L;
+
+    /** Creates new form RandomlDomainPanel. */
     public RandomlDomainPanel() {
         initComponents();
         addListeners();

@@ -34,45 +34,53 @@ import pt.uc.dei.fincos.basic.Globals;
  *
  */
 public class CSV_Writer {
+
+    /** Data writer. */
 	private BufferedWriter writer;
 
-	private long lastFlushTimestamp = 0;
-	private int flushInterval;
+	/** The interval, in milliseconds, at which data is flushed to disk. */
+	private final int flushInterval;
+
+	/** Keeps track of disk flushes. */
+    private long lastFlushTimestamp = 0;
 
 
+    /**
+     *
+     * @param path              path for the CSV file
+     * @param flushInterval     the interval, in milliseconds, at which data must
+     *                          be flushed to disk
+     * @throws IOException      if the file cannot be open
+     */
 	public CSV_Writer(String path, int flushInterval) throws IOException {
-		this.setFlushInterval(flushInterval);
+	    if (flushInterval < 0) {
+            flushInterval = 10; //default value: 10ms
+        }
+        this.flushInterval = flushInterval;
+
 		File f = new File(path);
 
-		if(!f.getParentFile().exists())
+		if (!f.getParentFile().exists()) {
 			f.getParentFile().mkdirs();
+		}
 
 		writer = new BufferedWriter(new FileWriter(path));
 	}
 
-	public void setFlushInterval(int flushInterval) {
-		if(flushInterval < 0) {
-			flushInterval = 10; //default value: 10ms
-		}
-			this.flushInterval = flushInterval;
-	}
-
-	public int getFlushInterval() {
-		return flushInterval;
-	}
 
 	/**
 	 * Writes an event along with its associated timestamp into a CSV file.
 	 *
-	 * @param e				An event, already in CSV representation
-	 * @param timestamp		The timestamp of the event
-	 * @throws IOException
+	 * @param e                an event, already in CSV representation
+	 * @param timestamp        the timestamp of the event
+	 * @throws IOException     if an error occurs while writing to the CSV file
 	 */
-	public synchronized void writeRecord(String e, long timestamp) throws IOException {
+	public final synchronized void writeRecord(String e, long timestamp)
+    throws IOException {
 		writer.write(timestamp + Globals.CSV_DELIMITER + e);
 		writer.newLine();
 
-		if (System.currentTimeMillis() - lastFlushTimestamp >= getFlushInterval()) {
+		if (System.currentTimeMillis() - lastFlushTimestamp >= flushInterval) {
 			lastFlushTimestamp = System.currentTimeMillis();
 			writer.flush();
 		}
@@ -81,27 +89,29 @@ public class CSV_Writer {
 	/**
 	 * Writes an event into a CSV file.
 	 *
-	 * @param e				An event, already in CSV representation
-	 * @throws IOException
+	 * @param e                an event, already in CSV representation
+	 * @throws IOException     if an error occurs while writing to the CSV file
 	 */
-	public synchronized void writeRecord(String e) throws IOException {
+	public final synchronized void writeRecord(String e) throws IOException {
 		writer.write(e);
 		writer.newLine();
 
-		if (System.currentTimeMillis() - lastFlushTimestamp >= getFlushInterval()) {
+		if (System.currentTimeMillis() - lastFlushTimestamp >= flushInterval) {
 			lastFlushTimestamp = System.currentTimeMillis();
 			writer.flush();
 		}
 	}
 
 	/**
-	 * Writes an event along with its associated timestamp into a CSV file.
+	 * Writes an event along with an associated timestamp into the CSV file.
 	 *
-	 * @param e				An event, in an internal representation format
-	 * @param timestamp
-	 * @throws IOException
+	 * @param e                the event, in the FINCoS representation format
+	 * @param timestamp        a timestamp, associated with the event
+	 *
+	 * @throws IOException     if an error occurs while writing to the CSV file
 	 */
-	public synchronized void writeRecord(Event e, long timestamp) throws IOException {
+	public final synchronized void writeRecord(Event e, long timestamp)
+	throws IOException {
 		if (timestamp != 0) {
 			writeRecord(e.toCSV(), timestamp);
 		} else {
@@ -110,16 +120,21 @@ public class CSV_Writer {
 	}
 
 	/**
-	 * Writes an event into a CSV file
+	 * Writes an event into a CSV file.
 	 *
-	 * @param e				An event, in an internal representation format
-	 * @throws IOException
+	 * @param e                An event, in an internal representation format
+	 * @throws IOException     if an error occurs while writing to the CSV file
 	 */
-	public synchronized void writeRecord(Event e) throws IOException {
+	public final synchronized void writeRecord(Event e) throws IOException {
 		writeRecord(e, 0);
 	}
 
-	public void closeFile() throws IOException{
+	/**
+     * Flushes any entries to disk and closes the file.
+     *
+     * @throws IOException  if an error occurs while closing/writing to the CSV file
+     */
+	public final void closeFile() throws IOException {
 		writer.flush();
 		writer.close();
 	}

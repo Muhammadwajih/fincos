@@ -30,15 +30,24 @@ import pt.uc.dei.fincos.perfmon.OfflinePerformanceValidator;
  *
  * @author  Marcelo R.N. Mendes
  */
-public class LogProcessProgressDialog extends JDialog {
+public final class LogProcessProgressDialog extends JDialog {
 
-    OfflinePerformanceValidator perfMeasurer;
+    /** serial id. */
+    private static final long serialVersionUID = 6692097518469327529L;
+
+    /** Entity responsible for computing performance metrics from Sink log files. */
+    private final OfflinePerformanceValidator perfMeasurer;
+
 
     /**
      *
-     * @param parent
+     *
+     * @param parent        parent component of this form
+     * @param perfMeasurer  entity responsible for computing performance
+     *                      metrics from Sink log files
      */
-    public LogProcessProgressDialog(java.awt.Frame parent, OfflinePerformanceValidator perfMeasurer) {
+    public LogProcessProgressDialog(java.awt.Frame parent,
+            OfflinePerformanceValidator perfMeasurer) {
         super(parent, false);
         this.perfMeasurer = perfMeasurer;
         initComponents();

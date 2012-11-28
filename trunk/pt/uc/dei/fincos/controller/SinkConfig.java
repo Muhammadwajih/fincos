@@ -28,7 +28,7 @@ import java.net.InetAddress;
  * @see ComponentConfig
  *
  */
-public class SinkConfig extends ComponentConfig implements Cloneable {
+public final class SinkConfig extends ComponentConfig implements Cloneable {
     /** Serial id. */
     private static final long serialVersionUID = -7247958453310369444L;
 
@@ -43,14 +43,16 @@ public class SinkConfig extends ComponentConfig implements Cloneable {
      * @param connection                Connection through which events must be received
      * @param outputStreamsList         A list of streams to which the Sink is associated
      * @param loggingEnabled            Indicates if received events must be logged to disk
-     * @param fieldsToLog               Either all fields (LOG_ALL_FIELDS) or only timestamps (LOG_ONLY_TIMESTAMPS)
+     * @param fieldsToLog               Either all fields (LOG_ALL_FIELDS)
+     *                                  or only timestamps (LOG_ONLY_TIMESTAMPS)
      * @param loggingSamplingRate       The fraction of all events that will be logged
      * @param logFlushInterval          The periodic interval at which log is flushed to disk
      */
     public SinkConfig(String alias, InetAddress address, ConnectionConfig connection,
             String[] outputStreamsList, boolean loggingEnabled, int fieldsToLog,
             double loggingSamplingRate, int logFlushInterval) {
-        super(alias, address, connection, loggingEnabled, fieldsToLog, loggingSamplingRate, logFlushInterval);
+        super(alias, address, connection, loggingEnabled, fieldsToLog,
+              loggingSamplingRate, logFlushInterval);
         this.setOutputStreamList(outputStreamsList);
     }
 

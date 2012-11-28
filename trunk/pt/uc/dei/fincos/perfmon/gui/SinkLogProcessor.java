@@ -99,7 +99,7 @@ public class SinkLogProcessor extends SwingWorker<Set<PerformanceStats>, Void> {
         try {
             statsSeries = get();
             if (statsSeries != null) {
-                if (offlinePerf.finished) {
+                if (offlinePerf.isFinished()) {
                     progressDialog.updateProgress(100);
                     progressDialog.dispose();
                     parentApp.showInfo("Finished!"

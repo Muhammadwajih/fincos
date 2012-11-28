@@ -27,7 +27,7 @@ package pt.uc.dei.fincos.random;
  * @author  Marcelo R.N. Mendes
  *
  */
-public final class RandomNormalVariate extends Variate{
+public final class RandomNormalVariate extends Variate {
     /** serial id. */
     private static final long serialVersionUID = -2212145157310217993L;
 
@@ -55,10 +55,8 @@ public final class RandomNormalVariate extends Variate{
      * @param mean         mean of Normal distribution
      * @param stdev        standard deviation of Normal distribution
      *
-     * @throws IllegalArgumentException    if <tt>stdev</tt> is negative
      */
-    public RandomNormalVariate(Long seed, double mean, double stdev)
-    throws IllegalArgumentException {
+    public RandomNormalVariate(Long seed, double mean, double stdev) {
         super(seed);
         this.mean = mean;
         if (stdev >= 0) {

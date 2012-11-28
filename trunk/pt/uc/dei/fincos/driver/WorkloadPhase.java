@@ -28,6 +28,7 @@ import java.io.Serializable;
  * @see     SyntheticWorkloadPhase
  * @see     ExternalFileWorkloadPhase
  */
-public abstract class WorkloadPhase implements Serializable{
+public abstract class WorkloadPhase implements Serializable {
+    /** serial id. */
 	private static final long serialVersionUID = -9071175654542999665L;
 }

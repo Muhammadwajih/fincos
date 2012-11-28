@@ -33,11 +33,12 @@ import pt.uc.dei.fincos.basic.EventType;
 import pt.uc.dei.fincos.basic.Globals;
 
 /**
- * Converts an event, as represented in FINCoS, to a JMS stream message ({@link StreamMessage}), and vice versa.
+ * Converts an event, as represented in FINCoS, to a JMS stream message
+ * ({@link StreamMessage}), and vice versa.
  *
  * @author  Marcelo R.N. Mendes
  */
-public class StreamMessageConverter extends Converter {
+public final class StreamMessageConverter extends Converter {
 
     /**
      * Creates a stream message converter.
@@ -60,7 +61,6 @@ public class StreamMessageConverter extends Converter {
                 msg.writeInt((Integer) payload[i]);
                 break;
             case LONG:
-            case TIMESTAMP:
                 msg.writeLong((Long) payload[i]);
                 break;
             case FLOAT:

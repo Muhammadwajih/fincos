@@ -26,14 +26,14 @@ import java.util.TreeMap;
  * @author  Marcelo R.N. Mendes
  *
  */
-public class Histogram {
+public final class Histogram {
     /** Minimum value for the x-axis of the histogram. */
     private double min;
 
     /** Maximum value for the x-axis of the histogram. */
     private double max;
 
-    /** Width of the hitograms' bins. */
+    /** Width of the histogram's bins. */
     private double binWidth;
 
     /** Number of bins in the histogram. */
@@ -51,8 +51,10 @@ public class Histogram {
     /**
      *
      * @param binWidth		Size of the buckets
-     * @param min			Min value of the histogram (smaller values will be part of the first bucket)
-     * @param max			Max value of the histogram (greater values will be part of the last bucket)
+     * @param min			Min value of the histogram
+     *                      (smaller values will be part of the first bucket)
+     * @param max			Max value of the histogram
+     *                      (greater values will be part of the last bucket)
      * @param cumulative	Indicates if frequencies of the histogram are cumulative or not
      */
     public Histogram(double binWidth, double min, double max, boolean cumulative) {
@@ -67,8 +69,10 @@ public class Histogram {
     /**
      *
      * @param bucketCount	Number of bins
-     * @param min			Min value of the histogram (smaller values will be part of the first bucket)
-     * @param max			Max value of the histogram (greater values will be part of the last bucket)
+     * @param min			Min value of the histogram
+     *                      (smaller values will be part of the first bucket)
+     * @param max			Max value of the histogram
+     *                      (greater values will be part of the last bucket)
      * @param cumulative	Indicates if frequencies of the histogram are cumulative or not
      */
     public Histogram(int bucketCount, double min, double max, boolean cumulative) {
@@ -113,7 +117,7 @@ public class Histogram {
      * Keys are the lower boundary of the bins and the values are
      * the corresponding frequencies.
      *
-     * @return
+     * @return  the histogram
      */
     public TreeMap<Double, Double> getHistogram() {
         TreeMap<Double, Double> ret = new TreeMap<Double, Double>();
@@ -122,25 +126,42 @@ public class Histogram {
             if (!cumulative || i == 0) {
                 ret.put(min + (i) * binWidth, 1.0 * histogram[i] / itemCount);
             } else {
-                ret.put(min + (i) * binWidth, ret.get(min + (i - 1) * binWidth) + 1.0 * histogram[i] / itemCount);
+                ret.put(min + (i) * binWidth,
+                        ret.get(min + (i - 1) * binWidth) + 1.0 * histogram[i] / itemCount);
             }
         }
 
         return ret;
     }
 
+    /**
+     *
+     * @return the minimum value for the x-axis of the histogram
+     */
     public double getMin() {
         return min;
     }
 
+    /**
+     *
+     * @return  the maximum value for the x-axis of the histogram
+     */
     public double getMax() {
         return max;
     }
 
+    /**
+     *
+     * @return  the width of the histogram's bins
+     */
     public double getBinWidth() {
         return binWidth;
     }
 
+    /**
+     *
+     * @return  the number of bins in the histogram
+     */
     public int getBucketCount() {
         return binCount;
     }

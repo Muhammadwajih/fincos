@@ -34,7 +34,6 @@ import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * Manages the connections file.
@@ -49,11 +48,10 @@ public class ConnectionsFileParser {
      * @param path  Path to xml file containing configured connections
      * @return      the list of configured connections
      *
-     * @throws ParserConfigurationException
-     * @throws IOException
-     * @throws SAXException
+     * @throws Exception    if an error occurs while parsing the XML connections file.
      */
-    public static ConnectionConfig[] getConnections(String path) throws ParserConfigurationException, SAXException, IOException {
+    public static ConnectionConfig[] getConnections(String path)
+    throws Exception {
         ConnectionConfig[] ret = null;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
@@ -62,8 +60,8 @@ public class ConnectionsFileParser {
         Document doc = builder.parse(configFile);
         Element xmlFileRoot = doc.getDocumentElement();
         if (xmlFileRoot != null) {
-            Element connectionsList = (Element) xmlFileRoot.getElementsByTagName("Connections").item(0);
-
+            Element connectionsList = (Element) xmlFileRoot.
+                                       getElementsByTagName("Connections").item(0);
             NodeList connections = connectionsList.getElementsByTagName("Connection");
             ret = new ConnectionConfig[connections.getLength()];
             Element conn;
@@ -85,7 +83,8 @@ public class ConnectionsFileParser {
                     connProps.put("cfName", customProp);
                     type = ConnectionConfig.JMS;
                 } else {
-                    throw new InvalidParameterException("Invalid connection type \"" + typeStr + "\".");
+                    throw new InvalidParameterException("Invalid connection type \""
+                                                        + typeStr + "\".");
                 }
                 Element propList = (Element) conn.getElementsByTagName("Properties").item(0);
                 NodeList properties = propList.getElementsByTagName("Property");
@@ -108,11 +107,15 @@ public class ConnectionsFileParser {
      * @param connCfgs  the list of connections
      * @param filePath  the path of XML file
      *
-     * @throws ParserConfigurationException     if an error occurs during creation of the XML document
-     * @throws IOException                      if an error occurs when writing data to the file at disk
-     * @throws TransformerException
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open/write the connections file
      */
-    public static void saveToFile(ConnectionConfig[] connCfgs, String filePath) throws ParserConfigurationException, IOException, TransformerException {
+    public static void saveToFile(ConnectionConfig[] connCfgs, String filePath)
+    throws ParserConfigurationException, TransformerException, IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         builder = factory.newDocumentBuilder();
@@ -156,11 +159,15 @@ public class ConnectionsFileParser {
      *
      * @param filePath  the path of XML file
      *
-     * @throws ParserConfigurationException     if an error occurs during creation of the XML document
-     * @throws IOException                      if an error occurs when writing data to the file at disk
-     * @throws TransformerException
+     * @throws ParserConfigurationException     if an error occurs while
+     *                                          creating the XML document
+     * @throws TransformerException             if an error occurs while trying
+     *                                          to transform the XML into text
+     * @throws IOException                      if an error occurs while trying
+     *                                          to open/write the connections file
      */
-    public static void createEmptyFile(String filePath) throws ParserConfigurationException, IOException, TransformerException {
+    public static void createEmptyFile(String filePath)
+    throws ParserConfigurationException, TransformerException, IOException {
         File f = new File(filePath);
         if (!f.exists()) {
             f.createNewFile();
