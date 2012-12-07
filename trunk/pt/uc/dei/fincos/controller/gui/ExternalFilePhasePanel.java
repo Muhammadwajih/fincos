@@ -798,7 +798,7 @@ public class ExternalFilePhasePanel extends javax.swing.JPanel {
     protected javax.swing.JSpinner loopSpinner;
     private javax.swing.JPanel optionsPanel;
     protected javax.swing.JTextField otherCharField;
-    private javax.swing.JRadioButton otherRdBtn;
+    protected javax.swing.JRadioButton otherRdBtn;
     protected javax.swing.JTextField rateField;
     private javax.swing.JPanel schemaPanel;
     private javax.swing.JTable schemaTable;

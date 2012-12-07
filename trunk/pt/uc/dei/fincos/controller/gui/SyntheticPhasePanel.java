@@ -42,7 +42,7 @@ import pt.uc.dei.fincos.driver.SyntheticWorkloadPhase;
  * @author  Marcelo R.N. Mendes
  *
  */
-@SuppressWarnings({"serial", "rawtypes"})
+@SuppressWarnings({"serial", "rawtypes" })
 public class SyntheticPhasePanel extends javax.swing.JPanel {
 
     /** serial id. */

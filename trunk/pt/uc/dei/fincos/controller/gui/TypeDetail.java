@@ -18,6 +18,7 @@
 
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -28,6 +29,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.UIManager;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
@@ -42,7 +44,7 @@ import pt.uc.dei.fincos.basic.EventType;
  *
  * @author  Marcelo R.N. Mendes
  */
-@SuppressWarnings({"serial", "rawtypes"})
+@SuppressWarnings({ "serial", "rawtypes" })
 public final class TypeDetail extends ComponentDetail {
 
     /** serial id. */
@@ -365,17 +367,26 @@ public final class TypeDetail extends ComponentDetail {
         });
     }
 
-
-    /**
-     * Checks if the input provided by the user in the GUI is valid.
-     *
-     * @return              <tt>true</tt> if the input is valid, <tt>false</tt> otherwise.
-     */
+    @Override
     public boolean validateFields() {
+        boolean ret = true;
         if (nameField.getText() == null || nameField.getText().isEmpty()) {
-            return false;
+            nameField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            Color defaultColor = UIManager.getColor("TextField.background");
+            nameField.setBackground(defaultColor);
         }
-        return columnsTable.getRowCount() > 1;
+
+        if (columnsTable.getRowCount() <= 1) {
+            columnsTable.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            Color defaultColor = UIManager.getColor("Table.background");
+            columnsTable.setBackground(defaultColor);
+        }
+
+        return ret;
     }
 
 

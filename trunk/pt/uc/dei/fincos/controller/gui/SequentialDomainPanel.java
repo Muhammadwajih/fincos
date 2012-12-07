@@ -18,10 +18,13 @@
 
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+
+import javax.swing.UIManager;
 
 import pt.uc.dei.fincos.basic.SequentialDomain;
 import pt.uc.dei.fincos.random.ConstantVariate;
@@ -240,7 +243,13 @@ public final class SequentialDomainPanel extends javax.swing.JPanel {
                 initialParam1Field.setEnabled(initialRandomRadio.isSelected());
                 initialParam2Lbl.setEnabled(initialRandomRadio.isSelected());
                 initialParam2Field.setEnabled(initialRandomRadio.isSelected());
-
+                Color defaultColor = UIManager.getColor("TextField.background");
+                if (!initialConstantRadio.isSelected()) {
+                    initialConstantField.setBackground(defaultColor);
+                } else {
+                    initialParam1Field.setBackground(defaultColor);
+                    initialParam2Field.setBackground(defaultColor);
+                }
             }
         };
         initialConstantRadio.addItemListener(l1);
@@ -256,6 +265,13 @@ public final class SequentialDomainPanel extends javax.swing.JPanel {
                 incrParam1Field.setEnabled(incrementRandomRadio.isSelected());
                 incrParam2Lbl.setEnabled(incrementRandomRadio.isSelected());
                 incrParam2Field.setEnabled(incrementRandomRadio.isSelected());
+                Color defaultColor = UIManager.getColor("TextField.background");
+                if (!incrementConstantRadio.isSelected()) {
+                    incrementConstantField.setBackground(defaultColor);
+                } else {
+                    incrParam1Field.setBackground(defaultColor);
+                    incrParam2Field.setBackground(defaultColor);
+                }
             }
         };
         incrementConstantRadio.addItemListener(l2);
@@ -349,27 +365,125 @@ public final class SequentialDomainPanel extends javax.swing.JPanel {
         }
     }
 
+    /**
+    *
+    * Checks if the fields in the UI have been correctly filled.
+    *
+    * @return  <tt>true</tt> if all the parameters have been correctly filled,
+    *          <tt>false</tt> otherwise
+    */
     public boolean validateFields() {
-        return ( // checks initial value
-                ((initialConstantRadio.isSelected()
-                && initialConstantField.getText() != null
-                && !initialConstantField.getText().isEmpty())
-                || (initialRandomRadio.isSelected()
-                && initialParam1Field.getText() != null
-                && !initialParam1Field.getText().isEmpty()
-                && (initialRandomVariateCombo.getSelectedItem().equals("Exponential")
-                || initialParam2Field.getText() != null
-                && !initialParam2Field.getText().isEmpty())))
-                && // checks increment
-                ((incrementConstantRadio.isSelected()
-                && incrementConstantField.getText() != null
-                && !incrementConstantField.getText().isEmpty())
-                || (incrementRandomRadio.isSelected()
-                && incrParam1Field.getText() != null
-                && !incrParam1Field.getText().isEmpty()
-                && (incrementRandomVariateCombo.getSelectedItem().equals("Exponential")
-                || incrParam2Field.getText() != null
-                && !incrParam2Field.getText().isEmpty()))));
+        boolean ret = true;
+
+        if (initialConstantRadio.isSelected()) {
+            if (initialConstantField.getText() == null
+             || initialConstantField.getText().isEmpty()) {
+                initialConstantField.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String initConst = initialConstantField.getText();
+                    Double.parseDouble(initConst);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    initialConstantField.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    initialConstantField.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+        }
+
+        if (initialRandomRadio.isSelected()) {
+            if (initialParam1Field.getText() == null
+             || initialParam1Field.getText().isEmpty()) {
+                initialParam1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String p1 = initialParam1Field.getText();
+                    Double.parseDouble(p1);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    initialParam1Field.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    initialParam1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+
+            if (!initialRandomVariateCombo.getSelectedItem().equals("Exponential")) {
+                if (initialParam2Field.getText() == null
+                 || initialParam2Field.getText().isEmpty()) {
+                    initialParam2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    try {
+                        String p2 = initialParam2Field.getText();
+                        Double.parseDouble(p2);
+                        Color defaultColor = UIManager.getColor("TextField.background");
+                        initialParam2Field.setBackground(defaultColor);
+                    } catch (NumberFormatException nfe) {
+                        initialParam2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                        ret = false;
+                    }
+                }
+            }
+        }
+
+        if (incrementConstantRadio.isSelected()) {
+            if (incrementConstantField.getText() == null
+             || incrementConstantField.getText().isEmpty()) {
+                incrementConstantField.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String initConst = incrementConstantField.getText();
+                    Double.parseDouble(initConst);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    incrementConstantField.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    incrementConstantField.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+        }
+
+        if (incrementRandomRadio.isSelected()) {
+            if (incrParam1Field.getText() == null
+             || incrParam1Field.getText().isEmpty()) {
+                incrParam1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String p1 = incrParam1Field.getText();
+                    Double.parseDouble(p1);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    incrParam1Field.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    incrParam1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+
+            if (!incrementRandomVariateCombo.getSelectedItem().equals("Exponential")) {
+                if (incrParam2Field.getText() == null
+                 || incrParam2Field.getText().isEmpty()) {
+                    incrParam2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    try {
+                        String p2 = incrParam2Field.getText();
+                        Double.parseDouble(p2);
+                        Color defaultColor = UIManager.getColor("TextField.background");
+                        incrParam2Field.setBackground(defaultColor);
+                    } catch (NumberFormatException nfe) {
+                        incrParam2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                        ret = false;
+                    }
+                }
+            }
+        }
+
+        return ret;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     protected javax.swing.JTextField incrParam1Field;

@@ -18,6 +18,7 @@
 
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,6 +30,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
 import pt.uc.dei.fincos.controller.ConnectionConfig;
@@ -262,57 +264,71 @@ public final class ConnectionDetail extends ComponentDetail {
         okBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if ((op == INSERT && !isUnique(aliasField.getText()))
-                        ||
-                    (op == UPDATE && !oldCfg.alias.equals(aliasField.getText()) && !isUnique(aliasField.getName()))) {
-                    JOptionPane.showMessageDialog(null, "There is already a connection named \""
-                            + aliasField.getText() + "\".", "Invalid Input",
-                            JOptionPane.ERROR_MESSAGE);
-                } else {
-                    String alias = aliasField.getText();
-                    int type = cepAdapterRadioBtn.isSelected() ? ConnectionConfig.CEP_ADAPTER : ConnectionConfig.JMS;
-                    LinkedHashMap<String, String> props = new LinkedHashMap<String, String>();
-                    if (type == ConnectionConfig.CEP_ADAPTER) {
-                        props.put("engine", customPropertyField.getText());
+                if (validateFields()) {
+                    if ((op == INSERT && !isUnique(aliasField.getText()))
+                        || (op == UPDATE && !oldCfg.alias.equals(aliasField.getText())
+                         && !isUnique(aliasField.getName()))) {
+                        JOptionPane.showMessageDialog(null, "There is already a connection named \""
+                                + aliasField.getText() + "\".", "Invalid Input",
+                                JOptionPane.ERROR_MESSAGE);
                     } else {
-                        props.put("cfName", customPropertyField.getText());
-                    }
-                    for (int i = 0; i < propertiesTable.getRowCount(); i++) {
-                        String name = (String) propertiesTable.getValueAt(i, 0);
-                        String value = (String) propertiesTable.getValueAt(i, 1);
-                        if (name == null || name.isEmpty()) {
-                            continue;
+                        String alias = aliasField.getText();
+                        int type = cepAdapterRadioBtn.isSelected()
+                                 ? ConnectionConfig.CEP_ADAPTER
+                                 : ConnectionConfig.JMS;
+                        LinkedHashMap<String, String> props = new LinkedHashMap<String, String>();
+                        if (type == ConnectionConfig.CEP_ADAPTER) {
+                            props.put("engine", customPropertyField.getText());
+                        } else {
+                            props.put("cfName", customPropertyField.getText());
                         }
-                        props.put(name, value);
-                    }
-                    ConnectionConfig newCfg = new ConnectionConfig(alias, type, props);
-                    if (parent instanceof ConnectionsDialog) {
-                        switch (op) {
-                        case UPDATE:
-                            ((ConnectionsDialog) parent).updateConnection(oldCfg, newCfg);
-                            break;
-                        case INSERT:
-                            ((ConnectionsDialog) parent).addConnection(newCfg);
+                        for (int i = 0; i < propertiesTable.getRowCount(); i++) {
+                            String name = (String) propertiesTable.getValueAt(i, 0);
+                            String value = (String) propertiesTable.getValueAt(i, 1);
+                            if (name == null || name.isEmpty()) {
+                                continue;
+                            }
+                            props.put(name, value);
                         }
-                    } else if (parent instanceof DriverDetail) {
-                        try {
-                            Controller_GUI.getInstance().addConnection(newCfg);
-                            ((DriverDetail) parent).updateConnectionsList();
-                        } catch (Exception e1) {
-                            JOptionPane.showMessageDialog(null, "Could not create connection ("
-                                    + e1.getMessage() + ").", "Error", JOptionPane.ERROR_MESSAGE);
+                        ConnectionConfig newCfg = new ConnectionConfig(alias, type, props);
+                        if (parent instanceof ConnectionsDialog) {
+                            switch (op) {
+                            case UPDATE:
+                                ((ConnectionsDialog) parent).updateConnection(oldCfg, newCfg);
+                                break;
+                            case INSERT:
+                                ((ConnectionsDialog) parent).addConnection(newCfg);
+                                break;
+                            }
+                        } else if (parent instanceof DriverDetail) {
+                            try {
+                                Controller_GUI.getInstance().addConnection(newCfg);
+                                ((DriverDetail) parent).updateConnectionsList();
+                            } catch (Exception e1) {
+                                JOptionPane.showMessageDialog(null,
+                                        "Could not create connection (" + e1.getMessage() + ").",
+                                        "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } else if (parent instanceof SinkDetail) {
+                            try {
+                                Controller_GUI.getInstance().addConnection(newCfg);
+                                ((SinkDetail) parent).updateConnectionsList();
+                            } catch (Exception e1) {
+                                JOptionPane.showMessageDialog(null,
+                                        "Could not create connection (" + e1.getMessage() + ").",
+                                        "Error", JOptionPane.ERROR_MESSAGE);
+                            }
                         }
-                    } else if (parent instanceof SinkDetail) {
-                        try {
-                            Controller_GUI.getInstance().addConnection(newCfg);
-                            ((SinkDetail) parent).updateConnectionsList();
-                        } catch (Exception e1) {
-                            JOptionPane.showMessageDialog(null, "Could not create connection ("
-                                    + e1.getMessage() + ").", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+
+                        dispose();
                     }
 
-                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(null,
+                            "One or more required fields "
+                          + "were not correctly filled.",
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -383,6 +399,20 @@ public final class ConnectionDetail extends ComponentDetail {
         return true;
     }
 
+    @Override
+    protected boolean validateFields() {
+        boolean ret = true;
+        if (aliasField.getText() == null
+                || aliasField.getText().isEmpty()) {
+            aliasField.setBackground(INVALID_INPUT_COLOR);
+                   ret = false;
+               } else {
+                   Color defaultColor = UIManager.getColor("TextField.background");
+                   aliasField.setBackground(defaultColor);
+               }
+        return ret;
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField aliasField;
     private javax.swing.JLabel aliasLbl;
@@ -398,5 +428,4 @@ public final class ConnectionDetail extends ComponentDetail {
     private javax.swing.JTable propertiesTable;
     private javax.swing.JLabel typeLbl;
     // End of variables declaration//GEN-END:variables
-
 }

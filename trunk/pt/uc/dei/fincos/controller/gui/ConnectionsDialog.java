@@ -345,12 +345,21 @@ public final class ConnectionsDialog extends ComponentDetail {
         dirty = true;
     }
 
+    /**
+     * Disables editing of the UI.
+     */
     public void disableGUI() {
         this.connectionsTable.setEnabled(false);
         this.addBtn.setEnabled(false);
         this.deleteBtn.setEnabled(false);
         this.okBtn.setEnabled(false);
     }
+
+    @Override
+    protected boolean validateFields() {
+        return true;
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addBtn;
     private javax.swing.JButton cancelBtn;

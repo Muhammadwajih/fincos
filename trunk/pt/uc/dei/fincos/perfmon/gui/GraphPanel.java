@@ -70,7 +70,7 @@ import pt.uc.dei.fincos.perfmon.Stream;
  * @author  Marcelo R.N. Mendes
  *
  */
-@SuppressWarnings({"serial", "rawtypes", "unchecked"})
+@SuppressWarnings({"serial", "rawtypes", "unchecked" })
 public class GraphPanel extends JPanel {
     /** serial id. */
     private static final long serialVersionUID = -9023933264149434389L;

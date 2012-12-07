@@ -30,7 +30,7 @@ import pt.uc.dei.fincos.basic.PredefinedListDomain;
 
 /**
  *
- * GUI for comfiguring sequential domains.
+ * GUI for configuring predefined-list domains.
  *
  * @author  Marcelo R.N. Mendes
  *
@@ -140,6 +140,12 @@ public final class PredefinedListDomainPanel extends javax.swing.JPanel {
         });
     }
 
+    /**
+     * Fills the UI with the parameters of the column being configured.
+     *
+     * @param datatype  the data type of the column
+     * @param domain    the domain of the column
+     */
     public void fillProperties(Datatype datatype, PredefinedListDomain domain) {
         sameFreqCheck.setSelected(domain.isDeterministic());
 
@@ -169,7 +175,18 @@ public final class PredefinedListDomainPanel extends javax.swing.JPanel {
         }
     }
 
-    public boolean validateFields(String dataType) throws Exception {
+    /**
+     * Checks if the fields in the UI have been correctly filled.
+     *
+     * @param dataType  the data type of the column
+     *
+     * @return  <tt>true</tt> if all the parameters have been correctly filled,
+     *          <tt>false</tt> otherwise
+     *
+     * @throws Exception  for customized error messages
+     *
+     */
+    protected boolean validateFields(String dataType) throws Exception {
         DefaultTableModel model = (DefaultTableModel) itemsTable.getModel();
         if (model.getRowCount() < 1) {
             return false;
@@ -178,8 +195,10 @@ public final class PredefinedListDomainPanel extends javax.swing.JPanel {
             for (int i = 0; i < model.getRowCount(); i++) {
                 item = (String) model.getValueAt(i, 0);
                 if (item == null || item.isEmpty()
-                        || (!sameFreqCheck.isSelected() && (model.getValueAt(i, 1) == null || model.getValueAt(i, 1).equals("")))) {
-                    return false;
+                 || (!sameFreqCheck.isSelected()
+                  && (model.getValueAt(i, 1) == null
+                   || model.getValueAt(i, 1).equals("")))) {
+                    throw new Exception("Invalid frequency. (row " + (i + 1) + ").");
                 }
 
                 String type = "datatype";
@@ -194,7 +213,9 @@ public final class PredefinedListDomainPanel extends javax.swing.JPanel {
                                 || item.equalsIgnoreCase("0")) {
                             model.setValueAt("false", i, 0);
                         } else {
-                            throw new Exception("\"" + item + "\" is not a valid BOOLEAN. (row " + (i + 1) + ").");
+                            throw new Exception("\"" + item
+                                             + "\" is not a valid BOOLEAN. (row "
+                                             + (i + 1) + ").");
                         }
                     }
                     if (dataType.equals("DOUBLE")) {
