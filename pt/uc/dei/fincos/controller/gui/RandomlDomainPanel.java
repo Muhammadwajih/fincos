@@ -18,8 +18,11 @@
 
 package pt.uc.dei.fincos.controller.gui;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import javax.swing.UIManager;
 
 import pt.uc.dei.fincos.basic.RandomDomain;
 import pt.uc.dei.fincos.random.RandomExponentialVariate;
@@ -165,12 +168,52 @@ public final class RandomlDomainPanel extends javax.swing.JPanel {
         }
     }
 
+    /**
+     *
+     * Checks if the fields in the UI have been correctly filled.
+     *
+     * @return  <tt>true</tt> if all the parameters have been correctly filled,
+     *          <tt>false</tt> otherwise
+     */
     public boolean validateFields() {
-        return (param1Field.getText() != null
-                && !param1Field.getText().isEmpty()
-                && (distrCombo.getSelectedItem().equals("Exponential")
-                || param2Field.getText() != null
-                && !param2Field.getText().isEmpty()));
+        boolean ret = true;
+
+        if (param1Field.getText() == null
+         || param1Field.getText().isEmpty()) {
+            param1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            try {
+                String p1 = param1Field.getText();
+                Double.parseDouble(p1);
+                Color defaultColor = UIManager.getColor("TextField.background");
+                param1Field.setBackground(defaultColor);
+            } catch (NumberFormatException nfe) {
+                param1Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            }
+        }
+
+        if (!distrCombo.getSelectedItem().equals("Exponential")) {
+            if (param2Field.getText() == null
+                    || param2Field.getText().isEmpty()) {
+                param2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String p2 = param2Field.getText();
+                    Double.parseDouble(p2);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    param2Field.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    param2Field.setBackground(ComponentDetail.INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+        }
+
+
+        return ret;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     protected javax.swing.JComboBox distrCombo;

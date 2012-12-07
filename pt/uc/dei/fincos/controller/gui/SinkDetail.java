@@ -512,16 +512,19 @@ public final class SinkDetail extends ComponentDetail {
         }
     }
 
-    private boolean validateFields() {
+
+
+    @Override
+    protected boolean validateFields() {
         boolean ret = true;
-        if (this.aliasField == null || this.aliasField.getText().isEmpty()) {
+        if (this.aliasField.getText() == null || this.aliasField.getText().isEmpty()) {
             this.aliasField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
             this.aliasField.setBackground(UIManager.getColor("TextField.background"));
         }
 
-        if (this.addressField == null
+        if (this.addressField.getText() == null
          || this.addressField.getText().isEmpty()) {
             this.addressField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
@@ -530,8 +533,8 @@ public final class SinkDetail extends ComponentDetail {
         }
 
         if (this.connCombo.getSelectedIndex() == -1
-         || this.connCombo.getSelectedIndex() >=
-            Controller_GUI.getInstance().getConnections().length) {
+         || this.connCombo.getSelectedIndex() >= Controller_GUI.getInstance().
+                                                 getConnections().length) {
             this.connCombo.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {

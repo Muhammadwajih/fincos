@@ -19,6 +19,7 @@
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
 import pt.uc.dei.fincos.basic.Attribute;
@@ -62,7 +64,7 @@ public final class PhaseDetail extends ComponentDetail {
     private ExternalFilePhasePanel externalFilePanel;
 
     /** The parent component of this form. */
-    final DriverDetail parent;
+    private final DriverDetail parent;
 
     /**
      * Creates new form PhaseDetail.
@@ -235,13 +237,8 @@ public final class PhaseDetail extends ComponentDetail {
 
                             Long randomSeed = null;
                             if (syntheticPanel.dataGenSeedCheck.isSelected()) {
-                                try {
-                                    String rndSeedStr = syntheticPanel.dataGenSeedField.getText();
-                                    randomSeed = Long.parseLong(rndSeedStr);
-                                } catch (NumberFormatException nfe) {
-                                    JOptionPane.showMessageDialog(null, "Invalid seed value.");
-                                    return;
-                                }
+                                String rndSeedStr = syntheticPanel.dataGenSeedField.getText();
+                                randomSeed = Long.parseLong(rndSeedStr);
                             }
 
                             for (int i = 0; i < model.getRowCount() - 1; i++) {
@@ -314,10 +311,15 @@ public final class PhaseDetail extends ComponentDetail {
 
 
                     } else {
-                        JOptionPane.showMessageDialog(null, "One or more required fields were not correctly filled.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null,
+                                                      "One or more required fields "
+                                                    + "were not correctly filled.",
+                                                      "Invalid Input",
+                                                      JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (NumberFormatException nfe) {
-                    JOptionPane.showMessageDialog(null, "Invalid value at Synthetic workload table");
+                    JOptionPane.showMessageDialog(null,
+                                                  "Invalid value at Synthetic workload table");
                 } catch (Exception exc) {
                     JOptionPane.showMessageDialog(null, exc.getMessage());
                 }
@@ -376,6 +378,12 @@ public final class PhaseDetail extends ComponentDetail {
         this.repaint();
     }
 
+    /**
+     * Updates a data type from this (synthetic) phase.
+     *
+     * @param oldType   the old configuration of the type
+     * @param newType   the new configuration of the type
+     */
     public void updateEventType(EventType oldType, EventType newType) {
         int index = this.syntheticTypes.indexOf(oldType);
 
@@ -395,7 +403,10 @@ public final class PhaseDetail extends ComponentDetail {
      */
     public void addEventType(int index, EventType newType) {
         this.syntheticTypes.add(index, newType);
-        ((DefaultTableModel) syntheticPanel.schemaTable.getModel()).insertRow(index, new Object[] {newType.getName(), newType.getAttributesNamesList(), "1.0"});
+        Object[] row = new Object[] {newType.getName(),
+                                     newType.getAttributesNamesList(),
+                                     "1.0"};
+        ((DefaultTableModel) syntheticPanel.schemaTable.getModel()).insertRow(index, row);
     }
 
     /**
@@ -406,30 +417,151 @@ public final class PhaseDetail extends ComponentDetail {
     public void addEventType(EventType newType) {
         this.syntheticTypes.add(newType);
         DefaultTableModel model = ((DefaultTableModel) syntheticPanel.schemaTable.getModel());
-        model.insertRow(model.getRowCount() - 1, new Object[] {newType.getName(), newType.getAttributesNamesList(), "1.0"});
+        Object[] row = new Object[] {newType.getName(),
+                                     newType.getAttributesNamesList(),
+                                     "1.0"};
+        model.insertRow(model.getRowCount() - 1, row);
     }
 
+    /**
+     * Removes a data type from this (synthetic) phase.
+     *
+     * @param index     the index of the type to be removed
+     */
     private void removeEventType(int index) {
         syntheticTypes.remove(index);
         ((DefaultTableModel) syntheticPanel.schemaTable.getModel()).removeRow(index);
     }
 
-    private boolean validateFields() {
+    @Override
+    protected boolean validateFields() {
+        boolean ret = true;
         if (syntheticRadio.isSelected()) { // synthetic data
-            return (syntheticPanel.durationTextField.getText() != null
-                 && !syntheticPanel.durationTextField.getText().isEmpty()
-                 && syntheticPanel.initialRateTextField.getText() != null
-                 && !syntheticPanel.initialRateTextField.getText().isEmpty()
-                 && syntheticPanel.finalRateTextField.getText() != null
-                 && !syntheticPanel.finalRateTextField.getText().isEmpty()
-                 && syntheticPanel.schemaTable.getRowCount() > 1
-                 && (!syntheticPanel.dataGenSeedCheck.isSelected()
-                  || syntheticPanel.dataGenSeedField.getText() != null
-                  && !syntheticPanel.dataGenSeedField.getText().isEmpty()
-                    )
-            );
+            if (syntheticPanel.durationTextField.getText() == null
+             || syntheticPanel.durationTextField.getText().isEmpty()) {
+                syntheticPanel.durationTextField.setBackground(INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String duration = syntheticPanel.durationTextField.getText();
+                    Integer.parseInt(duration);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    syntheticPanel.durationTextField.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    syntheticPanel.durationTextField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+
+            if (syntheticPanel.initialRateTextField.getText() == null
+             || syntheticPanel.initialRateTextField.getText().isEmpty()) {
+                syntheticPanel.initialRateTextField.setBackground(INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String initRate = syntheticPanel.initialRateTextField.getText();
+                    Double.parseDouble(initRate);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    syntheticPanel.initialRateTextField.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    syntheticPanel.initialRateTextField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+
+            if (syntheticPanel.finalRateTextField.getText() == null
+             || syntheticPanel.finalRateTextField.getText().isEmpty()) {
+                syntheticPanel.finalRateTextField.setBackground(INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                try {
+                    String finalRate = syntheticPanel.finalRateTextField.getText();
+                    Double.parseDouble(finalRate);
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    syntheticPanel.finalRateTextField.setBackground(defaultColor);
+                } catch (NumberFormatException nfe) {
+                    syntheticPanel.finalRateTextField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                }
+            }
+
+            if (syntheticPanel.schemaTable.getRowCount() <= 1) {
+                syntheticPanel.schemaTable.setBackground(INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                Color defaultColor = UIManager.getColor("Table.background");
+                syntheticPanel.schemaTable.setBackground(defaultColor);
+            }
+
+            if (syntheticPanel.dataGenSeedCheck.isSelected()) {
+                if (syntheticPanel.dataGenSeedField.getText() == null
+                 || syntheticPanel.dataGenSeedField.getText().isEmpty()) {
+                    syntheticPanel.dataGenSeedField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    try {
+                        String rndSeed = syntheticPanel.dataGenSeedField.getText();
+                        Long.parseLong(rndSeed);
+                        Color defaultColor = UIManager.getColor("TextField.background");
+                        syntheticPanel.dataGenSeedField.setBackground(defaultColor);
+                    } catch (NumberFormatException nfe) {
+                        syntheticPanel.dataGenSeedField.setBackground(INVALID_INPUT_COLOR);
+                        ret = false;
+                    }
+                }
+            }
+
         } else { // external file
-            return (externalFilePanel.filePathField.getText() != null
+            if (externalFilePanel.filePathField.getText() == null
+             || externalFilePanel.filePathField.getText().isEmpty()) {
+                externalFilePanel.filePathField.setBackground(INVALID_INPUT_COLOR);
+                ret = false;
+            } else {
+                Color defaultColor = UIManager.getColor("TextField.background");
+                externalFilePanel.filePathField.setBackground(defaultColor);
+            }
+
+            if (externalFilePanel.otherRdBtn.isSelected()) {
+                if (externalFilePanel.otherCharField.getText() == null
+                 || externalFilePanel.otherCharField.getText().isEmpty()) {
+                    externalFilePanel.otherCharField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    externalFilePanel.otherCharField.setBackground(defaultColor);
+                }
+            }
+
+            if (externalFilePanel.useFixedRateRdBtn.isSelected()) {
+                if (externalFilePanel.rateField.getText() == null
+                 || externalFilePanel.rateField.getText().isEmpty()) {
+                    externalFilePanel.rateField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    try {
+                        String rate = externalFilePanel.rateField.getText();
+                        Double.parseDouble(rate);
+                        Color defaultColor = UIManager.getColor("TextField.background");
+                        externalFilePanel.rateField.setBackground(defaultColor);
+                    } catch (NumberFormatException nfe) {
+                        externalFilePanel.rateField.setBackground(INVALID_INPUT_COLOR);
+                        ret = false;
+                    }
+                }
+            }
+
+            if (externalFilePanel.typeNoRdBtn.isSelected()) {
+                if (externalFilePanel.typeField.getText() == null
+                 || externalFilePanel.typeField.getText().isEmpty()) {
+                    externalFilePanel.typeField.setBackground(INVALID_INPUT_COLOR);
+                    ret = false;
+                } else {
+                    Color defaultColor = UIManager.getColor("TextField.background");
+                    externalFilePanel.typeField.setBackground(defaultColor);
+                }
+            }
+
+           /* return (externalFilePanel.filePathField.getText() != null
                     && !externalFilePanel.filePathField.getText().isEmpty()
                     && (externalFilePanel.tsCheckBox.isSelected()
                         || (!externalFilePanel.tsCheckBox.isSelected()
@@ -440,9 +572,9 @@ public final class PhaseDetail extends ComponentDetail {
                            && externalFilePanel.typeField.getText() != null
                            && !externalFilePanel.typeField.getText().isEmpty())
                     )
-            );
+            );*/
         }
-
+        return ret;
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

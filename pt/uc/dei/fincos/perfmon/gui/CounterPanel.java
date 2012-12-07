@@ -39,7 +39,7 @@ import pt.uc.dei.fincos.perfmon.Stream;
  *
  * @author  Marcelo R.N. Mendes
  */
-@SuppressWarnings({ "unchecked", "rawtypes"})
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class CounterPanel extends javax.swing.JPanel {
     /** serial id. */
     private static final long serialVersionUID = -8102495513812210261L;

@@ -31,7 +31,8 @@ import javax.swing.JDialog;
  */
 public abstract class ComponentDetail extends JDialog {
 
-    public static Color INVALID_INPUT_COLOR = new Color(245, 255, 150);
+    /** Color used to identify fields at the UI that were not properly filled. */
+    public static final Color INVALID_INPUT_COLOR = new Color(245, 255, 150);
 
     /**
      * Creates a non modal form.
@@ -54,4 +55,14 @@ public abstract class ComponentDetail extends JDialog {
 
     /** INSERT GUI mode (a new component is being configured). */
     static final int INSERT = 1;
+
+    /**
+     * Checks if the fields in the UI have been correctly filled.
+     *
+     * @return  <tt>true</tt> if all the parameters have been correctly filled,
+     *          <tt>false</tt> otherwise
+     *
+     * @throws Exception  for customized error messages
+     */
+    protected abstract boolean validateFields() throws Exception;
 }

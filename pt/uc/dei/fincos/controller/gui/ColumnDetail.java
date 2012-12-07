@@ -19,6 +19,7 @@
 package pt.uc.dei.fincos.controller.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
 import pt.uc.dei.fincos.basic.Attribute;
@@ -236,7 +238,8 @@ public final class ColumnDetail extends ComponentDetail {
             @Override
             public void itemStateChanged(ItemEvent e) {
                 if (dataTypeCombo.getSelectedItem().equals("BOOLEAN")) {
-                    DefaultTableModel model = (DefaultTableModel) predefinedPanel.itemsTable.getModel();
+                    DefaultTableModel model =
+                            (DefaultTableModel) predefinedPanel.itemsTable.getModel();
                     int rowCount = model.getRowCount();
                     for (int i = 0; i < rowCount; i++) {
                         model.removeRow(0);
@@ -248,11 +251,6 @@ public final class ColumnDetail extends ComponentDetail {
                     model.addRow(new Object[] {"false", "1.0"});
                     domainTypeCombo.setEnabled(false);
                 } else {
-                    DefaultTableModel model = (DefaultTableModel) predefinedPanel.itemsTable.getModel();
-                    int rowCount = model.getRowCount();
-                    for (int i = 0; i < rowCount; i++) {
-                        model.removeRow(0);
-                    }
                     predefinedPanel.addBtn.setEnabled(true);
                     predefinedPanel.deleteBtn.setEnabled(true);
                     domainTypeCombo.setEnabled(true);
@@ -380,7 +378,8 @@ public final class ColumnDetail extends ComponentDetail {
                     JOptionPane.showMessageDialog(null,
                             "Invalid number format " + nfe.getMessage());
                 } catch (Exception exc) {
-                    JOptionPane.showMessageDialog(null, exc.getMessage());
+                    JOptionPane.showMessageDialog(null, exc.getMessage(),
+                            "Invalid Input", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -471,26 +470,27 @@ public final class ColumnDetail extends ComponentDetail {
         }
     }
 
-    /**
-     * Checks if the input provided by the user in the GUI is valid.
-     *
-     * @return              <tt>true</tt> if the input is valid, <tt>false</tt> otherwise.
-     * @throws Exception    for invalid inputs with a specific error message
-     */
-    private boolean validateFields() throws Exception {
+    @Override
+    protected boolean validateFields() throws Exception {
+        boolean ret = true;
+
         if (nameField.getText() == null || nameField.getText().isEmpty()) {
-            return false;
+            nameField.setBackground(INVALID_INPUT_COLOR);
+            ret = false;
+        } else {
+            Color defaultColor = UIManager.getColor("TextField.background");
+            nameField.setBackground(defaultColor);
         }
 
         if (domainTypeCombo.getSelectedItem().equals("Predefined List")) {
-            return predefinedPanel.validateFields((String) dataTypeCombo.getSelectedItem());
+            ret = ret & predefinedPanel.validateFields((String) dataTypeCombo.getSelectedItem());
         } else if (domainTypeCombo.getSelectedItem().equals("Random")) {
-            return randomPanel.validateFields();
+            ret = ret & randomPanel.validateFields();
         } else if (domainTypeCombo.getSelectedItem().equals("Sequential")) {
-            return sequentialPanel.validateFields();
-        } else {
-            return false;
+            ret = ret & sequentialPanel.validateFields();
         }
+
+        return ret;
     }
 
 

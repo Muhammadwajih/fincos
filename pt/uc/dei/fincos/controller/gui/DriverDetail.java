@@ -602,16 +602,17 @@ public class DriverDetail extends ComponentDetail {
         }
     }
 
-    private boolean validateFields() {
+    @Override
+    protected boolean validateFields() {
         boolean ret = true;
-        if (this.aliasField == null || this.aliasField.getText().isEmpty()) {
+        if (this.aliasField.getText() == null || this.aliasField.getText().isEmpty()) {
             this.aliasField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
         } else {
             aliasField.setBackground(UIManager.getColor("TextField.background"));
         }
 
-        if (this.addressField == null
+        if (this.addressField.getText() == null
                 || this.addressField.getText().isEmpty()) {
             this.addressField.setBackground(INVALID_INPUT_COLOR);
             ret = false;
