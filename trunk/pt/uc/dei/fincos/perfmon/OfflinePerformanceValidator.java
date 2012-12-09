@@ -375,7 +375,7 @@ public final class OfflinePerformanceValidator {
                 int streamType;
                 String header = logReader.getNextLine();
                 totalReadBytes += (header.length() / charsPerByte + 2);
-                if (header != null && header.contains("FINCoS")) {
+                if (header.contains("FINCoS")) {
                     if (header.contains("Driver")) {
                         streamType = Stream.INPUT;
                     } else if (header.contains("Sink")) {
@@ -398,9 +398,7 @@ public final class OfflinePerformanceValidator {
                 // Connection alias
                 connection = logReader.getNextLine();
                 totalReadBytes += (connection.length() / charsPerByte + 2);
-                if (connection != null) {
-                    connection = connection.substring(connection.indexOf(":") + 2);
-                }
+                connection = connection.substring(connection.indexOf(":") + 2);
 
                 // ignores next line of log header (Log Start time)
                 totalReadBytes += (logReader.getNextLine().length() / charsPerByte + 2);
@@ -429,14 +427,11 @@ public final class OfflinePerformanceValidator {
                 }
 
                 // Log sampling rate
-                String logSamplingRateStr = logReader.getNextLine();
-                totalReadBytes += (logSamplingRateStr.length() / charsPerByte + 2);
-                if (logSamplingRateStr != null) {
-                    logSamplingRateStr =
-                            logSamplingRateStr.substring(logSamplingRateStr.indexOf(":") + 2);
-                }
+                String logSamplRateStr = logReader.getNextLine();
+                totalReadBytes += (logSamplRateStr.length() / charsPerByte + 2);
+                logSamplRateStr = logSamplRateStr.substring(logSamplRateStr.indexOf(":") + 2);
                 int logSamplingFactor =
-                        (int) Math.round(1 / Double.parseDouble(logSamplingRateStr));
+                        (int) Math.round(1 / Double.parseDouble(logSamplRateStr));
 
                 double rt;
                 while (keepProcessing && (event = logReader.getNextLine()) != null) {

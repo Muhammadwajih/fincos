@@ -317,7 +317,7 @@ public final class ColumnDetail extends ComponentDetail {
                                     double mean = Double.parseDouble(sequentialPanel.initialParam1Field.getText());
                                     double stdev = Double.parseDouble(sequentialPanel.initialParam2Field.getText());
                                     initialVariate = new RandomNormalVariate(randomSeed, mean, stdev);
-                                } else if (sequentialPanel.initialRandomVariateCombo.getSelectedItem().equals("Exponential")) {
+                                } else { // Exponential
                                     double lambda = Double.parseDouble(sequentialPanel.initialParam1Field.getText());
                                     initialVariate = new RandomExponentialVariate(randomSeed, lambda);
                                 }
@@ -334,7 +334,7 @@ public final class ColumnDetail extends ComponentDetail {
                                     double mean = Double.parseDouble(sequentialPanel.incrParam1Field.getText());
                                     double stdev = Double.parseDouble(sequentialPanel.incrParam2Field.getText());
                                     incrementVariate = new RandomNormalVariate(randomSeed, mean, stdev);
-                                } else if (sequentialPanel.incrementRandomVariateCombo.getSelectedItem().equals("Exponential")) {
+                                } else { // Exponential
                                     double lambda = Double.parseDouble(sequentialPanel.incrParam1Field.getText());
                                     incrementVariate = new RandomExponentialVariate(randomSeed, lambda);
                                 }

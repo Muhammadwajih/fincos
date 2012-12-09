@@ -95,7 +95,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
     /** Configuration parameters of this driver. */
     private DriverConfig drConfig;
 
-    /** How this Driver sends events to CEP engines (directly through their API or through JMS messages). */
+    /** How this Driver sends events to CEP engines
+     * (directly through their API or through JMS messages). */
     private AdapterType adapterType;
 
     /** How latency is computed (Either END-TO-END or ADAPTER). */
@@ -179,7 +180,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
         statusPanel =  new JPanel();
         statusPanel.setLayout(null);
         statusPanel.setPreferredSize(new Dimension(200, 400));
-        statusPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Status"));
+        statusPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Status"));
         statusLabel = new JLabel();
         bar = new JProgressBar(0, 100);
         bar.setStringPainted(true);
@@ -197,7 +199,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
         eventCountLabel.setBounds(20, 75, 175, 50);
 
         infoArea = new JTextArea(10, 30);
-        infoArea.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
+        infoArea.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), "Info"));
         JScrollPane infoScroll = new JScrollPane(infoArea);
         infoArea.setEditable(false);
 
@@ -245,6 +248,78 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
 
     }
 
+    /**
+     * Displays a summary of a given workload phase on Driver's UI.
+     *
+     * @param phaseNo   the number of the phase
+     * @param w         the phase
+     */
+    private void printPhaseSummary(int phaseNo, WorkloadPhase w) {
+        if (w instanceof SyntheticWorkloadPhase) {
+            SyntheticWorkloadPhase sPhase = (SyntheticWorkloadPhase) w;
+            showInfo(" Phase " + phaseNo + ": Synthetic workload"
+                    + "\n\tApproximate phase duration: "
+                    + sPhase.getDuration() + " seconds ("
+                    + new DecimalFormat("###.##").format(sPhase.getDuration() / 3600.0)
+                    + " hour(s))."
+                    + "  \n\tEvent submission rates:\n\t\tinitial: "
+                    + sPhase.getInitialRate() + " events/second."
+                    + "\n\t\tfinal:" + sPhase.getFinalRate() + " events/second."
+                    + "\n\t\taverage: "
+                    + ((sPhase.getInitialRate() + sPhase.getFinalRate()) / 2)
+                    + " events/second."
+                    + "\n\t\tPoisson: "
+                    + (sPhase.getArrivalProcess() == ArrivalProcess.POISSON ? "Yes" : "No")
+                    + "\n\tEvent count: " + sPhase.getTotalEventCount() + " events."
+                    );
+        } else if (w instanceof ExternalFileWorkloadPhase) {
+            ExternalFileWorkloadPhase filePhase = (ExternalFileWorkloadPhase) w;
+            String detailInfo = " Phase " + phaseNo + ": External File workload"
+                    + "\n\tFile path: " + filePhase.getFilePath()
+                    + "\n\tLoop count: " + filePhase.getLoopCount();
+            // timestamp info
+            if (filePhase.containsTimestamps()) {
+                detailInfo += "\n\tContains timestamps: Yes, expressed in ";
+                switch (filePhase.getTimestampUnit()) {
+                case ExternalFileWorkloadPhase.MILLISECONDS:
+                    detailInfo += "milliseconds";
+                    break;
+                case ExternalFileWorkloadPhase.SECONDS:
+                    detailInfo += "seconds";
+                    break;
+                case ExternalFileWorkloadPhase.DATE_TIME:
+                    detailInfo += "date/time";
+                }
+                if (filePhase.isUsingTimestamps()) {
+                    detailInfo += "\n\tUse timestamps for event submission: Yes";
+                } else {
+                    detailInfo += "\n\tUse timestamps for event submission: No";
+                    detailInfo += "\n\tEvents will be submitted at a rate of "
+                            + filePhase.getEventSubmissionRate()
+                            + " events/sec.";
+                }
+            } else {
+                detailInfo += "\n\tContains timestamps: No";
+                detailInfo += "\n\tEvents will be submitted at a rate of "
+                        + filePhase.getEventSubmissionRate() + " events/sec.";
+            }
+            //Event types info
+            if (filePhase.containsEventTypes()) {
+                detailInfo += "\n\tContains event types: Yes";
+            } else {
+                detailInfo += "\n\tContains event types: No";
+                detailInfo += " (all events in the file are of the same type: \""
+                        + filePhase.getSingleEventTypeName() + "\")";
+            }
+            showInfo(detailInfo);
+        }
+    }
+
+    /**
+     * Displays a message on Driver's UI.
+     *
+     * @param msg   the message to be displayed
+     */
     private void showInfo(final String msg) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -255,13 +330,25 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
          });
     }
 
+    /**
+     * Locates the RMI registry and binds this Driver.
+     *
+     * @throws RemoteException  if an error occurs when contacting the registry.
+     */
     private void initializeRMI() throws RemoteException {
-        DriverRemoteFunctions stub = (DriverRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
+        DriverRemoteFunctions stub = (DriverRemoteFunctions)
+                UnicastRemoteObject.exportObject(this, 0);
         Registry registry = LocateRegistry.getRegistry(Globals.RMI_PORT);
         registry.rebind(this.alias, stub);
     }
 
 
+    /**
+     * Updates the state and progress of this Driver.
+     *
+     * @param s         the activity being currently performed by this Driver
+     * @param progress  the progress of the activity
+     */
     private void updateStatus(Step s, double progress) {
         synchronized (this.status) {
             this.status.setStep(s);
@@ -271,6 +358,9 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
 
     }
 
+    /**
+     * Updates the UI of this Driver.
+     */
     private void updateScreen() {
         switch (this.status.getStep()) {
         case DISCONNECTED:
@@ -384,90 +474,19 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
 
             // Logging
             if (drConfig.isLoggingEnabled()) {
-                // Logging
-                String logHeader = "FINCoS Driver Log File."
-                    + "\n Driver Alias: " + cfg.getAlias()
-                    + "\n Driver Address: " + cfg.getAddress().getHostAddress()
-                    + "\n Connection: " + cfg.getConnection().alias
-                    + "\n Load generation start time: " + new Date();
-
-                try {
-                    String logFile = Globals.APP_PATH + "log" + File.separator
-                                   + cfg.getAlias() + ".log";
-                    logger = new Logger(logFile, logHeader,
-                                        cfg.getLogFlushInterval(),
-                                        cfg.getLoggingSamplingRate(),
-                                        cfg.getFieldsToLog());
-                } catch (IOException e) {
-                    this.showInfo("ERROR: Could not open log file (" + e.getMessage() + ").");
-                    this.updateStatus(Step.ERROR, this.status.getProgress());
+                boolean ok = openLogFile(cfg);
+                if (!ok) {
                     return false;
                 }
             }
 
+            // Connection with SUT
             ConnectionConfig connCfg = drConfig.getConnection();
-            Properties connProps = new Properties();
-            for (Entry<String, String> e: connCfg.properties.entrySet()) {
-                connProps.put(e.getKey(), e.getValue());
+            boolean connOk = connect(connCfg);
+            if (!connOk) {
+                return false;
             }
-            // Tries to connect to JMS Provider
-            if (drConfig.getConnection().type == ConnectionConfig.JMS) {
-                this.adapterType = AdapterType.JMS;
-                if (jmsInterface != null) {
-                    try {
-                        jmsInterface.disconnect();
-                        jmsInterface = null;
-                    } catch (Exception e) {
-                        System.err.println("Could not disconnect from JMS provider. (" + e.getMessage() + ")");
-                    }
-                }
-
-                try {
-                    this.showInfo("Trying to establish connection with JMS provider...");
-                    String cfName = connCfg.properties.get("cfName");
-                    this.jmsInterface = new JMS_Writer(connProps, cfName, drConfig.getStreamNames(),
-                                        rtMode, rtResolution);
-                    this.showInfo("Done!");
-                } catch (Exception e) {
-                    this.showInfo("ERROR: Could not connect to JMS provider. (" + e.getMessage() + ").");
-                    this.updateStatus(Step.ERROR, this.status.getProgress());
-                    return false;
-                } catch (Error err) {
-                    this.showInfo("ERROR: Could not connect to JMS provider. (" + err.getMessage() + ").");
-                    this.updateStatus(Step.ERROR, this.status.getProgress());
-                    return false;
-                }
-            }
-            // Tries to connect directly to the CEP engine
-            else if (drConfig.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
-                this.adapterType = AdapterType.CEP;
-                cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
-                if (cepEngineInterface == null) {
-                    throw new Exception("Unsupported CEP engine");
-                }
-                try {
-                    this.showInfo("Trying to establish connection with CEP engine...");
-                    cepEngineInterface.connect();
-                    //Initializes CEP interface with no subscriptions
-                    cepEngineInterface.load(null, null);
-                    showInfo("Done!");
-                } catch (Exception e) {
-                    this.showInfo("ERROR: Could not connect to CEP engine. (" + e.getMessage() + ").");
-                    this.updateStatus(Step.ERROR, this.status.getProgress());
-                    return false;
-                } catch (Error err) {
-                    this.showInfo("ERROR: Could not connect to CEP engine. (" + err.getMessage() + ").");
-                    this.updateStatus(Step.ERROR, this.status.getProgress());
-                    return false;
-                }
-            }
-
             this.updateStatus(Step.CONNECTED, 0);
-
-            int synthPhaseCount = 0;
-            int extFilePhaseCount = 0;
-            long t0, t1;
-            long generatedEventCount = 0;
 
             // Sets the number of threads to be used during load submission
             if (cfg.getThreadCount() >= 1) { // Pre-fixed thread count
@@ -476,28 +495,30 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                 threadCount = Runtime.getRuntime().availableProcessors();
             }
 
+            // Parses the workload of the Driver
+            int synthPhaseCount = 0;
+            int extFilePhaseCount = 0;
+            long t0, t1;
+            long generatedEventCount = 0;
+
             showInfo("Initializing Workload (" + cfg.getWorkload().length + " phases)");
             t0 = System.currentTimeMillis();
             for (int i = 0; i < cfg.getWorkload().length; i++) {
+                printPhaseSummary(i + 1, cfg.getWorkload()[i]);
                 if (cfg.getWorkload()[i] instanceof SyntheticWorkloadPhase) {
                     synthPhaseCount++;
-                    SyntheticWorkloadPhase syntheticPhase = (SyntheticWorkloadPhase) cfg.getWorkload()[i];
-                    showInfo(" Phase " + (i + 1) + ": Synthetic workload"
-                            +  "\n\tApproximate phase duration: " + syntheticPhase.getDuration() + " seconds (" + new DecimalFormat("###.##").format(syntheticPhase.getDuration() / 3600.00) + " hour(s))."
-                            + "  \n\tEvent submission rates:\n\t\tinitial: " + syntheticPhase.getInitialRate() + " events/second."
-                            + "\n\t\tfinal:" + syntheticPhase.getFinalRate() + " events/second."
-                            + "\n\t\taverage: " + ((syntheticPhase.getInitialRate() + syntheticPhase.getFinalRate()) / 2) + " events/second."
-                            + "\n\t\tPoisson: " + (syntheticPhase.getArrivalProcess() == ArrivalProcess.POISSON ? "Yes" : "No")
-                            + "\n\tEvent count: " + syntheticPhase.getTotalEventCount() + " events."
-                    );
-
+                    SyntheticWorkloadPhase syntheticPhase =
+                            (SyntheticWorkloadPhase) cfg.getWorkload()[i];
+                    // Generates data before test, if configured to do so.
                     if (syntheticPhase.getDataGenMode() == SyntheticWorkloadPhase.DATASET) {
                         try {
                             showInfo("\tLoading data...");
                             dg = new DataGen(syntheticPhase);
                             this.updateStatus(Step.LOADING, 0);
                             // Cleans data directory
-                            File phaseDataDir = new File(DEFAULT_DATA_FILES_DIR + File.separator + cfg.getAlias() + File.separator + "phase_" + (i + 1));
+                            File phaseDataDir = new File(DEFAULT_DATA_FILES_DIR
+                                                       + File.separator + cfg.getAlias()
+                                                       + File.separator + "phase_" + (i + 1));
                             if (phaseDataDir.exists()) {
                                 for (
                                         File  f : phaseDataDir.listFiles(new FileFilter() {
@@ -511,7 +532,6 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                             } else {
                                 phaseDataDir.mkdirs();
                             }
-
                             // Generates events
                             dg.generateData(phaseDataDir.getAbsolutePath(), DATA_FILE_COUNT);
                             if (this.status.getStep() == Step.STOPPED) {
@@ -528,42 +548,6 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                     totalEventCount += syntheticPhase.getTotalEventCount();
                 } else if (cfg.getWorkload()[i] instanceof ExternalFileWorkloadPhase) {
                     extFilePhaseCount++;
-                    ExternalFileWorkloadPhase filePhase = (ExternalFileWorkloadPhase) cfg.getWorkload()[i];
-                    String detailInfo = " Phase " + (i + 1) + ": External File workload"
-                    + "\n\tFile path: " + filePhase.getFilePath()
-                    + "\n\tLoop count: " + filePhase.getLoopCount();
-                    // timestamp info
-                    if (filePhase.containsTimestamps()) {
-                        detailInfo += "\n\tContains timestamps: Yes, expressed in ";
-                        switch (filePhase.getTimestampUnit()) {
-                        case ExternalFileWorkloadPhase.MILLISECONDS:
-                            detailInfo += "milliseconds";
-                            break;
-                        case ExternalFileWorkloadPhase.SECONDS:
-                            detailInfo += "seconds";
-                            break;
-                        case ExternalFileWorkloadPhase.DATE_TIME:
-                            detailInfo += "date/time";
-                        }
-                        if (filePhase.isUsingTimestamps()) {
-                            detailInfo += "\n\tUse timestamps for event submission: Yes";
-                        } else {
-                            detailInfo += "\n\tUse timestamps for event submission: No";
-                            detailInfo += "\n\tEvents will be submitted at a rate of " + filePhase.getEventSubmissionRate() + " events/sec.";
-                        }
-                    } else {
-                        detailInfo += "\n\tContains timestamps: No";
-                        detailInfo += "\n\tEvents will be submitted at a rate of " + filePhase.getEventSubmissionRate() + " events/sec.";
-                    }
-                    //Event types info
-                    if (filePhase.containsEventTypes()) {
-                        detailInfo += "\n\tContains event types: Yes";
-                    } else {
-                        detailInfo += "\n\tContains event types: No";
-                        detailInfo += " (all events in the file are of the same type: \"" + filePhase.getSingleEventTypeName() + "\")";
-                    }
-
-                    showInfo(detailInfo);
                 }
             }
             t1 = System.currentTimeMillis();
@@ -580,13 +564,124 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
             throw new InvalidStateException("Cannot load driver. "
                                           + "Driver has already been loaded.");
         }
+    }
 
+    /**
+     * Opens a log file for this Driver.
+     *
+     * @param cfg   the configuration of this Driver
+     * @return      <tt>true</tt> if the log file has been successfully
+     *              opened, <tt>false</tt> otherwise.
+     */
+    private boolean openLogFile(DriverConfig cfg) {
+        String logHeader = "FINCoS Driver Log File."
+                + "\n Driver Alias: " + cfg.getAlias()
+                + "\n Driver Address: " + cfg.getAddress().getHostAddress()
+                + "\n Connection: " + cfg.getConnection().alias
+                + "\n Load generation start time: " + new Date();
+
+        try {
+            String logFile = Globals.APP_PATH + "log" + File.separator
+                    + cfg.getAlias() + ".log";
+            logger = new Logger(logFile, logHeader,
+                    cfg.getLogFlushInterval(),
+                    cfg.getLoggingSamplingRate(),
+                    cfg.getFieldsToLog());
+        } catch (IOException e) {
+            this.showInfo("ERROR: Could not open log file (" + e.getMessage() + ").");
+            this.updateStatus(Step.ERROR, this.status.getProgress());
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Tries to connect with the system under test using the properties
+     * passed as arguments.
+     *
+     * @param connCfg   connection properties
+     * @return          <tt>true</tt> if the connection has been successfully
+     *                  established, <tt>false</tt> otherwise.
+     */
+    private boolean connect(ConnectionConfig connCfg) {
+        Properties connProps = new Properties();
+        for (Entry<String, String> e : connCfg.properties.entrySet()) {
+            connProps.put(e.getKey(), e.getValue());
+        }
+
+        // Tries to connect through a JMS Provider
+        if (drConfig.getConnection().type == ConnectionConfig.JMS) {
+            this.adapterType = AdapterType.JMS;
+            if (jmsInterface != null) {
+                try {
+                    jmsInterface.disconnect();
+                    jmsInterface = null;
+                } catch (Exception e) {
+                    System.err.println("Could not disconnect from JMS provider. ("
+                                      + e.getMessage() + ")");
+                }
+            }
+
+            try {
+                this.showInfo("Trying to establish connection with JMS provider...");
+                String cfName = connCfg.properties.get("cfName");
+                this.jmsInterface = new JMS_Writer(connProps, cfName, drConfig.getStreamNames(),
+                        rtMode, rtResolution);
+                this.showInfo("Done!");
+            } catch (Exception e) {
+                this.showInfo("ERROR: Could not connect to JMS provider. ("
+                            + e.getMessage() + ").");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            } catch (Error err) {
+                this.showInfo("ERROR: Could not connect to JMS provider. ("
+                            + err.getMessage() + ").");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            }
+        } // Tries to connect directly with the CEP engine
+        else if (drConfig.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
+            this.adapterType = AdapterType.CEP;
+            try {
+                cepEngineInterface =
+                        CEP_EngineFactory.getCEPEngineInterface(connProps, rtMode, rtResolution);
+            } catch (Exception exc) {
+                this.showInfo("ERROR: Could not connect to CEP engine. ("
+                        + exc.getMessage() + ").");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            }
+            if (cepEngineInterface == null) {
+                this.showInfo("Unsupported CEP engine");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            }
+            try {
+                this.showInfo("Trying to establish connection with CEP engine...");
+                cepEngineInterface.connect();
+                //Initializes CEP interface with no subscriptions
+                cepEngineInterface.load(null, null);
+                showInfo("Done!");
+            } catch (Exception e) {
+                this.showInfo("ERROR: Could not connect to CEP engine. (" + e.getMessage() + ").");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            } catch (Error err) {
+                this.showInfo("ERROR: Could not connect to CEP engine. ("
+                        + err.getMessage() + ").");
+                this.updateStatus(Step.ERROR, this.status.getProgress());
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
     public void start() throws InvalidStateException {
         if (this.status.getStep() == Step.READY) {
-            // Initializes a new thread to run load, so RMI thread will return immediately after call.
+            /* Initializes a new thread to run load, so RMI thread
+             * returns immediately after call. */
             new Thread() {
                 @Override
                 public void run() {
@@ -599,12 +694,17 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
 
                             // Starts phase
                             if (drConfig.getWorkload()[i] instanceof SyntheticWorkloadPhase) {
-                                startSyntheticPhase((SyntheticWorkloadPhase) drConfig.getWorkload()[i], i + 1);
+                                SyntheticWorkloadPhase sPhase =
+                                        (SyntheticWorkloadPhase) drConfig.getWorkload()[i];
+                                startSyntheticPhase(sPhase, i + 1);
                             } else if (drConfig.getWorkload()[i] instanceof ExternalFileWorkloadPhase) {
-                                startExternalDatasetPhase((ExternalFileWorkloadPhase) drConfig.getWorkload()[i], i + 1);
+                                ExternalFileWorkloadPhase ePhase =
+                                        (ExternalFileWorkloadPhase) drConfig.getWorkload()[i];
+                                startExternalDatasetPhase(ePhase, i + 1);
                             }
 
-                            // After phase completion, update stats and check if Driver was stopped or paused
+                            /* After phase completion, update stats and check if
+                             *  Driver was stopped or paused. */
                             synchronized (status) {
                                 if (status.getStep() != Step.STOPPED) {
                                     for (Sender sender: senders) {
@@ -615,25 +715,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                                     while (status.getStep() == Step.PAUSED) {
                                         status.wait();
                                     }
-                                }
-                                // If Stopped, close connections with FINCoS Adapter and FINCoS Perfmon
-                                else {
-                                    if (adapterType == AdapterType.JMS) {
-                                        if (jmsInterface != null) {
-                                            try {
-                                                jmsInterface.disconnect();
-                                                jmsInterface = null;
-                                            } catch (Exception e) {
-                                                System.err.println("Could not disconnect from JMS provider. (" + e.getMessage() + ")");
-                                            }
-                                        }
-                                    } else if (adapterType == AdapterType.CEP) {
-                                        if (cepEngineInterface != null) {
-                                            cepEngineInterface.disconnect();
-                                            cepEngineInterface = null;
-                                        }
-                                    }
-
+                                } else {
+                                    clean();
                                     return;
                                 }
                             }
@@ -656,24 +739,7 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                         updateStatus(Step.ERROR, status.getProgress());
                         showInfo("Interrupted Exception");
                     } finally {
-                        if (logger != null) {
-                            logger.close();
-                            logger = null;
-                        }
-
-                        try {
-                            if (jmsInterface != null) {
-                                jmsInterface.disconnect();
-                                jmsInterface = null;
-                            }
-                            if (cepEngineInterface != null) {
-                                //cepEngineInterface.disconnect(); C8 gets messed with this
-                                cepEngineInterface = null;
-                            }
-
-                        } catch (Exception e) {
-                            showInfo("Could not disconnect from server. (" + e.getMessage() + ")");
-                        }
+                        clean();
                     }
                 }
             }.start();
@@ -780,11 +846,10 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
      *
      * @param filePhase         The workload parameters
      * @param phaseNumber       The ID of the phase
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws IOException      if an error occurs while opening the data file
      */
     private void startExternalDatasetPhase(ExternalFileWorkloadPhase filePhase, int phaseNumber)
-    throws IOException, InterruptedException {
+    throws IOException {
         Scheduler sch;
         DataFileReader reader = null;
         showInfo("Phase " + phaseNumber + " started. Initializing dispatcher thread...");
@@ -806,22 +871,28 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
                 senders[0] = new Sender(jmsInterface, sch, reader, filePhase.containsTimestamps(),
-                                        null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
+                                        null, this.alias + "/sender-1",
+                                        filePhase.getLoopCount(), rtMode, rtResolution,
                                         useScheduledTime, perfTracingEnabled);
             }
         } else if (adapterType == AdapterType.CEP) {
             // Event submission is based on timestamps in the data file
             if (filePhase.containsTimestamps() && filePhase.isUsingTimestamps()) {
-                senders[0] = new Sender(cepEngineInterface, reader, filePhase.getTimestampUnit(),
+                senders[0] = new Sender(cepEngineInterface, reader,
+                                        filePhase.getTimestampUnit(),
                                         filePhase.getLoopCount(), rtMode, rtResolution,
                                         useScheduledTime, perfTracingEnabled);
             } else { // Event submission is scheduled based on a fixed rate
                 sch = new Scheduler(filePhase.getEventSubmissionRate(),
                         filePhase.getEventSubmissionRate(),
                         1, ArrivalProcess.DETERMINISTIC, 1L);
-                    senders[0] = new Sender(cepEngineInterface, sch, reader, filePhase.containsTimestamps(),
-                                            null, this.alias + "/sender-1", filePhase.getLoopCount(), rtMode, rtResolution,
-                                            useScheduledTime, perfTracingEnabled);
+                senders[0] = new Sender(cepEngineInterface, sch, reader,
+                                        filePhase.containsTimestamps(),
+                                        null, this.alias + "/sender-1",
+                                        filePhase.getLoopCount(),
+                                        rtMode, rtResolution,
+                                        useScheduledTime,
+                                        perfTracingEnabled);
             }
         }
         senders[0].setLogger(logger);
@@ -831,9 +902,16 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
         showInfo("Done! Sending events...");
 
         // Waits for completion of the sending thread
-        senders[0].join();
+        try {
+            senders[0].join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
+    /**
+     * Resumes load submission (if Driver is currently paused).
+     */
     private void resume() {
         synchronized (this.status) {
             this.status.setStep(Step.RUNNING);
@@ -842,6 +920,31 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
         }
         for (Sender sender : this.senders) {
             sender.resumeLoad();
+        }
+    }
+
+    /**
+     * Releases any resources currently held by this Driver
+     * (i.e., connections, log files, etc.).
+     */
+    private void clean() {
+        if (logger != null) {
+            logger.close();
+            logger = null;
+        }
+
+        try {
+            if (jmsInterface != null) {
+                jmsInterface.disconnect();
+                jmsInterface = null;
+            }
+            if (cepEngineInterface != null) {
+                cepEngineInterface.disconnect();
+                cepEngineInterface = null;
+            }
+
+        } catch (Exception e) {
+            showInfo("Could not disconnect from server. (" + e.getMessage() + ")");
         }
     }
 
@@ -865,8 +968,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
     public void stop() throws InvalidStateException {
         synchronized (this.status) {
             if (this.status.getStep() == Step.RUNNING
-                    || this.status.getStep() == Step.PAUSED
-                    || this.status.getStep() == Step.ERROR) {
+             || this.status.getStep() == Step.PAUSED
+             || this.status.getStep() == Step.ERROR) {
                 this.status.setStep(Step.STOPPED);
                 if (this.senders != null) {
                     for (Sender sender : this.senders) {
@@ -877,26 +980,25 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                     }
                     this.senders = null;
                 }
-
-                if (logger != null) {
-                    this.logger.close();
-                    logger = null;
-                }
-
+                clean();
                 showInfo("Driver has been stopped.");
             } else if (this.status.getStep() == Step.LOADING) {
                 this.status.setStep(Step.STOPPED);
                 if (this.dg != null) {
                     this.dg.stopDataGeneration();
                 }
+                clean();
                 showInfo("Data generation was stopped.");
-            } else if (this.status.getStep() == Step.READY || this.status.getStep() == Step.FINISHED) {
+            } else if (this.status.getStep() == Step.READY
+                    || this.status.getStep() == Step.FINISHED) {
                 this.status.setStep(Step.STOPPED);
                 totalEventsSent = 0;
                 phaseEventsSent = 0;
+                clean();
                 showInfo("Driver has been stopped.");
             } else {
-                throw new InvalidStateException("Driver must be loading, ready, running or paused in order to be stopped.");
+                throw new InvalidStateException("Driver must be loading, ready, "
+                                    + "running or paused in order to be stopped.");
             }
         }
     }
@@ -912,7 +1014,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                 }
                 showInfo("Done!");
             } else {
-                throw new InvalidStateException("Driver must be running or paused in order to switch of phase.");
+                throw new InvalidStateException("Driver must be running or "
+                                    + "paused in order to switch of phase.");
             }
         }
     }
@@ -928,7 +1031,8 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                 }
                 showInfo("Done!");
             } else {
-                throw new InvalidStateException("Driver must be running or paused in order to alter event submission rate.");
+                throw new InvalidStateException("Driver must be running or paused "
+                                    + "in order to alter event submission rate.");
             }
 
         }

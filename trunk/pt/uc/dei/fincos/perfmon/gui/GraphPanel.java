@@ -71,33 +71,35 @@ import pt.uc.dei.fincos.perfmon.Stream;
  *
  */
 @SuppressWarnings({"serial", "rawtypes", "unchecked" })
-public class GraphPanel extends JPanel {
+public final class GraphPanel extends JPanel {
     /** serial id. */
     private static final long serialVersionUID = -9023933264149434389L;
 
     /** Maps connections to a list of streams.*/
-    TreeMap<String, HashSet<Stream>> serversStreams;
+    private TreeMap<String, HashSet<Stream>> serversStreams;
 
     /** Maps connections to a list of series.*/
-    private HashMap<String, TimeSeries> graphSeries = new HashMap<String, TimeSeries>();
+    private final HashMap<String, TimeSeries> graphSeries;
 
     /** Performance stats over time. */
-    HashMap<String, TreeMap<Long, Double>> seriesData = new HashMap<String, TreeMap<Long, Double>>();
+    private final HashMap<String, TreeMap<Long, Double>> seriesData;
 
     /** A panel containing a JFreechart chart. */
-    PerfChartPanel chart;
+    private PerfChartPanel chart;
 
     /** A panel that allows to choose which counters to show on GUI. */
-    CounterPanel counterPanel;
+    private CounterPanel counterPanel;
 
     /** A table indicating which counters are currently being shown on GUI.. */
-    JTable countersTable;
+    private JTable countersTable;
 
     /** The parent component of this panel. */
-    PerformanceMonitor parent;
+    private final PerformanceMonitor parent;
 
     public GraphPanel(PerformanceMonitor parent) {
         this.parent = parent;
+        this.graphSeries = new HashMap<String, TimeSeries>();
+        this.seriesData = new HashMap<String, TreeMap<Long, Double>>();
     }
 
     public void loadForRealTimeMonitoring(DriverConfig[] drivers, SinkConfig[] sinks) {
@@ -144,7 +146,8 @@ public class GraphPanel extends JPanel {
         counterPanel = new CounterPanel(serversStreams, seriesData, this);
 
         // Chart
-        chart = new PerfChartPanel("", new String[]{}, "", new DecimalFormat("0"), PerfChartPanel.REAL_TIME);
+        chart = new PerfChartPanel("", new String[]{}, "",
+                new DecimalFormat("0"), PerfChartPanel.REAL_TIME);
 
         loadGUIComponents();
     }
@@ -174,7 +177,8 @@ public class GraphPanel extends JPanel {
         serversStreams = new TreeMap<String, HashSet<Stream>>();
 
         // Chart
-        chart = new PerfChartPanel("", new String[]{}, "", new DecimalFormat("0"), PerfChartPanel.LOG_FILE);
+        chart = new PerfChartPanel("", new String[]{}, "",
+                new DecimalFormat("0"), PerfChartPanel.LOG_FILE);
 
         String server;
         Stream stream;
@@ -404,26 +408,26 @@ public class GraphPanel extends JPanel {
         String connection, streamName, streamType, counter;
         String [] key;
         synchronized (this.graphSeries) {
-            if (this.graphSeries != null) {
-                for (Entry<String, TimeSeries> e : graphSeries.entrySet()) {
-                    key = e.getKey().split(Globals.CSV_DELIMITER);
-                    connection = key[0];
-                    streamName = key[1];
-                    streamType = key[2];
-                    counter = key[3];
-                    if (streamType.equalsIgnoreCase("Input")) {
-                        Double throughput = parent.getThroughputFor(connection, streamName);
-                        if (throughput != null) {
+            for (Entry<String, TimeSeries> e : graphSeries.entrySet()) {
+                key = e.getKey().split(Globals.CSV_DELIMITER);
+                connection = key[0];
+                streamName = key[1];
+                streamType = key[2];
+                counter = key[3];
+                if (streamType.equalsIgnoreCase("Input")) {
+                    Double throughput = parent.getThroughputFor(connection, streamName);
+                    if (throughput != null) {
+                        chart.updateChart(e.getValue(), System.currentTimeMillis(), throughput);
+                    }
+                } else if (streamType.equalsIgnoreCase("Output")) {
+                    Double throughput = parent.getOutThroughputFor(connection, streamName);
+                    if (throughput != null && !throughput.isNaN()) {
+                        if (counter.equalsIgnoreCase("Throughput")) {
                             chart.updateChart(e.getValue(), System.currentTimeMillis(), throughput);
-                        }
-                    } else if (streamType.equalsIgnoreCase("Output")) {
-                        Double throughput = parent.getOutThroughputFor(connection, streamName);
-                        if (throughput != null && !throughput.isNaN()) {
-                            if (counter.equalsIgnoreCase("Throughput")) {
-                                chart.updateChart(e.getValue(), System.currentTimeMillis(), throughput);
-                            } else if (counter.equalsIgnoreCase("Response Time")) {
-                                chart.updateChart(e.getValue(), System.currentTimeMillis(), parent.getResponseTimeFor(connection, streamName));
-                            }
+                        } else if (counter.equalsIgnoreCase("Response Time")) {
+                            chart.updateChart(e.getValue(),
+                                              System.currentTimeMillis(),
+                                              parent.getResponseTimeFor(connection, streamName));
                         }
                     }
                 }
@@ -444,7 +448,8 @@ public class GraphPanel extends JPanel {
      * @param streamType     the type of the stream (either INPUT or OUTPUT)
      * @param counter        the name of the performance counter
      *
-     * @return               the number of series currently shown on GUI, or -1 if the series could not be added
+     * @return               the number of series currently shown on GUI,
+     *                       or -1 if the series could not be added
      */
     public int addSeries(String seriesId, Color color, double scale, String scaleStr,
             String connection, String streamName, String streamType, String counter) {

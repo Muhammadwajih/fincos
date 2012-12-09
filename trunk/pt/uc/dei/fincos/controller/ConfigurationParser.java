@@ -845,7 +845,8 @@ public final class ConfigurationParser {
      *
      * @return				an instance of <tt>SequentialDomain</tt>
      * @throws Exception    if an error occurs while parsing the domain
-     * @see 				<tt>SequentialDomain</tt> class
+     *
+     * @see 				SequentialDomain
      */
     private Domain parseSequentialDomain(Element domain, Long randomSeed)
     throws Exception {
@@ -859,6 +860,9 @@ public final class ConfigurationParser {
         } else if (initialValue.getAttribute("type").equalsIgnoreCase("Random")) {
             Element variate = (Element) initialValue.getElementsByTagName("RandomVariable").item(0);
             initialValueVariate = this.parseRandomVariate(variate, randomSeed);
+        } else {
+            throw new Exception("Invalid variate type (\""
+                              + initialValue.getAttribute("type") + "\").");
         }
         // Parses Increment
         Element increment = (Element) domain.getElementsByTagName("Increment").item(0);
@@ -868,6 +872,9 @@ public final class ConfigurationParser {
         } else if (increment.getAttribute("type").equalsIgnoreCase("Random")) {
             Element variate = (Element) increment.getElementsByTagName("RandomVariable").item(0);
             incrementVariate = this.parseRandomVariate(variate, randomSeed);
+        } else {
+            throw new Exception("Invalid variate type (\""
+                    + increment.getAttribute("type") + "\").");
         }
 
         return new SequentialDomain(initialValueVariate, incrementVariate);
@@ -881,7 +888,8 @@ public final class ConfigurationParser {
      * @param randomSeed	The seed used in random number generation
      *
      * @return				An instance of <tt>PredefinedListDomain</tt>
-     * @see 				<tt>PredefinedListDomain</tt> class
+     *
+     * @see 				PredefinedListDomain class
      */
     private Domain parsePredefinedList(Element domain,  Long randomSeed) {
         NodeList list = domain.getChildNodes();
@@ -931,7 +939,7 @@ public final class ConfigurationParser {
      * @param seed					seeed for random number generation
      * @return						an instance of <tt>Variate</tt> class
      * @throws Exception            if an error occurs while parsing the variate
-     * @see							<tt>Variate</tt> class
+     * @see							Variate
      */
     private Variate parseRandomVariate(Element randomVariate, Long seed)
     throws Exception {
@@ -1003,7 +1011,8 @@ public final class ConfigurationParser {
      * @param d			The element where the <tt>Domain</tt> instance
      *                  must be written to
      * @return			The <tt>Domain</tt> instance
-     * @see				<tt>Domain</tt> class
+     *
+     * @see				Domain
      */
     private Element saveDomain(Document doc, Domain d) {
         Element domain = doc.createElement("Domain");
@@ -1055,7 +1064,8 @@ public final class ConfigurationParser {
      * @param doc		The XML document where the Variate instance must be written to
      * @param e			The element where the Variate instance must be written to
      * @param v			The Variate instance
-     * @see				<tt>Variate</tt> class
+     *
+     * @see				Variate
      */
     private void saveVariate(Document doc, Element e, Variate v) {
         if (v instanceof ConstantVariate) {

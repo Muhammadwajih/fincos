@@ -396,7 +396,6 @@ public final class EsperInterface extends CEP_EngineInterface {
             if (outputStreams != null) {
                 this.outputListeners = new EsperListener[outputStreams.length];
                 int i = 0;
-                // TODO: Change this to a mapping Listener->List-of-streams
                 for (Entry<String, String> query : this.queryNamesAndTexts.entrySet()) {
                     if (hasListener(query.getKey(), outputStreams)) {
                         outputListeners[i] = new EsperListener("lsnr-0" + (i + 1),
@@ -438,7 +437,7 @@ public final class EsperInterface extends CEP_EngineInterface {
                 sendMapEvent(e);
             }
 
-            if (this.useExternalTimer && e.getType().equals(extTSEventType)) {
+            if (this.useExternalTimer && e.getType().getName().equals(extTSEventType)) {
                 advanceClock((Long) e.getAttributeValue(extTSIndex));
             }
         }

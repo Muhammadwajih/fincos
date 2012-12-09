@@ -141,7 +141,6 @@ public final class StreamMessageConverter extends Converter {
         StringBuilder sb = new StringBuilder();
         sb.append(src);
         StreamMessage str = (StreamMessage) msg;
-        // TODO: More elegant way of reading the message (without exception)
         while (true) {
             try {
                 String att = str.readObject().toString();
@@ -160,7 +159,6 @@ public final class StreamMessageConverter extends Converter {
         ArrayList<Object> evtData = new ArrayList<Object>();
         evtData.add(src);
         StreamMessage str = (StreamMessage) msg;
-        // TODO: More elegant way of reading the message (without exception)
         while (true) {
             try {
                 Object att = str.readObject();

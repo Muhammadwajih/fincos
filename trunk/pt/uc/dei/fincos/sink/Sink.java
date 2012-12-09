@@ -29,6 +29,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -209,7 +210,7 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
     /**
      * Locates the RMI registry and binds this Sink.
      *
-     * @throws RemoteException  if an error occurs when contacting the reigistry.
+     * @throws RemoteException  if an error occurs when contacting the registry.
      */
     private void initializeRMI() throws RemoteException {
         SinkRemoteFunctions stub = (SinkRemoteFunctions) UnicastRemoteObject.exportObject(this, 0);
@@ -265,7 +266,7 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
                 connProps.put(e.getKey(), e.getValue());
             }
             if (sinkCfg.getConnection().type == ConnectionConfig.JMS) {
-                this.adapterType =  AdapterType.JMS;
+                this.adapterType = AdapterType.JMS;
                 String cfName = (String) connProps.get("cfName");
                 showInfo("Connecting to JMS Provider...");
                 HashMap<String, String[]> lsnrs = new HashMap<String, String[]>();
@@ -479,9 +480,18 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
                 }
             }
         } catch (IOException ioe) {
-            System.err.println("Error while processing event \"" + event
-                                + "\" (" + ioe.getMessage() + ").");
+            System.err.println("Error while processing event \""
+                             + Arrays.toString(event) + "\" (" + ioe.getMessage() + ").");
         }
+    }
+
+    /**
+     *
+     * @return  the type of the adapter used by this sink
+     *          (either CEP or JMS)
+     */
+    public AdapterType getAdapterType() {
+        return adapterType;
     }
 
     @Override
