@@ -244,8 +244,6 @@ public class HistogramPanel extends JPanel {
                     for (int i = 0; i < logFilePath.length; i++) {
                         CSV_Reader logReader = new CSV_Reader(logFilePath[i]);
                         // parses log header
-                        String server;
-
                         String header = logReader.getNextLine();
                         if (header == null || !header.contains("FINCoS")
                                 || (!header.contains("Driver")) && !(header.contains("Sink"))) {
@@ -257,18 +255,19 @@ public class HistogramPanel extends JPanel {
                         logReader.getNextLine(); // Driver/Sink alias
                         logReader.getNextLine(); // Driver/Sink address
 
-                        // Server address
-                        server = logReader.getNextLine();
+                        // Connection alias
+                        String connection = logReader.getNextLine();
 
-                        if (server != null) {
-                            server = server.substring(server.indexOf(":") + 2);
+                        if (connection != null) {
+                            connection = connection.substring(connection.indexOf(":") + 2);
                         }
 
                         // ignores next line of log header
                         logReader.getNextLine().length(); // Log Start time
 
-                        // Determines Response time measurement mode of the test
-                        String rtMode = logReader.getNextLine().substring(server.indexOf(":") + 2);
+                        // Determines response time measurement mode of the test
+                        String rtMode = logReader.getNextLine();
+                        rtMode = rtMode.substring(rtMode.indexOf(":") + 2);
                         int rtMeasurementMode;
                         if (rtMode.contains("ADAPTER")) {
                             rtMeasurementMode = Globals.ADAPTER_RT;
@@ -278,7 +277,9 @@ public class HistogramPanel extends JPanel {
                             rtMeasurementMode = Globals.NO_RT;
                         }
 
-                        String rtResStr = logReader.getNextLine().substring(server.indexOf(":") + 2);
+                        // Determines response time resolution of the test
+                        String rtResStr = logReader.getNextLine();
+                        rtResStr = rtResStr.substring(rtResStr.indexOf(":") + 2);
                         double rtFactor = 1.0;
                         if (rtResStr.contains("milliseconds")) {
                             rtFactor = 1.0;
@@ -510,7 +511,7 @@ public class HistogramPanel extends JPanel {
                 } else {
                     maxValue = e.getKey();
                     maxFreq = e.getValue();
-                    dataset.add(e.getKey(), maxFreq, seriesName);
+                    dataset.add(maxValue, maxFreq, seriesName);
 
                     String label = "\u2265"
                                  +  Globals.FLOAT_FORMAT_2.format(e.getKey())

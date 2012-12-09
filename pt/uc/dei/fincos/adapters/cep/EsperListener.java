@@ -116,7 +116,11 @@ public final class EsperListener extends OutputListener implements UpdateListene
         }
 
         for (int i = 0; i < newEvents.length; i++) {
-            processIncomingEvent(newEvents[i], timestamp);
+            try {
+                processIncomingEvent(newEvents[i], timestamp);
+            } catch (Exception e) {
+               System.err.println(e.getMessage());
+            }
         }
     }
 
@@ -125,9 +129,10 @@ public final class EsperListener extends OutputListener implements UpdateListene
      *
      * @param event         the incoming event
      * @param timestamp     the timestamp associated with the event
+     * @throws Exception    if the incoming event is of an unknown type
      */
-    private void processIncomingEvent(EventBean event, long timestamp) {
-        onOutput(toFieldArray(event, timestamp)); //TODO: Remove this or optimize code
+    private void processIncomingEvent(EventBean event, long timestamp) throws Exception {
+        onOutput(toFieldArray(event, timestamp));
     }
 
     /**
@@ -135,10 +140,11 @@ public final class EsperListener extends OutputListener implements UpdateListene
      *
      * @param event         The event in Esper's native representation
      * @param timestamp     The timestamp associated with the incoming event
-     * @return      The event as an array of objects
+     * @return              The event as an array of objects
+     * @throws Exception    if the incoming event is of an unknown type
      *
      */
-    private Object[] toFieldArray(EventBean event, long timestamp) {
+    private Object[] toFieldArray(EventBean event, long timestamp) throws Exception {
         Object[] eventObj = null;
         int fieldCount = 0;
 
@@ -167,17 +173,17 @@ public final class EsperListener extends OutputListener implements UpdateListene
                     i++;
                 }
             } catch (ClassNotFoundException cne) {
-                System.err.println("The type \"" + queryOutputName + "\" has not been defined. ");
-            } catch (Exception e) {
-                e.printStackTrace();
+                throw new Exception("The type \"" + queryOutputName + "\" has not been defined. ");
             }
         }
 
-        // First element is the stream name
-        eventObj[0] = queryOutputName;
-        // Last element is the arrival time
-        if (rtMode == Globals.ADAPTER_RT) {
-            eventObj[fieldCount - 1] = timestamp;
+        if (eventObj != null) {
+            // First element is the stream name
+            eventObj[0] = queryOutputName;
+            // Last element is the arrival time
+            if (rtMode == Globals.ADAPTER_RT) {
+                eventObj[fieldCount - 1] = timestamp;
+            }
         }
 
         return eventObj;

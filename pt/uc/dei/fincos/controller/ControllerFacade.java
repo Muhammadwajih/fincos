@@ -93,7 +93,7 @@ public final class ControllerFacade {
      *
      * @return the unique instance of the Facade
      */
-    public static ControllerFacade getInstance() {
+    public static synchronized ControllerFacade getInstance() {
         if (instance == null) {
             instance = new ControllerFacade();
         }

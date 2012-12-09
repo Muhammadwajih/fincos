@@ -63,7 +63,7 @@ public class DaemonServer implements RemoteDaemonServerFunctions {
 	 */
 	private void start() throws Exception {
 			System.out.println("Trying to start rmi regitry application...");
-			Runtime.getRuntime().exec("rmiregistry " + Globals.RMI_PORT);
+			LocateRegistry.createRegistry(Globals.RMI_PORT);
 			System.out.println("Done!");
 			System.out.println("Trying to initialize RMI interface...");
 			UnicastRemoteObject.exportObject(this, 0);

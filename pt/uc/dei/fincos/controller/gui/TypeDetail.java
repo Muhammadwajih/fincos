@@ -57,7 +57,7 @@ public final class TypeDetail extends ComponentDetail {
     private EventType oldType;
 
     /** Seed for random number generation. */
-    private Long dataGenSeed;
+    private final Long dataGenSeed;
 
     /** List of attributes of this data type. */
     private ArrayList<Attribute> columns;
@@ -73,6 +73,7 @@ public final class TypeDetail extends ComponentDetail {
      */
     public TypeDetail(PhaseDetail parent, EventType type, Long dataGenSeed) {
         super(parent);
+        this.dataGenSeed = dataGenSeed;
         this.columns = new ArrayList<Attribute>();
         initComponents();
         addListeners();

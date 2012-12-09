@@ -20,6 +20,7 @@ package pt.uc.dei.fincos.data;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -69,6 +70,9 @@ public final class DataFileReader {
 
     /** The index of the field containing the timestamp of the records in the data file. */
     private final int timestampIndex;
+
+    /** Format of the timestamps in the data file (when the unit is date-time). */
+    private final DateFormat dateTimeFormat = (DateFormat) Globals.DATE_TIME_FORMAT.clone();
 
     /** A flag indicating if the timestamp field (if present) must be included in the
      *  payload of the read events. */
@@ -181,7 +185,7 @@ public final class DataFileReader {
                 }
             }
             if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(record[tsIndex]).getTime();
+                timestamp = dateTimeFormat.parse(record[tsIndex]).getTime();
             } else {
                 timestamp = Long.parseLong(record[tsIndex]);
             }
@@ -257,7 +261,7 @@ public final class DataFileReader {
 		        eventRecord = new Object[csvRecord.length - 1];
 		    }
 		    if (timestampUnit == ExternalFileWorkloadPhase.DATE_TIME) {
-                timestamp = Globals.DATE_TIME_FORMAT.parse(csvRecord[tsIndex]).getTime();
+                timestamp = dateTimeFormat.parse(csvRecord[tsIndex]).getTime();
             } else {
                 timestamp = Long.parseLong(csvRecord[tsIndex]);
             }

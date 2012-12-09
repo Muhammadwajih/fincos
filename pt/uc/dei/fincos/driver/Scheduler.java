@@ -205,7 +205,7 @@ public final class Scheduler {
      *
      * @return  the multiplier factor
      */
-    public double getRateFactor() {
+    public synchronized double getRateFactor() {
         return rateFactor;
     }
 }

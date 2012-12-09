@@ -995,6 +995,11 @@ public final class Controller_GUI extends JFrame {
         System.exit(0);
     }
 
+    /**
+     * Displays a message on the Controller UI.
+     *
+     * @param msg   the message
+     */
     private void showInfo(final String msg) {
         SwingUtilities.invokeLater(new Runnable() {
 
@@ -1099,11 +1104,13 @@ public final class Controller_GUI extends JFrame {
                 configModified = false;
                 return true;
             } catch (FileNotFoundException e) {
-                JOptionPane.showMessageDialog(null, "File not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "File not found.",
+                                              "Error", JOptionPane.ERROR_MESSAGE);
                 return false;
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "Could not save configuration file.\n("
-                        + e.getClass() + " - " + e.getMessage() + ")", "Error", JOptionPane.ERROR_MESSAGE);
+                                              + e.getClass() + " - " + e.getMessage() + ")",
+                                              "Error", JOptionPane.ERROR_MESSAGE);
                 return false;
             }
         } else {
@@ -1121,7 +1128,10 @@ public final class Controller_GUI extends JFrame {
 
             if (this.facade.getDriverList() != null && !this.facade.getDriverList().isEmpty()) {
                 for (DriverConfig dr : facade.getDriverList()) {
-                    model.addRow(new Object[]{"DISCONNECTED", dr.getAlias(), dr.getAddress().getHostAddress()});
+                    Object[] row = new Object[]{"DISCONNECTED",
+                                                dr.getAlias(),
+                                                dr.getAddress().getHostAddress()};
+                    model.addRow(row);
                 }
             }
         }
@@ -1137,7 +1147,10 @@ public final class Controller_GUI extends JFrame {
 
             if (this.facade.getSinkList() != null && !this.facade.getSinkList().isEmpty()) {
                 for (SinkConfig sink : this.facade.getSinkList()) {
-                    model.addRow(new Object[]{"DISCONNECTED", sink.getAlias(), sink.getAddress().getHostAddress()});
+                    Object[] row = new Object[]{"DISCONNECTED",
+                                                sink.getAlias(),
+                                                sink.getAddress().getHostAddress()};
+                    model.addRow(row);
                 }
             }
         }
@@ -1178,7 +1191,10 @@ public final class Controller_GUI extends JFrame {
     public void addDriver(DriverConfig dr) {
         synchronized (driversTable) {
             facade.addDriver(dr);
-            ((DefaultTableModel) driversTable.getModel()).addRow(new Object[]{"DISCONNECTED", dr.getAlias(), dr.getAddress().getHostAddress()});
+            Object[] row = new Object[]{"DISCONNECTED",
+                                        dr.getAlias(),
+                                        dr.getAddress().getHostAddress()};
+            ((DefaultTableModel) driversTable.getModel()).addRow(row);
         }
         if (!configModified) {
             this.setTitle(this.getTitle() + "*");
@@ -1202,7 +1218,10 @@ public final class Controller_GUI extends JFrame {
 
                 String status = (String) driversTable.getValueAt(index, 0);
                 ((DefaultTableModel) driversTable.getModel()).removeRow(index);
-                ((DefaultTableModel) driversTable.getModel()).insertRow(index, new Object[]{status, newCfg.getAlias(), newCfg.getAddress().getHostAddress()});
+                Object[] newRow = new Object[] {status,
+                                                newCfg.getAlias(),
+                                                newCfg.getAddress().getHostAddress()};
+                ((DefaultTableModel) driversTable.getModel()).insertRow(index, newRow);
 
                 if (!configModified) {
                     this.setTitle(this.getTitle() + "*");
