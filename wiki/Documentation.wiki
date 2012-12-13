@@ -1,8 +1,13 @@
-== Introduction ==
-
-In this page you can find an outline of FINCoS architecture, including its main components and their dependencies.
-
-
 == Package Structure ==
 
-Under contruction.
+In this page you can find a brief description on how FINCoS code is structured. The framework is composed by seven main packages:
+  * _adapters_: contains the classes that mediate the communication between FINCoS and the systems under test. 
+  * _basic_: contains general entity classes used throughout the entire framework.
+  * _controller_: contains the classes responsible for coordinating performance runs.
+  * _data_: contains the classes responsible for reading and writing data to disk.
+  * _driver_: contains the classes involved in load generation.
+  * _perfmon_: contains the classes that perform online and offline performance measuring.
+  * _random_: contains the classes involved in random number generation.
+  * _sink_: contains the classes responsible for processing the output produced by the systems under test.
+
+More details on each package, including their main classes and corresponding relationships are presented next.
