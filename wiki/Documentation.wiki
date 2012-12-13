@@ -11,3 +11,27 @@ In this page you can find a brief description on how FINCoS code is structured. 
   * _sink_: contains the classes responsible for processing the output produced by the systems under test.
 
 More details on each package, including their main classes and corresponding relationships are presented next.
+
+=== _Basic_ and _Random_ packages ===
+[http://fincos.googlecode.com/svn/imgs/model/package_basic_random.png]
+.
+
+=== _Controller_ package ===
+[http://fincos.googlecode.com/svn/imgs/model/package_controller.png]
+.
+
+=== _Driver_ package ===
+[http://fincos.googlecode.com/svn/imgs/model/package_driver.png]
+.
+
+=== _Sink_ package ===
+[http://fincos.googlecode.com/svn/imgs/model/package_sink.png]
+.
+
+=== _Adapters_ package ===
+[http://fincos.googlecode.com/svn/imgs/model/package_adapter.png]
+.
+
+=== _Perfmon_ package ===
+[http://fincos.googlecode.com/svn/imgs/model/package_perfmon.png]
+.
