@@ -101,7 +101,7 @@ public final class SinkDetail extends ComponentDetail {
         this.addressField.setText(sink.getAddress().getHostAddress());
         if (sink.getConnection() != null) {
             int connIndex =
-                    Controller_GUI.getInstance().getConnectionIndex(sink.getConnection().alias);
+                    Controller_GUI.getInstance().getConnectionIndex(sink.getConnection().getAlias());
             this.connCombo.setSelectedIndex(connIndex);
         } else {
             this.connCombo.setSelectedIndex(-1);
@@ -330,7 +330,7 @@ public final class SinkDetail extends ComponentDetail {
         String[] txts = new String[conns.length + 1];
         ImageIcon[] imgs = new ImageIcon[conns.length + 1];
         for (int i = 0; i < conns.length; i++) {
-            txts[i] = conns[i].alias;
+            txts[i] = conns[i].getAlias();
         }
         txts[txts.length - 1] = "New Connection...";
         imgs[txts.length - 1] = new ImageIcon("imgs/connection_new.png");

@@ -341,6 +341,8 @@ public class SyntheticPhasePanel extends javax.swing.JPanel {
                 dataGenSeedField.setEnabled(dataGenSeedCheck.isSelected());
             }
         });
+
+        dataGenRTRadio.setSelected(true);
     }
 
     /**

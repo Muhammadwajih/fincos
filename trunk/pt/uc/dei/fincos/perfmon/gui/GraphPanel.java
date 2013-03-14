@@ -114,30 +114,30 @@ public final class GraphPanel extends JPanel {
         // Counters Panel
         serversStreams = new TreeMap<String, HashSet<Stream>>();
         for (DriverConfig dr: drivers) {
-            if (!serversStreams.containsKey(dr.getConnection().alias)) {
-                serversStreams.put(dr.getConnection().alias, new HashSet<Stream>());
+            if (!serversStreams.containsKey(dr.getConnection().getAlias())) {
+                serversStreams.put(dr.getConnection().getAlias(), new HashSet<Stream>());
             }
             for (WorkloadPhase phase : dr.getWorkload()) {
                 if (phase instanceof SyntheticWorkloadPhase) {
                     SyntheticWorkloadPhase synthPhase = (SyntheticWorkloadPhase) phase;
                     for (EventType type: synthPhase.getSchema().keySet()) {
-                        serversStreams.get(dr.getConnection().alias).add(new Stream(Stream.INPUT, type.getName()));
+                        serversStreams.get(dr.getConnection().getAlias()).add(new Stream(Stream.INPUT, type.getName()));
                     }
                 } else if (phase instanceof ExternalFileWorkloadPhase) {
                         ExternalFileWorkloadPhase filePhase = (ExternalFileWorkloadPhase) phase;
                         if (!filePhase.containsEventTypes()) {
-                            serversStreams.get(dr.getConnection().alias).add(new Stream(Stream.INPUT, filePhase.getSingleEventTypeName()));
+                            serversStreams.get(dr.getConnection().getAlias()).add(new Stream(Stream.INPUT, filePhase.getSingleEventTypeName()));
                         }
 
                 }
             }
         }
         for (SinkConfig sink: sinks) {
-            if (!serversStreams.containsKey(sink.getConnection().alias)) {
-                serversStreams.put(sink.getConnection().alias, new HashSet<Stream>());
+            if (!serversStreams.containsKey(sink.getConnection().getAlias())) {
+                serversStreams.put(sink.getConnection().getAlias(), new HashSet<Stream>());
             }
             for (String stream : sink.getOutputStreamList()) {
-                serversStreams.get(sink.getConnection().alias).add(new Stream(Stream.OUTPUT, stream));
+                serversStreams.get(sink.getConnection().getAlias()).add(new Stream(Stream.OUTPUT, stream));
             }
 
         }

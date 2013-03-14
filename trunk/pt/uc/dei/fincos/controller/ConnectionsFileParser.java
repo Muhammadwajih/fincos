@@ -130,15 +130,15 @@ public class ConnectionsFileParser {
         Element conn;
         for (ConnectionConfig c : connCfgs) {
             conn = doc.createElement("Connection");
-            conn.setAttribute("alias", c.alias);
-            conn.setAttribute("type", c.type == ConnectionConfig.CEP_ADAPTER ? "CEP" : "JMS");
-            if (c.type == ConnectionConfig.CEP_ADAPTER) {
-                conn.setAttribute("engine", c.properties.get("engine"));
+            conn.setAttribute("alias", c.getAlias());
+            conn.setAttribute("type", c.getType() == ConnectionConfig.CEP_ADAPTER ? "CEP" : "JMS");
+            if (c.getType() == ConnectionConfig.CEP_ADAPTER) {
+                conn.setAttribute("engine", c.getProperties().get("engine"));
             } else {
-                conn.setAttribute("cfName", c.properties.get("cfName"));
+                conn.setAttribute("cfName", c.getProperties().get("cfName"));
             }
             Element properties = doc.createElement("Properties");
-            for (Map.Entry<String, String> prop : c.properties.entrySet()) {
+            for (Map.Entry<String, String> prop : c.getProperties().entrySet()) {
                 Element property = doc.createElement("Property");
                 property.setAttribute("name", prop.getKey());
                 property.setAttribute("value", prop.getValue());
@@ -172,7 +172,6 @@ public class ConnectionsFileParser {
         if (!f.exists()) {
             f.createNewFile();
         }
-        System.out.println("AQUI");
         saveToFile(new ConnectionConfig[0], filePath);
     }
 }

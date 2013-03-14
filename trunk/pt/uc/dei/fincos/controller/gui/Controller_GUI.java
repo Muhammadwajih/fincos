@@ -268,7 +268,7 @@ public final class Controller_GUI extends JFrame {
      */
     public ConnectionConfig getConnection(String alias) {
         for (ConnectionConfig conn : this.connections) {
-            if (conn.alias.equals(alias)) {
+            if (conn.getAlias().equals(alias)) {
                 return conn;
             }
         }
@@ -295,7 +295,7 @@ public final class Controller_GUI extends JFrame {
      */
     public int getConnectionIndex(String alias) {
         for (int i = 0; i < this.connections.size(); i++) {
-            if (connections.get(i).alias.equals(alias)) {
+            if (connections.get(i).getAlias().equals(alias)) {
                 return i;
             }
         }

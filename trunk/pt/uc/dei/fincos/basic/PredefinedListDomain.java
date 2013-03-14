@@ -190,9 +190,14 @@ public final class PredefinedListDomain extends Domain {
 
     @Override
     public void setRandomSeed(final Long seed) {
-        if (this.rnd != null) {
+        if (this.rnd != null && seed != null) {
             this.rnd.setSeed(seed);
+        } else {
+            if (seed != null) {
+                this.rnd = new Random(seed);
+            } else {
+                this.rnd = new Random();
+            }
         }
-
     }
 }

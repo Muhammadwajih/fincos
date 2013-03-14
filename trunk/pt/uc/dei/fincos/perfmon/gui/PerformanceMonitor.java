@@ -269,7 +269,7 @@ public final class PerformanceMonitor extends JFrame {
         if (this.sinks != null) {
             for (SinkConfig sink : this.sinks) {
                 for (String outputStream : sink.getOutputStreamList()) {
-                    String key = sink.getConnection().alias + "/" + outputStream;
+                    String key = sink.getConnection().getAlias() + "/" + outputStream;
                     outputStreamStats.put(key, null);
                 }
             }
@@ -608,7 +608,7 @@ public final class PerformanceMonitor extends JFrame {
                         String streamName = e.getKey();
                         Integer sentCount = e.getValue();
                         double throughput = interval != 0 ? 1000.0 * sentCount / interval : 0;
-                        String streamID = dr.getConnection().alias + "/" + streamName;
+                        String streamID = dr.getConnection().getAlias() + "/" + streamName;
                         // The throughput of this stream for *all* Drivers
                         Double totalThroughput = inputStreamsStats.get(streamID);
                         if (totalThroughput == null) {
@@ -634,7 +634,7 @@ public final class PerformanceMonitor extends JFrame {
                         String streamName = e.getKey();
                         OutStreamCounters counters = e.getValue();
                         counters.setThroughput(interval != 0 ? 1E3 * counters.getLastCount() / interval : 0);
-                        String streamID = sink.getConnection().alias + "/" + streamName;
+                        String streamID = sink.getConnection().getAlias() + "/" + streamName;
                         outputStreamStats.put(streamID, counters);
                     }
                 } catch (RemoteException e) {
@@ -745,13 +745,13 @@ public final class PerformanceMonitor extends JFrame {
 
         if (this.drivers != null) {
             for (DriverConfig dr : this.drivers) {
-                list.add(dr.getConnection().alias);
+                list.add(dr.getConnection().getAlias());
             }
         }
 
         if (this.sinks != null) {
             for (SinkConfig sink : this.sinks) {
-                list.add(sink.getConnection().alias);
+                list.add(sink.getConnection().getAlias());
             }
         }
 

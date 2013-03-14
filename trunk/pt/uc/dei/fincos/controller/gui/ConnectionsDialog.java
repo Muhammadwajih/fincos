@@ -105,7 +105,7 @@ public final class ConnectionsDialog extends ComponentDetail {
     private void fillGUI(List<ConnectionConfig> connections) {
         DefaultTableModel model = (DefaultTableModel) this.connectionsTable.getModel();
         for (ConnectionConfig c : connections) {
-            model.addRow(new Object[]{c.alias, c.type == ConnectionConfig.CEP_ADAPTER
+            model.addRow(new Object[]{c.getAlias(), c.getType() == ConnectionConfig.CEP_ADAPTER
                                       ? "CEP Adapter" : "JMS"});
         }
     }
@@ -323,7 +323,7 @@ public final class ConnectionsDialog extends ComponentDetail {
     protected void addConnection(ConnectionConfig connCfg) {
         this.connections.add(connCfg);
         ((DefaultTableModel) this.connectionsTable.getModel()).addRow(
-                new Object[]{connCfg.alias, connCfg.type == ConnectionConfig.CEP_ADAPTER
+                new Object[]{connCfg.getAlias(), connCfg.getType() == ConnectionConfig.CEP_ADAPTER
                              ? "CEP Adapter" : "JMS"});
         dirty = true;
     }
@@ -340,7 +340,7 @@ public final class ConnectionsDialog extends ComponentDetail {
         this.connections.add(index, newCfg);
         ((DefaultTableModel) connectionsTable.getModel()).removeRow(index);
         ((DefaultTableModel) connectionsTable.getModel()).insertRow(index,
-                new Object[]{newCfg.alias, newCfg.type == ConnectionConfig.CEP_ADAPTER
+                new Object[]{newCfg.getAlias(), newCfg.getType() == ConnectionConfig.CEP_ADAPTER
                              ? "CEP Adapter" : "JMS"});
         dirty = true;
     }

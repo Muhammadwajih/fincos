@@ -77,7 +77,7 @@ public final class EsperInterface extends CEP_EngineInterface {
     /** Esper runtime. */
     private EPRuntime runtime;
 
-    /** Stores schemas for streams whose events are represented as Maps.*/
+    /** Stores schemas for streams whose events are represented as Maps or Object-arrays.*/
     private HashMap<String, LinkedHashMap<String, String>> streamsSchemas;
 
     /** A map query identifier -> query EPL text.*/
@@ -100,6 +100,9 @@ public final class EsperInterface extends CEP_EngineInterface {
 
     /** Events submitted as Plain java Objects. */
     protected static final int POJO_FORMAT = 1;
+
+    /** Events submitted as Plain java Objects. */
+    protected static final int OBJECT_ARRAY_FORMAT = 2;
 
     /** Indicates if an external clock should be used. */
     private boolean useExternalTimer;
@@ -187,7 +190,9 @@ public final class EsperInterface extends CEP_EngineInterface {
     public synchronized boolean connect() throws Exception {
         try {
             String eventFormat = retrieveConnectionProperty("Event_format");
-            if (eventFormat.equalsIgnoreCase("POJO")) {
+            if (eventFormat.equalsIgnoreCase("Object-Array")) {
+                this.eventFormat = OBJECT_ARRAY_FORMAT;
+            } else if (eventFormat.equalsIgnoreCase("POJO")) {
                 this.eventFormat = POJO_FORMAT;
             } else {
                 this.eventFormat = MAP_FORMAT;
@@ -293,8 +298,8 @@ public final class EsperInterface extends CEP_EngineInterface {
                     && type.getElementsByTagName("java-util-map").getLength() > 0) {
                 NodeList attributes = ((Element) type.getElementsByTagName("java-util-map").
                                       item(0)).getElementsByTagName("map-property");
-                // Add streams whose events are represented as Maps
-                if (this.eventFormat == MAP_FORMAT) {
+                // Add streams whose events are represented as Maps or Object-arrays
+                if (this.eventFormat == MAP_FORMAT || this.eventFormat == OBJECT_ARRAY_FORMAT) {
                     typeAtts = new LinkedHashMap<String, String>(attributes.getLength());
                     for (int j = 0; j < attributes.getLength(); j++) {
                         Element attribute = (Element) attributes.item(j);
@@ -303,6 +308,40 @@ public final class EsperInterface extends CEP_EngineInterface {
                         typeAtts.put(attName, attType);
                     }
                     streamsSchemas.put(typeName, typeAtts);
+                    /*
+                     *  If the representation is object array,
+                     *  replace event definition as a Map by one as Object array.
+                     */
+                    if (this.eventFormat == OBJECT_ARRAY_FORMAT) {
+                        String[] attNames = new String[attributes.getLength()];
+                        Object[] attTypes = new Object[attributes.getLength()];
+                        for (int j = 0; j < attributes.getLength(); j++) {
+                            Element attribute = (Element) attributes.item(j);
+                            attNames[j] = attribute.getAttribute("name");
+                            attType = attribute.getAttribute("class");
+                            if (attType.equals("int")) {
+                                attTypes[j] = int.class;
+                            } else if (attType.equals("long")) {
+                                attTypes[j] = long.class;
+                            } else if (attType.equals("string")) {
+                                attTypes[j] = String.class;
+                            } else if (attType.equals("double")) {
+                                attTypes[j] = double.class;
+                            } else if (attType.equals("float")) {
+                                attTypes[j] = float.class;
+                            } else if (attType.equals("boolean")) {
+                                attTypes[j] = boolean.class;
+                            } else {
+                                throw new Exception("Unsupported data type for"
+                                        + " attribute \"" + attNames[j]
+                                        + "\", in event type \"" + typeName
+                                        + "\".");
+                            }
+                        }
+                        esperConfig.removeEventType(typeName, true);
+                        esperConfig.addEventType(typeName, attNames, attTypes);
+                    }
+
                 } else if (this.eventFormat == POJO_FORMAT) {
                     Attribute[] atts = new Attribute[attributes.getLength()];
                     for (int j = 0; j < attributes.getLength(); j++) {
@@ -431,7 +470,9 @@ public final class EsperInterface extends CEP_EngineInterface {
     @Override
     public synchronized void send(Event e) throws Exception {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
-            if (this.eventFormat == POJO_FORMAT) {
+            if (this.eventFormat == OBJECT_ARRAY_FORMAT) {
+                sendObjectArrayEvent(e);
+            } else if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(e);
             } else {
                 sendMapEvent(e);
@@ -446,7 +487,9 @@ public final class EsperInterface extends CEP_EngineInterface {
     @Override
     public synchronized void send(CSV_Event event) {
         if (this.status.getStep() == Step.READY || this.status.getStep() == Step.CONNECTED) {
-            if (this.eventFormat == POJO_FORMAT) {
+            if (this.eventFormat == OBJECT_ARRAY_FORMAT) {
+                sendObjectArrayEvent(event);
+            } else if (this.eventFormat == POJO_FORMAT) {
                 sendPOJOEvent(event);
             } else {
                 sendMapEvent(event);
@@ -605,6 +648,68 @@ public final class EsperInterface extends CEP_EngineInterface {
     }
 
     /**
+     * Sends an Object-array event to Esper.
+     *
+     * Event record is initially represented using the FINCoS internal format
+     * and it is converted to a an Object-array format before sending to Esper.
+     *
+     * @param event     the event to be sent
+     */
+    private void sendObjectArrayEvent(Event event) {
+        String eventTypeName = event.getType().getName();
+        LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
+        if (eventSchema != null) {
+            Object[] objArrEvent = null;
+            Object[] payload = event.getValues();
+
+            int fieldCount = this.rtMode != Globals.NO_RT
+                           ? payload.length + 1
+                           : payload.length;
+
+            if (eventSchema.size() != fieldCount) {
+                System.err.println("ERROR: Number of fields in event \""
+                        + event + "\" (" + (fieldCount)
+                        + ") does not match schema of event type \""
+                        + eventTypeName + "\" ("
+                        + eventSchema.size() + ").");
+                return;
+            }
+
+            if (this.rtMode == Globals.NO_RT) { // No RT measurement: send event's payload
+                objArrEvent = payload;
+            } else { // With RT measurement: send event's payload and timestamp
+                objArrEvent = new Object[fieldCount];
+                for (int i = 0; i < fieldCount; i++) {
+                    if (i == fieldCount - 1) {    // Timestamp field (last one)
+                        if (this.rtMode == Globals.ADAPTER_RT) {
+                            /* Assigns a timestamp to the event just after conversion
+                               (i.e., just before sending the event to the target system) */
+                            long timestamp = 0;
+                            if (rtResolution == Globals.MILLIS_RT) {
+                                timestamp = System.currentTimeMillis();
+                            } else if (rtResolution == Globals.NANO_RT) {
+                                timestamp = System.nanoTime();
+                            }
+                            objArrEvent[i] = timestamp;
+                        } else if (rtMode == Globals.END_TO_END_RT) {
+                            // The timestamp comes from the Driver
+                            objArrEvent[i] = event.getTimestamp();
+                        }
+                    } else {
+                        objArrEvent[i] = payload[i];
+                    }
+                }
+            }
+            synchronized (runtime) {
+                runtime.sendEvent(objArrEvent, eventTypeName);
+            }
+        } else {
+            System.err.println("Unknown event type \"" + eventTypeName + "\"."
+                    + "It is not possible to send event.");
+        }
+    }
+
+    /**
      * Sends a Map event to Esper.
      *
      * Event record is initially represented as a FINCoS CSV record
@@ -752,6 +857,74 @@ public final class EsperInterface extends CEP_EngineInterface {
                     + ". It is not possible to send event.");
             e.printStackTrace();
             return;
+        }
+    }
+
+    /**
+     * Sends an Object-array event to Esper.
+     *
+     * Event record is initially represented using the FINCoS internal format
+     * and it is converted to an Object-array format before sending to Esper.
+     *
+     * @param event     the event to be sent
+     */
+    private void sendObjectArrayEvent(CSV_Event event) {
+        String eventTypeName = event.getType();
+        LinkedHashMap<String, String> eventSchema = streamsSchemas.get(eventTypeName);
+
+        if (eventSchema != null) {
+            String[] payload = event.getPayload();
+            int fieldCount = this.rtMode != Globals.NO_RT
+                           ? payload.length + 1
+                           : payload.length;
+
+            if (eventSchema.size() != fieldCount) {
+                System.err.println("ERROR: Number of fields in event \""
+                        + event + "\" (" + (fieldCount)
+                        + ") does not match schema of event type \""
+                        + eventTypeName + "\" ("
+                        + eventSchema.size() + ").");
+                return;
+            }
+            Object[] objArrEvent = new Object[fieldCount];
+            int i = 0;
+            for (Entry <String, String> field: eventSchema.entrySet()) {
+                if (i == eventSchema.size() - 1 && rtMode != Globals.NO_RT) { // Timestamp field (last one, if it exists)
+                    if (this.rtMode == Globals.ADAPTER_RT) {
+                        /* Assigns a timestamp to the event just after conversion
+                              (i.e., just before sending the event to the target system) */
+                        long timestamp = 0;
+                        if (rtResolution == Globals.MILLIS_RT) {
+                            timestamp = System.currentTimeMillis();
+                        } else if (rtResolution == Globals.NANO_RT) {
+                            timestamp = System.nanoTime();
+                        }
+                        objArrEvent[i] = timestamp;
+                    } else if (rtMode == Globals.END_TO_END_RT) {
+                        // The timestamp comes from the Driver
+                        objArrEvent[i] = event.getTimestamp();
+                    }
+                } else {
+                    if (field.getValue().equals("int")) {
+                        objArrEvent[i] = Integer.parseInt(payload[i]);
+                    } else if (field.getValue().equals("long")) {
+                        objArrEvent[i] = Long.parseLong(payload[i]);
+                    } else if (field.getValue().equals("string")) {
+                        objArrEvent[i] = payload[i];
+                    } else if (field.getValue().equals("double")) {
+                        objArrEvent[i] = Double.parseDouble(payload[i]);
+                    } else if (field.getValue().equals("float")) {
+                        objArrEvent[i] = Float.parseFloat(payload[i]);
+                    }
+                }
+                i++;
+            }
+            synchronized (runtime) {
+                runtime.sendEvent(objArrEvent, eventTypeName);
+            }
+        } else {
+            System.err.println("Unknown event type \"" + eventTypeName + "\"."
+                    + "It is not possible to send event.");
         }
     }
 
