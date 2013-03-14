@@ -1,5 +1,5 @@
 /* FINCoS Framework
- * Copyright (C) 2012 CISUC, University of Coimbra
+ * Copyright (C) 2013 CISUC, University of Coimbra
  *
  * Licensed under the terms of The GNU General Public License, Version 2.
  * A copy of the License has been included with this distribution in the
@@ -101,7 +101,7 @@ public final class EsperInterface extends CEP_EngineInterface {
     /** Events submitted as Plain java Objects. */
     protected static final int POJO_FORMAT = 1;
 
-    /** Events submitted as Plain java Objects. */
+    /** Events submitted as Objects arrays. */
     protected static final int OBJECT_ARRAY_FORMAT = 2;
 
     /** Indicates if an external clock should be used. */

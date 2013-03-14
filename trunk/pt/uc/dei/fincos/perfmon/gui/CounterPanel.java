@@ -1,5 +1,5 @@
 /* FINCoS Framework
- * Copyright (C) 2012 CISUC, University of Coimbra
+ * Copyright (C) 2013 CISUC, University of Coimbra
  *
  * Licensed under the terms of The GNU General Public License, Version 2.
  * A copy of the License has been included with this distribution in the
