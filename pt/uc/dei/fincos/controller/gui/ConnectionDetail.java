@@ -73,7 +73,7 @@ public final class ConnectionDetail extends ComponentDetail {
         if (connCfg != null) {
             this.oldCfg = connCfg;
             this.op = UPDATE;
-            setTitle("Editing \"" + connCfg.alias + "\"");
+            setTitle("Editing \"" + connCfg.getAlias() + "\"");
             fillProperties(connCfg);
             aliasField.setEditable(false);
         } else {
@@ -92,15 +92,15 @@ public final class ConnectionDetail extends ComponentDetail {
      * @param connCfg   the connection configuration
      */
     public void fillProperties(ConnectionConfig connCfg) {
-        aliasField.setText(connCfg.alias);
+        aliasField.setText(connCfg.getAlias());
         aliasField.setCaretPosition(0);
-        if (connCfg.type == ConnectionConfig.CEP_ADAPTER) {
+        if (connCfg.getType() == ConnectionConfig.CEP_ADAPTER) {
             cepAdapterRadioBtn.setSelected(true);
-            String engine = connCfg.properties.get("engine");
+            String engine = connCfg.getProperties().get("engine");
             customPropertyField.setText(engine);
         } else {
             jmsRadioBtn.setSelected(true);
-            String cfName = connCfg.properties.get("cfName");
+            String cfName = connCfg.getProperties().get("cfName");
             customPropertyField.setText(cfName);
         }
         customPropertyField.setCaretPosition(0);
@@ -109,7 +109,7 @@ public final class ConnectionDetail extends ComponentDetail {
             model.removeRow(0);
         }
 
-        for (Entry<String, String> e : connCfg.properties.entrySet()) {
+        for (Entry<String, String> e : connCfg.getProperties().entrySet()) {
             if (e.getKey().equals("engine") || e.getKey().equals("cfName")) {
                 continue;
             }
@@ -266,7 +266,7 @@ public final class ConnectionDetail extends ComponentDetail {
             public void actionPerformed(ActionEvent e) {
                 if (validateFields()) {
                     if ((op == INSERT && !isUnique(aliasField.getText()))
-                        || (op == UPDATE && !oldCfg.alias.equals(aliasField.getText())
+                        || (op == UPDATE && !oldCfg.getAlias().equals(aliasField.getText())
                          && !isUnique(aliasField.getName()))) {
                         JOptionPane.showMessageDialog(null, "There is already a connection named \""
                                 + aliasField.getText() + "\".", "Invalid Input",
@@ -392,7 +392,7 @@ public final class ConnectionDetail extends ComponentDetail {
      */
     protected boolean isUnique(String alias) {
         for (ConnectionConfig c : Controller_GUI.getInstance().getConnections()) {
-            if (c.alias.equals(alias)) {
+            if (c.getAlias().equals(alias)) {
                 return false;
             }
         }

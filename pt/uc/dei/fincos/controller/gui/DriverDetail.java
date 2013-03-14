@@ -333,7 +333,7 @@ public class DriverDetail extends ComponentDetail {
         String[] txts = new String[conns.length + 1];
         ImageIcon[] imgs = new ImageIcon[conns.length + 1];
         for (int i = 0; i < conns.length; i++) {
-            txts[i] = conns[i].alias;
+            txts[i] = conns[i].getAlias();
         }
         txts[txts.length - 1] = "New Connection...";
         imgs[txts.length - 1] = new ImageIcon("imgs/connection_new.png");
@@ -570,7 +570,7 @@ public class DriverDetail extends ComponentDetail {
         }
 
         if (dr.getConnection() != null) {
-            int connIndex = Controller_GUI.getInstance().getConnectionIndex(dr.getConnection().alias);
+            int connIndex = Controller_GUI.getInstance().getConnectionIndex(dr.getConnection().getAlias());
             this.connCombo.setSelectedIndex(connIndex);
         } else {
             this.connCombo.setSelectedIndex(-1);

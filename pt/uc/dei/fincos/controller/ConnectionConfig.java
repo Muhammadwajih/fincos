@@ -32,13 +32,13 @@ public final class ConnectionConfig implements Serializable, Cloneable {
     private static final long serialVersionUID = -1527657198530605646L;
 
     /** A unique identifier for this connection. */
-    public final String alias;
+    private final String alias;
 
     /** Either CEP_ADAPTER or JMS. */
-    public final int type;
+    private final int type;
 
     /** Vendor-specific parameters used to establish the connection .*/
-    public final LinkedHashMap<String, String> properties;
+    private final LinkedHashMap<String, String> properties;
 
     /** Direct connection with CEP engine via custom-code Adapter.  */
     public static final int CEP_ADAPTER = 0;
@@ -64,16 +64,16 @@ public final class ConnectionConfig implements Serializable, Cloneable {
 
     @Override
     public String toString() {
-        return "ConnectionConfig [alias=" + alias + ", "
-                               + "type=" + type + ", "
-                               + "properties=" + properties + "]";
+        return "ConnectionConfig [alias=" + getAlias() + ", "
+                               + "type=" + getType() + ", "
+                               + "properties=" + getProperties() + "]";
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((alias == null) ? 0 : alias.hashCode());
+        result = prime * result + ((getAlias() == null) ? 0 : getAlias().hashCode());
         return result;
     }
 
@@ -89,11 +89,11 @@ public final class ConnectionConfig implements Serializable, Cloneable {
             return false;
         }
         ConnectionConfig other = (ConnectionConfig) obj;
-        if (alias == null) {
-            if (other.alias != null) {
+        if (getAlias() == null) {
+            if (other.getAlias() != null) {
                 return false;
             }
-        } else if (!alias.equals(other.alias)) {
+        } else if (!getAlias().equals(other.getAlias())) {
             return false;
         }
 
@@ -103,7 +103,30 @@ public final class ConnectionConfig implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     @Override
     public ConnectionConfig clone() {
-        return new ConnectionConfig(this.alias, this.type,
-                    (LinkedHashMap<String, String>) this.properties.clone());
+        return new ConnectionConfig(this.getAlias(), this.getType(),
+                    (LinkedHashMap<String, String>) this.getProperties().clone());
+    }
+
+    /**
+     *
+     * @return  the unique identifier for this connection
+     */
+    public String getAlias() {
+        return alias;
+    }
+
+    /**
+     * @return the type of this connection
+     *         (either CEP_ADAPTER or JMS)
+     */
+    public int getType() {
+        return type;
+    }
+
+    /**
+     * @return the parameters used to establish this connection
+     */
+    public LinkedHashMap<String, String> getProperties() {
+        return properties;
     }
 }

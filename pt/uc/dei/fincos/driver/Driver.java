@@ -577,7 +577,7 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
         String logHeader = "FINCoS Driver Log File."
                 + "\n Driver Alias: " + cfg.getAlias()
                 + "\n Driver Address: " + cfg.getAddress().getHostAddress()
-                + "\n Connection: " + cfg.getConnection().alias
+                + "\n Connection: " + cfg.getConnection().getAlias()
                 + "\n Load generation start time: " + new Date();
 
         try {
@@ -605,12 +605,12 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
      */
     private boolean connect(ConnectionConfig connCfg) {
         Properties connProps = new Properties();
-        for (Entry<String, String> e : connCfg.properties.entrySet()) {
+        for (Entry<String, String> e : connCfg.getProperties().entrySet()) {
             connProps.put(e.getKey(), e.getValue());
         }
 
         // Tries to connect through a JMS Provider
-        if (drConfig.getConnection().type == ConnectionConfig.JMS) {
+        if (drConfig.getConnection().getType() == ConnectionConfig.JMS) {
             this.adapterType = AdapterType.JMS;
             if (jmsInterface != null) {
                 try {
@@ -624,7 +624,7 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
 
             try {
                 this.showInfo("Trying to establish connection with JMS provider...");
-                String cfName = connCfg.properties.get("cfName");
+                String cfName = connCfg.getProperties().get("cfName");
                 this.jmsInterface = new JMS_Writer(connProps, cfName, drConfig.getStreamNames(),
                         rtMode, rtResolution);
                 this.showInfo("Done!");
@@ -640,7 +640,7 @@ public final class Driver extends JFrame implements DriverRemoteFunctions {
                 return false;
             }
         } // Tries to connect directly with the CEP engine
-        else if (drConfig.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
+        else if (drConfig.getConnection().getType() == ConnectionConfig.CEP_ADAPTER) {
             this.adapterType = AdapterType.CEP;
             try {
                 cepEngineInterface =

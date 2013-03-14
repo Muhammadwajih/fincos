@@ -262,10 +262,10 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
             || this.status.getStep() == Step.ERROR
             || this.status.getStep() == Step.STOPPED) {
             Properties connProps = new Properties();
-            for (Entry<String, String> e: sinkCfg.getConnection().properties.entrySet()) {
+            for (Entry<String, String> e: sinkCfg.getConnection().getProperties().entrySet()) {
                 connProps.put(e.getKey(), e.getValue());
             }
-            if (sinkCfg.getConnection().type == ConnectionConfig.JMS) {
+            if (sinkCfg.getConnection().getType() == ConnectionConfig.JMS) {
                 this.adapterType = AdapterType.JMS;
                 String cfName = (String) connProps.get("cfName");
                 showInfo("Connecting to JMS Provider...");
@@ -286,7 +286,7 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
                     this.status.setStep(Step.ERROR);
                     return false;
                 }
-            } else if (sinkCfg.getConnection().type == ConnectionConfig.CEP_ADAPTER) {
+            } else if (sinkCfg.getConnection().getType() == ConnectionConfig.CEP_ADAPTER) {
                 this.adapterType = AdapterType.CEP;
                 cepEngineInterface = CEP_EngineFactory.getCEPEngineInterface(connProps,
                                         rtMode, rtResolution);
@@ -342,7 +342,7 @@ public final class Sink extends JFrame implements SinkRemoteFunctions {
                     String logHeader = "FINCoS Sink Log File."
                         + "\n Sink Alias: " + sinkCfg.getAlias()
                         + "\n Sink Address: " + sinkCfg.getAddress().getHostAddress()
-                        + "\n Connection: " + sinkCfg.getConnection().alias
+                        + "\n Connection: " + sinkCfg.getConnection().getAlias()
                         + "\n Start time: " + new Date()
                         + "\n Response Time Mode: " + rtModeStr
                         + "\n Response Time Resolution: " + rtResolutionStr

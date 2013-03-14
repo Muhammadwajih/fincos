@@ -175,7 +175,7 @@ public final class ConfigurationParser {
             driver.setAttribute("name", dr.getAlias());
             driver.setAttribute("address", dr.getAddress().getHostAddress());
             driver.setAttribute("threadCount", dr.getThreadCount() + "");
-            driver.setAttribute("connection", dr.getConnection().alias);
+            driver.setAttribute("connection", dr.getConnection().getAlias());
 
             Element workload, phase, schema;
             workload = doc.createElement("Workload");
@@ -282,7 +282,7 @@ public final class ConfigurationParser {
             sink = doc.createElement("Sink");
             sink.setAttribute("name", sinkCfg.getAlias());
             sink.setAttribute("address", sinkCfg.getAddress().getHostAddress());
-            sink.setAttribute("connection", sinkCfg.getConnection().alias);
+            sink.setAttribute("connection", sinkCfg.getConnection().getAlias());
 
             Element stream;
             for (String streamName : sinkCfg.getOutputStreamList()) {
