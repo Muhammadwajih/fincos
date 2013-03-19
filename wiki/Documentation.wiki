@@ -17,7 +17,7 @@ More details on each package, including their main classes and corresponding rel
 .
 
 === _Controller_ package ===
-[http://fincos.googlecode.com/svn/imgs/model/package_controller.png]
+[http://fincos.googlecode.com/svn/imgs/model/package_controller.png http://fincos.googlecode.com/svn/imgs/model/package_controller.png]
 .
 
 === _Driver_ package ===
